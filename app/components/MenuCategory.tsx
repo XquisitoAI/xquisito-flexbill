@@ -16,7 +16,7 @@ export default function MenuCategory({ category }: MenuCategoryProps) {
         <div className="h-1 bg-gradient-to-r from-orange-400 to-red-500 rounded-full w-24 mt-2"></div>
       </div>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
         {category.items.map((item) => (
           <MenuItem key={item.id} item={item} />
         ))}

@@ -13,6 +13,7 @@ interface CartState {
   items: CartItem[];
   totalItems: number;
   totalPrice: number;
+  userName: string;
 }
 
 // Acciones del carrito
@@ -20,13 +21,15 @@ type CartAction =
   | { type: 'ADD_ITEM'; payload: MenuItemData }
   | { type: 'REMOVE_ITEM'; payload: number }
   | { type: 'UPDATE_QUANTITY'; payload: { id: number; quantity: number } }
-  | { type: 'CLEAR_CART' };
+  | { type: 'CLEAR_CART' }
+  | { type: 'SET_USER_NAME'; payload: string };
 
 // Estado inicial
 const initialState: CartState = {
   items: [],
   totalItems: 0,
-  totalPrice: 0
+  totalPrice: 0,
+  userName: ''
 };
 
 // Reducer del carrito
@@ -67,6 +70,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       const totalPrice = newItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       
       return {
+        ...state,
         items: newItems,
         totalItems,
         totalPrice
@@ -84,11 +88,18 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       const totalPrice = newItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       
       return {
+        ...state,
         items: newItems,
         totalItems,
         totalPrice
       };
     }
+    
+    case 'SET_USER_NAME':
+      return {
+        ...state,
+        userName: action.payload
+      };
     
     case 'CLEAR_CART':
       return initialState;

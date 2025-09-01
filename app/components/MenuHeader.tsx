@@ -2,6 +2,7 @@
 
 import { Restaurant } from "../interfaces/restaurante";
 import { useCart } from "../context/CartContext";
+import { useRouter } from 'next/navigation';
 
 interface MenuHeaderProps {
   restaurant: Restaurant;
@@ -9,6 +10,11 @@ interface MenuHeaderProps {
 
 export default function MenuHeader({ restaurant }: MenuHeaderProps) {
   const { state } = useCart();
+  const router = useRouter();
+
+  const handleCartClick = () => {
+    router.push('/cart');
+  };
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="container mx-auto px-4 py-3">
@@ -25,7 +31,10 @@ export default function MenuHeader({ restaurant }: MenuHeaderProps) {
             </div>
             
             <div className="relative">
-              <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
+              <div 
+                onClick={handleCartClick}
+                className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors"
+              >
                 <span className="text-white text-sm">🛒</span>
               </div>
               {state.totalItems > 0 && (

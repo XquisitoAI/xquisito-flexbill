@@ -8,7 +8,6 @@ import { getRestaurantData } from "../utils/restaurantData";
 // Tipos para el estado de los items
 type OrderItemStatus = 'On Kitchen' | 'On its Way' | 'Delivered';
 
-
 // Función para asignar estado aleatorio (simulando el proceso real)
 const getRandomStatus = (): OrderItemStatus => {
   const statuses: OrderItemStatus[] = ['On Kitchen', 'On its Way', 'Delivered'];
@@ -17,7 +16,7 @@ const getRandomStatus = (): OrderItemStatus => {
 
 export default function OrderStatus() {
   const { state, refreshOrders } = useTable();
-  const { goBack } = useTableNavigation();
+  const { goBack, navigateWithTable } = useTableNavigation();
   const restaurantData = getRestaurantData();
 
   const handleGoBack = () => {
@@ -25,9 +24,7 @@ export default function OrderStatus() {
   };
 
   const handleCheckOut = () => {
-    // Aquí iría la lógica para el checkout
-    console.log('Processing checkout...', state.orders);
-    alert('¡Gracias por sus órdenes! Procesando checkout...');
+    navigateWithTable('/checkout');
   };
 
   // Calcular totales de toda la mesa

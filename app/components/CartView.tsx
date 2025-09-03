@@ -1,27 +1,27 @@
 'use client';
 
-import { useCart } from "../context/CartContext";
-import { useRouter } from 'next/navigation';
+import { useTable } from "../context/TableContext";
+import { useTableNavigation } from "../hooks/useTableNavigation";
 import MenuHeader from "./MenuHeader";
 import { getRestaurantData } from "../utils/restaurantData";
 
 export default function CartView() {
-  const { state } = useCart();
-  const router = useRouter();
+  const { state } = useTable();
+  const { navigateWithTable, goBack } = useTableNavigation();
   const restaurantData = getRestaurantData();
 
   const handleGoBack = () => {
-    router.back();
+    goBack();
   };
 
   const handleOrder = () => {
     // Navegamos a la vista de usuario para capturar su nombre
-    router.push('/user');
+    navigateWithTable('/user');
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <MenuHeader restaurant={restaurantData} />
+      <MenuHeader restaurant={restaurantData} tableNumber={state.tableNumber} />
 
       {/* Back button */}
       <div className="max-w-md mx-auto px-4 py-4">
@@ -43,14 +43,14 @@ export default function CartView() {
             <h2 className="text-lg font-medium text-gray-800">Items in Cart</h2>
           </div>
           
-          {state.items.length === 0 ? (
+          {state.currentUserItems.length === 0 ? (
             <div className="px-6 py-8 text-center">
               <div className="text-gray-400 text-4xl mb-4">🛒</div>
               <p className="text-gray-500">Your cart is empty</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {state.items.map((item) => (
+              {state.currentUserItems.map((item) => (
                 <div key={item.id} className="px-6 py-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -82,14 +82,14 @@ export default function CartView() {
       </div>
 
       {/* Order Button - Fixed at bottom */}
-      {state.items.length > 0 && (
+      {state.currentUserItems.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
           <div className="max-w-md mx-auto">
             <button 
               onClick={handleOrder}
               className="w-full bg-teal-700 text-white py-4 rounded-lg font-medium hover:bg-teal-800 transition-colors"
             >
-              Order {state.totalItems} items
+              Order {state.currentUserTotalItems} items
             </button>
           </div>
         </div>

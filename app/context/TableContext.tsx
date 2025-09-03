@@ -1,0 +1,271 @@
+'use client';
+
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { MenuItemData } from '../interfaces/menuItemData';
+import { tableApi, UserOrder } from '../services/tableApi';
+
+// Interfaz para un item del carrito
+export interface CartItem extends MenuItemData {
+  quantity: number;
+}
+
+// Usar la interfaz UserOrder de la API
+
+// Estado de la mesa
+interface TableState {
+  tableNumber: string;
+  orders: UserOrder[];
+  currentUserName: string;
+  currentUserItems: CartItem[];
+  currentUserTotalItems: number;
+  currentUserTotalPrice: number;
+  isLoading: boolean;
+  error: string | null;
+}
+
+// Acciones del contexto de mesa
+type TableAction = 
+  | { type: 'SET_TABLE_NUMBER'; payload: string }
+  | { type: 'ADD_ITEM_TO_CURRENT_USER'; payload: MenuItemData }
+  | { type: 'REMOVE_ITEM_FROM_CURRENT_USER'; payload: number }
+  | { type: 'UPDATE_QUANTITY_CURRENT_USER'; payload: { id: number; quantity: number } }
+  | { type: 'SET_CURRENT_USER_NAME'; payload: string }
+  | { type: 'SUBMIT_CURRENT_USER_ORDER' }
+  | { type: 'CLEAR_CURRENT_USER_CART' }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'SET_ORDERS'; payload: UserOrder[] };
+
+// Estado inicial
+const initialState: TableState = {
+  tableNumber: '',
+  orders: [],
+  currentUserName: '',
+  currentUserItems: [],
+  currentUserTotalItems: 0,
+  currentUserTotalPrice: 0,
+  isLoading: false,
+  error: null
+};
+
+// Función para calcular totales
+const calculateTotals = (items: CartItem[]) => {
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  return { totalItems, totalPrice };
+};
+
+// Reducer del contexto de mesa
+function tableReducer(state: TableState, action: TableAction): TableState {
+  switch (action.type) {
+    case 'SET_TABLE_NUMBER':
+      return {
+        ...state,
+        tableNumber: action.payload
+      };
+
+    case 'ADD_ITEM_TO_CURRENT_USER': {
+      const existingItem = state.currentUserItems.find(item => item.id === action.payload.id);
+      
+      let newItems: CartItem[];
+      if (existingItem) {
+        newItems = state.currentUserItems.map(item =>
+          item.id === action.payload.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        newItems = [...state.currentUserItems, { ...action.payload, quantity: 1 }];
+      }
+      
+      const { totalItems, totalPrice } = calculateTotals(newItems);
+      
+      return {
+        ...state,
+        currentUserItems: newItems,
+        currentUserTotalItems: totalItems,
+        currentUserTotalPrice: totalPrice
+      };
+    }
+
+    case 'REMOVE_ITEM_FROM_CURRENT_USER': {
+      const newItems = state.currentUserItems.filter(item => item.id !== action.payload);
+      const { totalItems, totalPrice } = calculateTotals(newItems);
+      
+      return {
+        ...state,
+        currentUserItems: newItems,
+        currentUserTotalItems: totalItems,
+        currentUserTotalPrice: totalPrice
+      };
+    }
+
+    case 'UPDATE_QUANTITY_CURRENT_USER': {
+      const newItems = state.currentUserItems.map(item =>
+        item.id === action.payload.id
+          ? { ...item, quantity: action.payload.quantity }
+          : item
+      ).filter(item => item.quantity > 0);
+      
+      const { totalItems, totalPrice } = calculateTotals(newItems);
+      
+      return {
+        ...state,
+        currentUserItems: newItems,
+        currentUserTotalItems: totalItems,
+        currentUserTotalPrice: totalPrice
+      };
+    }
+
+    case 'SET_CURRENT_USER_NAME':
+      return {
+        ...state,
+        currentUserName: action.payload
+      };
+
+    case 'SUBMIT_CURRENT_USER_ORDER': {
+      if (state.currentUserItems.length === 0 || !state.currentUserName) {
+        return state;
+      }
+
+      // La creación de la orden se maneja en el provider con la API
+      return {
+        ...state,
+        isLoading: true,
+        error: null
+      };
+    }
+
+    case 'CLEAR_CURRENT_USER_CART':
+      return {
+        ...state,
+        currentUserItems: [],
+        currentUserTotalItems: 0,
+        currentUserTotalPrice: 0
+      };
+
+    case 'SET_LOADING':
+      return {
+        ...state,
+        isLoading: action.payload
+      };
+
+    case 'SET_ERROR':
+      return {
+        ...state,
+        error: action.payload,
+        isLoading: false
+      };
+
+    case 'SET_ORDERS':
+      return {
+        ...state,
+        orders: action.payload,
+        isLoading: false,
+        error: null
+      };
+
+    default:
+      return state;
+  }
+}
+
+// Contexto de la mesa
+const TableContext = createContext<{
+  state: TableState;
+  dispatch: React.Dispatch<TableAction>;
+  submitOrder: (userName?: string) => Promise<void>;
+  refreshOrders: () => Promise<void>;
+} | null>(null);
+
+// Provider del contexto de mesa
+export function TableProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(tableReducer, initialState);
+  
+  // Cargar órdenes cuando se establece el número de mesa
+  useEffect(() => {
+    if (state.tableNumber) {
+      loadTableOrders();
+    }
+  }, [state.tableNumber]);
+
+  const loadTableOrders = async () => {
+    if (!state.tableNumber) return;
+
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
+    try {
+      const response = await tableApi.getTableOrders(parseInt(state.tableNumber));
+      
+      if (response.success && response.data) {
+        dispatch({ type: 'SET_ORDERS', payload: response.data });
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: response.error || 'Failed to load orders' });
+      }
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: 'Network error occurred' });
+    }
+  };
+
+  const submitOrder = async (userName?: string) => {
+    const finalUserName = userName || state.currentUserName;
+    
+    if (!state.tableNumber || !finalUserName || state.currentUserItems.length === 0) {
+      return;
+    }
+
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
+    try {
+      const orderData = {
+        user_name: finalUserName,
+        items: state.currentUserItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          description: item.description,
+          image: item.image
+        })),
+        total_items: state.currentUserTotalItems,
+        total_price: state.currentUserTotalPrice
+      };
+
+      const response = await tableApi.createUserOrder(parseInt(state.tableNumber), orderData);
+      
+      if (response.success) {
+        // Actualizar el nombre del usuario en el estado si se pasó como parámetro
+        if (userName) {
+          dispatch({ type: 'SET_CURRENT_USER_NAME', payload: finalUserName });
+        }
+        // Limpiar carrito actual
+        dispatch({ type: 'CLEAR_CURRENT_USER_CART' });
+        // Recargar órdenes
+        await loadTableOrders();
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: response.error || 'Failed to create order' });
+      }
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: 'Network error occurred' });
+    }
+  };
+
+  const refreshOrders = async () => {
+    await loadTableOrders();
+  };
+  
+  return (
+    <TableContext.Provider value={{ state, dispatch, submitOrder, refreshOrders }}>
+      {children}
+    </TableContext.Provider>
+  );
+}
+
+// Hook personalizado para usar el contexto de mesa
+export function useTable() {
+  const context = useContext(TableContext);
+  if (!context) {
+    throw new Error('useTable must be used within a TableProvider');
+  }
+  return context;
+}

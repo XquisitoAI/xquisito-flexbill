@@ -2,10 +2,10 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import MenuView from '../components/MenuView';
 import { useTable } from '../context/TableContext';
-import OrderStatus from "../components/OrderStatus";
 
-export default function OrderPage() {
+export default function MenuPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { dispatch } = useTable();
@@ -13,7 +13,7 @@ export default function OrderPage() {
 
   useEffect(() => {
     if (!tableNumber) {
-      // Redirigir a home si no hay número de mesa
+      // Redirigir a una página de error o home si no hay número de mesa
       router.push('/');
       return;
     }
@@ -32,12 +32,12 @@ export default function OrderPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Mesa Inválida</h1>
-          <p className="text-gray-600">Por favor escanee el código QR</p>
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Mesa Invalida</h1>
+          <p className="text-gray-600">Por favor escanee el codigo QR</p>
         </div>
       </div>
     );
   }
 
-  return <OrderStatus />;
+  return <MenuView tableNumber={tableNumber} />;
 }

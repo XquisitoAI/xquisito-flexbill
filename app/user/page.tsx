@@ -1,32 +1,69 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useCart } from '../context/CartContext';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useTable } from '../context/TableContext';
+import { useTableNavigation } from '../hooks/useTableNavigation';
 import MenuHeader from '../components/MenuHeader';
 import { getRestaurantData } from '../utils/restaurantData';
 
 export default function UserPage() {
   const [userName, setUserName] = useState('');
-  const { state, dispatch } = useCart();
+  const { state, dispatch, submitOrder } = useTable();
+  const { tableNumber, navigateWithTable, goBack } = useTableNavigation();
   const router = useRouter();
   const restaurantData = getRestaurantData();
 
+  useEffect(() => {
+    if (!tableNumber) {
+      // Redirigir a home si no hay número de mesa
+      router.push('/');
+      return;
+    }
+
+    if (isNaN(parseInt(tableNumber))) {
+      // Redirigir si el número de mesa no es válido
+      router.push('/');
+      return;
+    }
+
+    // Establecer el número de mesa en el contexto
+    dispatch({ type: 'SET_TABLE_NUMBER', payload: tableNumber });
+  }, [tableNumber, dispatch, router]);
+
   const handleGoBack = () => {
-    router.back();
+    goBack();
   };
 
-  const handleProceedToOrder = () => {
+  const handleProceedToOrder = async () => {
     if (userName.trim()) {
-      // Guardar el nombre del usuario en el contexto
-      dispatch({ type: 'SET_USER_NAME', payload: userName.trim() });
-      router.push('/order');
+      debugger
+      try {
+        // Enviar la orden a la API con el nombre del usuario directamente
+        await submitOrder(userName.trim());
+        // Navegar a la página de órdenes
+        navigateWithTable('/order');
+      } catch (error) {
+        console.error('Error submitting order:', error);
+        // El error se maneja en el contexto
+      }
     }
   };
 
+  if (!tableNumber || isNaN(parseInt(tableNumber))) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Mesa Inválida</h1>
+          <p className="text-gray-600">Por favor escanee el código QR</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <MenuHeader restaurant={restaurantData} />
+      <MenuHeader restaurant={restaurantData} tableNumber={state.tableNumber} />
       
       {/* Back button */}
       <div className="max-w-md mx-auto px-4 py-4">
@@ -66,14 +103,14 @@ export default function UserPage() {
         <div className="max-w-md mx-auto">
           <button 
             onClick={handleProceedToOrder}
-            disabled={!userName.trim()}
+            disabled={!userName.trim() || state.isLoading}
             className={`w-full py-4 rounded-lg font-medium transition-colors ${
-              userName.trim()
+              userName.trim() && !state.isLoading
                 ? 'bg-teal-700 text-white hover:bg-teal-800'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            Order {state.totalItems} items
+            {state.isLoading ? 'Placing Order...' : `Order ${state.currentUserTotalItems} items`}
           </button>
         </div>
       </div>

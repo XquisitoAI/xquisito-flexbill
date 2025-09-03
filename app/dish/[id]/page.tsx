@@ -1,16 +1,37 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { findDishById } from '../../utils/menuData';
 import MenuHeader from '../../components/MenuHeader';
 import { restaurantData } from '../../utils/restaurantData';
-import { useCart } from '../../context/CartContext';
+import { useTable } from '../../context/TableContext';
+import { useTableNavigation } from '../../hooks/useTableNavigation';
 
 export default function DishDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const dishId = parseInt(params.id as string);
-  const { dispatch } = useCart();
+  const { dispatch } = useTable();
+  const { tableNumber, goBack } = useTableNavigation();
+
+  useEffect(() => {
+    if (!tableNumber) {
+      // Redirigir a home si no hay número de mesa
+      router.push('/');
+      return;
+    }
+
+    if (isNaN(parseInt(tableNumber))) {
+      // Redirigir si el número de mesa no es válido
+      router.push('/');
+      return;
+    }
+
+    // Establecer el número de mesa en el contexto
+    dispatch({ type: 'SET_TABLE_NUMBER', payload: tableNumber });
+  }, [tableNumber, dispatch, router]);
 
   const dishData = findDishById(dishId);
 
@@ -18,9 +39,20 @@ export default function DishDetailPage() {
 
   const handleAddToCart = () => {
     if (dishData) {
-      dispatch({ type: 'ADD_ITEM', payload: dishData.dish });
+      dispatch({ type: 'ADD_ITEM_TO_CURRENT_USER', payload: dishData.dish });
     }
   };
+
+  if (!tableNumber || isNaN(parseInt(tableNumber))) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Mesa Inválida</h1>
+          <p className="text-gray-600">Por favor escanee el código QR</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!dishData) {
     return (
@@ -28,7 +60,7 @@ export default function DishDetailPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Platillo no encontrado</h1>
           <button 
-            onClick={() => router.back()}
+            onClick={() => goBack()}
             className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
           >
             Volver al menú
@@ -42,14 +74,14 @@ export default function DishDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-      <MenuHeader restaurant={restaurantData} />
+      <MenuHeader restaurant={restaurantData} tableNumber={tableNumber} />
       
       <main className="container mx-auto px-4 py-6">
         <div className="max-w-4xl mx-auto">
         {/* Header con botón de regreso */}
         <div className="flex items-center mb-6">
           <button 
-            onClick={() => router.back()}
+            onClick={() => goBack()}
             className="p-2 rounded-full bg-white shadow-lg hover:shadow-xl transition-shadow"
           >
             <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

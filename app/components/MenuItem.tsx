@@ -1,24 +1,24 @@
 'use client';
 
 import { MenuItemData } from "../interfaces/menuItemData";
-import { useRouter } from 'next/navigation';
-import { useCart } from "../context/CartContext";
+import { useTable } from "../context/TableContext";
+import { useTableNavigation } from "../hooks/useTableNavigation";
 
 interface MenuItemProps {
   item: MenuItemData;
 }
 
 export default function MenuItem({ item }: MenuItemProps) {
-  const router = useRouter();
-  const { dispatch } = useCart();
+  const { dispatch } = useTable();
+  const { navigateWithTable } = useTableNavigation();
 
   const handleImageClick = () => {
-    router.push(`/dish/${item.id}`);
+    navigateWithTable(`/dish/${item.id}`);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    dispatch({ type: 'ADD_ITEM', payload: item });
+    dispatch({ type: 'ADD_ITEM_TO_CURRENT_USER', payload: item });
   };
   
   return (

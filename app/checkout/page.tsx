@@ -1,10 +1,11 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useTable } from "../context/TableContext";
+import { useTableNavigation } from "../hooks/useTableNavigation";
 
 export default function CheckoutPage() {
   const { state } = useTable();
+  const { navigateWithTable } = useTableNavigation();
 
   const handleSignIn = () => {
     // Lógica para Sign In
@@ -17,9 +18,8 @@ export default function CheckoutPage() {
   };
 
   const handleContinueAsGuest = () => {
-    // Continuar como invitado y procesar el pago
-    console.log('Continue as Guest clicked');
-    alert('Processing payment as guest...');
+    // Navegar a la página de pago
+    navigateWithTable('/payment');
   };
 
   return (

@@ -44,9 +44,8 @@ export default function PaymentPage() {
     alert(`Payment of $${tableTotalPrice.toFixed(2)} processed successfully! Thank you ${name}!`);
   };
 
-  const handleChangeMethod = () => {
-    // Toggle between payment methods for demo
-    setSelectedPayment(selectedPayment === 'mastercard' ? 'visa' : 'mastercard');
+  const handleAddCard = () => {
+    navigateWithTable('/add-card');
   };
 
   const handleSplitBill = () => {
@@ -113,7 +112,7 @@ export default function PaymentPage() {
           <h3 className="text-sm font-medium text-gray-800 mb-4">Select your payment method</h3>
           
           {/* Selected Payment Method */}
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-3">
+          {/* <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-5 bg-gradient-to-r from-red-500 to-yellow-500 rounded flex items-center justify-center">
                 <span className="text-white text-xs font-bold">MC</span>
@@ -130,14 +129,14 @@ export default function PaymentPage() {
             <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </div>
+          </div> */}
 
           {/* Change Method Button */}
           <button 
-            onClick={handleChangeMethod}
+            onClick={handleAddCard}
             className="w-full bg-gray-800 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors mb-3"
           >
-            Change method
+            Add card
           </button>
 
           {/* Split Bill Option */}

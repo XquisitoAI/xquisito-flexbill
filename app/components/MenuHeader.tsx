@@ -14,7 +14,6 @@ export default function MenuHeader({ restaurant, tableNumber }: MenuHeaderProps)
   const { state } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const pathname = usePathname();
-  debugger
 
   const handleCartClick = () => {
     navigateWithTable('/cart');

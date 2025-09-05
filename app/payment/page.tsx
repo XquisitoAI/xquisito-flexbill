@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
+import { useGuest, useIsGuest } from "../context/GuestContext";
 import MenuHeader from "../components/MenuHeader";
 import { getRestaurantData } from "../utils/restaurantData";
 import { useState } from 'react';
@@ -12,6 +13,8 @@ export default function PaymentPage() {
   const { goBack, navigateWithTable } = useTableNavigation();
   const router = useRouter();
   const restaurantData = getRestaurantData();
+  const isGuest = useIsGuest();
+  const { guestId, tableNumber } = useGuest();
   const [name, setName] = useState(state.currentUserName);
   const [email, setEmail] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('mastercard');
@@ -71,6 +74,25 @@ export default function PaymentPage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-6">
+        {/* Guest User Indicator */}
+        {isGuest && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-blue-800 font-medium text-sm">Continuing as Guest</p>
+                <p className="text-blue-600 text-xs">
+                  {tableNumber ? `Table ${tableNumber}` : 'Guest user'} • Payment methods stored temporarily
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Your details */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-2">Your details</h2>

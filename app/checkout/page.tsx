@@ -2,10 +2,13 @@
 
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
+import { useGuest } from "../context/GuestContext";
+import { apiService } from "../utils/api";
 
 export default function CheckoutPage() {
   const { state } = useTable();
   const { navigateWithTable } = useTableNavigation();
+  const { setAsGuest } = useGuest();
 
   const handleSignIn = () => {
     // Lógica para Sign In
@@ -18,8 +21,27 @@ export default function CheckoutPage() {
   };
 
   const handleContinueAsGuest = () => {
-    // Navegar a la página de pago
-    navigateWithTable('/payment');
+    console.log('🎯 Continue as Guest clicked');
+    
+    // Initialize guest session using context
+    try {
+      // Set user as guest with table number from context
+      const tableNum = state.tableNumber?.toString() || undefined;
+      setAsGuest(tableNum);
+      
+      console.log('🆔 Guest session initialized via context');
+      console.log(`📍 Table number: ${tableNum || 'Not set'}`);
+      
+      // Navigate to payment page as guest
+      navigateWithTable('/payment');
+      
+      console.log('🚀 Navigating to payment as guest user');
+      
+    } catch (error) {
+      console.error('❌ Error initializing guest session:', error);
+      // Still navigate even if there's an error
+      navigateWithTable('/payment');
+    }
   };
 
   return (

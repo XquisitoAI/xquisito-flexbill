@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { useGuest, useIsGuest } from "../context/GuestContext";
+import { usePayment } from "../context/PaymentContext";
 import MenuHeader from "../components/MenuHeader";
 import { getRestaurantData } from "../utils/restaurantData";
 import { useState } from 'react';
@@ -16,6 +17,7 @@ export default function AddCardPage() {
   const restaurantData = getRestaurantData();
   const isGuest = useIsGuest();
   const { guestId, tableNumber } = useGuest();
+  const { addPaymentMethod, refreshPaymentMethods } = usePayment();
   
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -112,6 +114,13 @@ export default function AddCardPage() {
       });
 
       if (result.success) {
+        // Add the new payment method to the context if it exists
+        if (result.data?.paymentMethod) {
+          addPaymentMethod(result.data.paymentMethod);
+        } else {
+          // Fallback: refresh payment methods from API
+          await refreshPaymentMethods();
+        }
         alert('Card added successfully!');
         router.back();
       } else {

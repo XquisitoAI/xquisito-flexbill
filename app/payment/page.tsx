@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { useGuest, useIsGuest } from "../context/GuestContext";
+import { usePayment } from "../context/PaymentContext";
 import MenuHeader from "../components/MenuHeader";
 import { getRestaurantData } from "../utils/restaurantData";
 import { useState } from 'react';
@@ -15,6 +16,7 @@ export default function PaymentPage() {
   const restaurantData = getRestaurantData();
   const isGuest = useIsGuest();
   const { guestId, tableNumber } = useGuest();
+  const { hasPaymentMethods } = usePayment();
   const [name, setName] = useState(state.currentUserName);
   const [email, setEmail] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('mastercard');
@@ -52,6 +54,10 @@ export default function PaymentPage() {
   };
 
   const handleSplitBill = () => {
+    if (isGuest && !hasPaymentMethods) {
+      alert('Please add a payment method first to split the bill');
+      return;
+    }
     // Navegar a la página de choose to pay
     navigateWithTable('/choose-to-pay');
   };
@@ -164,9 +170,19 @@ export default function PaymentPage() {
           {/* Split Bill Option */}
           <button 
             onClick={handleSplitBill}
-            className="w-full bg-gray-800 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors mb-3"
+            disabled={isGuest && !hasPaymentMethods}
+            className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors mb-3 ${
+              isGuest && !hasPaymentMethods 
+                ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                : 'bg-gray-800 text-white hover:bg-gray-700'
+            }`}
           >
             Split Bill
+            {isGuest && !hasPaymentMethods && (
+              <span className="block text-xs mt-1 text-gray-500">
+                Add a card first
+              </span>
+            )}
           </button>
         </div>
 

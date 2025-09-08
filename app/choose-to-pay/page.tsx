@@ -8,7 +8,7 @@ import { getRestaurantData } from "../utils/restaurantData";
 
 export default function ChooseToPayPage() {
   const { state } = useTable();
-  const { goBack } = useTableNavigation();
+  const { goBack, navigateWithTable } = useTableNavigation();
   const restaurantData = getRestaurantData();
   const router = useRouter();
 
@@ -18,9 +18,8 @@ export default function ChooseToPayPage() {
   };
 
   const handleSplitEqually = () => {
-    // Lógica para dividir la cuenta equitativamente
-    console.log('Split Equally selected');
-    alert('Splitting bill equally among all diners...');
+    // Navegar a la página de seleccionar total a pagar
+    navigateWithTable('/select-total-pay');
   };
 
   const handleSelectItems = () => {

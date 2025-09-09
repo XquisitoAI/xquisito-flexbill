@@ -71,13 +71,19 @@ export default function SelectTotalPayPage() {
       alert('Please select at least one person to pay for');
       return;
     }
+
+    console.log(selectedUsers);
+    
     
     const selectedTotal = calculateSelectedTotal();
-    console.log('Selected users to pay for:', selectedUsers);
-    console.log('Total amount to pay:', selectedTotal);
     
-    // TODO: Navegar a la página de procesamiento de pago con el monto seleccionado
-    alert(`You will pay $${selectedTotal.toFixed(2)} for: ${selectedUsers.join(', ')}`);
+    // Navegar a la página de agregar propina con los datos seleccionados
+    const queryParams = new URLSearchParams({
+      amount: selectedTotal.toString(),
+      users: selectedUsers.join(',')
+    });    
+    
+    navigateWithTable(`/add-tip?${queryParams.toString()}`);
   };
 
   return (

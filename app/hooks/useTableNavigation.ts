@@ -15,7 +15,9 @@ export function useTableNavigation() {
       return;
     }
 
-    const newUrl = `${path}?table=${tableNumber}`;
+    // Verificar si ya existe un query string en el path
+    const separator = path.includes('?') ? '&' : '?';    
+    const newUrl = `${path}${separator}table=${tableNumber}`;
     
     if (replace) {
       router.replace(newUrl);

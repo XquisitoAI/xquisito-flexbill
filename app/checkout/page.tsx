@@ -4,21 +4,22 @@ import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { useGuest } from "../context/GuestContext";
 import { apiService } from "../utils/api";
+import { SignInButton, SignUpButton, SignedIn, SignedOut, useUser } from '@clerk/nextjs';
+import { useEffect } from 'react';
 
 export default function CheckoutPage() {
   const { state } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const { setAsGuest } = useGuest();
+  const { user, isLoaded } = useUser();
 
-  const handleSignIn = () => {
-    // Lógica para Sign In
-    console.log('Sign In clicked');
-  };
-
-  const handleSignUp = () => {
-    // Lógica para Sign Up
-    console.log('Sign Up clicked');
-  };
+  // Redirect authenticated users automatically
+  useEffect(() => {
+    if (isLoaded && user) {
+      console.log('🔐 User is authenticated, redirecting to payment');
+      navigateWithTable('/payment');
+    }
+  }, [isLoaded, user, navigateWithTable]);
 
   const handleContinueAsGuest = () => {
     console.log('🎯 Continue as Guest clicked');
@@ -70,58 +71,65 @@ export default function CheckoutPage() {
           </h1>
           
           <div className="space-y-3">
-            {/* Sign In Button */}
-            <button 
-              onClick={handleSignIn}
-              className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            <SignedOut>
+              {/* Sign In Button */}
+              <SignInButton mode="modal">
+                <button className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                      </svg>
+                    </div>
+                    <span className="text-gray-800 font-medium">Sign In</span>
+                  </div>
+                  <div className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-gray-400">
+                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </button>
+              </SignInButton>
+
+              {/* Sign Up Button */}
+              <SignUpButton mode="modal">
+                <button className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <span className="text-gray-800 font-medium">Sign Up</span>
+                  </div>
+                  <div className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-gray-400">
+                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </button>
+              </SignUpButton>
+
+              {/* Continue as Guest */}
+              <button 
+                onClick={handleContinueAsGuest}
+                className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors group"
+              >
+                <span className="text-gray-600 font-medium">Continue as Guest</span>
+                <div className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-gray-400">
+                  <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
-                <span className="text-gray-800 font-medium">Sign In</span>
-              </div>
-              <div className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-gray-400">
-                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </button>
+              </button>
+            </SignedOut>
 
-            {/* Sign Up Button */}
-            <button 
-              onClick={handleSignUp}
-              className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <span className="text-gray-800 font-medium">Sign Up</span>
+            <SignedIn>
+              {/* User is already signed in, they should be redirected automatically */}
+              <div className="text-center py-4 text-gray-600">
+                <p>Welcome back! Redirecting...</p>
               </div>
-              <div className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-gray-400">
-                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </button>
-
-            {/* Continue as Guest */}
-            <button 
-              onClick={handleContinueAsGuest}
-              className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors group"
-            >
-              <span className="text-gray-600 font-medium">Continue as Guest</span>
-              <div className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-gray-400">
-                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </button>
+            </SignedIn>
           </div>
         </div>
 

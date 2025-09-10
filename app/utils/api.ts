@@ -38,6 +38,10 @@ class ApiService {
 
   constructor() {
     this.baseURL = API_BASE_URL;
+    console.log('🔧 ApiService initialized:', {
+      baseURL: this.baseURL,
+      API_BASE_URL: API_BASE_URL
+    });
   }
 
   private async makeRequest<T = any>(
@@ -133,7 +137,7 @@ class ApiService {
     });
   }
 
-  // Future: Payment Processing API
+  // Payment Processing API
   async processPayment(paymentData: {
     paymentMethodId: string;
     amount: number;
@@ -143,6 +147,14 @@ class ApiService {
     tableNumber?: string;
     restaurantId?: string;
   }): Promise<ApiResponse<any>> {
+    console.log('🔄 Processing payment with apiService:', {
+      url: `${this.baseURL}/payments`,
+      paymentData: { 
+        ...paymentData, 
+        paymentMethodId: paymentData.paymentMethodId?.substring(0, 10) + '...' 
+      }
+    });
+    
     return this.makeRequest('/payments', {
       method: 'POST',
       body: JSON.stringify(paymentData)

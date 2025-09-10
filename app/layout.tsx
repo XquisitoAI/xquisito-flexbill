@@ -5,6 +5,7 @@ import { CartProvider } from "./context/CartContext";
 import { TableProvider } from "./context/TableContext";
 import { GuestProvider } from "./context/GuestContext";
 import { PaymentProvider } from "./context/PaymentContext";
+import { ClerkProvider } from '@clerk/nextjs';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,20 +31,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <CartProvider>
-          <TableProvider>
-            <GuestProvider>
-              <PaymentProvider>
-                {children}
-              </PaymentProvider>
-            </GuestProvider>
-          </TableProvider>
-        </CartProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
+          <CartProvider>
+            <TableProvider>
+              <GuestProvider>
+                <PaymentProvider>
+                  {children}
+                </PaymentProvider>
+              </GuestProvider>
+            </TableProvider>
+          </CartProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

@@ -119,24 +119,32 @@ export default function AddTipPage() {
         throw new Error(paymentResult.error?.message || 'Payment processing failed');
       }
       
-      // eCartPay returns a payment link - redirect user to complete payment
-      const order = paymentResult.data?.order || paymentResult.data?.payment;
+      // Handle different payment types
+      const payment = paymentResult.data?.payment;
+      const order = paymentResult.data?.order;
       
-      if (order?.payLink) {
-        console.log('🔗 Redirecting to eCartPay payment link:', order.payLink);
+      if (payment?.type === 'direct_charge') {
+        // Direct charge successful - go straight to success page
+        console.log('✅ Direct charge successful:', payment.id);
+        navigateWithTable(`/payment-success?paymentId=${payment.id}&amount=${totalAmount}&type=direct`);
+      } else if (order?.payLink || payment?.payLink) {
+        // Fallback to payment link flow
+        const payLink = order?.payLink || payment?.payLink;
+        console.log('🔗 Redirecting to eCartPay payment link:', payLink);
+        
         // Store order details for later reference
         if (typeof window !== 'undefined') {
           localStorage.setItem('xquisito-pending-payment', JSON.stringify({
-            orderId: order.id,
+            orderId: order?.id || payment?.id,
             amount: totalAmount,
             users: selectedUsers,
             tableNumber: state.tableNumber
           }));
         }
         // Redirect to eCartPay payment page
-        window.location.href = order.payLink;
+        window.location.href = payLink;
       } else {
-        throw new Error('Payment link not received from eCartPay');
+        throw new Error('No valid payment method received from eCartPay');
       }
 
     } catch (error:any) {

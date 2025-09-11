@@ -4,7 +4,7 @@ import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { useGuest } from "../context/GuestContext";
 import { apiService } from "../utils/api";
-import { SignInButton, SignUpButton, SignedIn, SignedOut, useUser } from '@clerk/nextjs';
+import { SignInButton, SignedIn, SignedOut, useUser } from '@clerk/nextjs';
 import { useEffect } from 'react';
 
 export default function CheckoutPage() {
@@ -92,23 +92,24 @@ export default function CheckoutPage() {
               </SignInButton>
 
               {/* Sign Up Button */}
-              <SignUpButton mode="modal">
-                <button className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <span className="text-gray-800 font-medium">Sign Up</span>
-                  </div>
-                  <div className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-gray-400">
-                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <button 
+                onClick={() => navigateWithTable('/sign-up')}
+                className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
-                </button>
-              </SignUpButton>
+                  <span className="text-gray-800 font-medium">Sign Up</span>
+                </div>
+                <div className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-gray-400">
+                  <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
 
               {/* Continue as Guest */}
               <button 

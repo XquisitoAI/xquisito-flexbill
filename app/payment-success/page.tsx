@@ -77,14 +77,6 @@ export default function PaymentSuccessPage() {
   
   const amount = paymentDetails?.amount || urlAmount;
 
-  useEffect(() => {
-    // Auto-redirect after 100 seconds to home page (session is cleared)
-    const timer = setTimeout(() => {
-      router.push('/');
-    }, 100000);
-
-    return () => clearTimeout(timer);
-  }, [router]);
 
   const handleBackToMenu = () => {
     // Since session is cleared, redirect to home page to select table again
@@ -170,7 +162,7 @@ export default function PaymentSuccessPage() {
             Thank you for dining with us! Your payment has been confirmed and you should receive a receipt shortly.
           </p>
           <p className="text-sm text-gray-500">
-            Your session has been completed. You will be redirected to the home page in a few seconds...
+            Your session has been completed. Choose what you'd like to do next.
           </p>
         </div>
 

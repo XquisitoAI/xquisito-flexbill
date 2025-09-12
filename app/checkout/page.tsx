@@ -16,28 +16,20 @@ export default function CheckoutPage() {
   // Redirect authenticated users automatically
   useEffect(() => {
     if (isLoaded && user) {
-      console.log('🔐 User is authenticated, redirecting to payment');
       navigateWithTable('/payment');
     }
   }, [isLoaded, user, navigateWithTable]);
 
-  const handleContinueAsGuest = () => {
-    console.log('🎯 Continue as Guest clicked');
-    
+  const handleContinueAsGuest = () => {    
     // Initialize guest session using context
     try {
       // Set user as guest with table number from context
       const tableNum = state.tableNumber?.toString() || undefined;
       setAsGuest(tableNum);
       
-      console.log('🆔 Guest session initialized via context');
-      console.log(`📍 Table number: ${tableNum || 'Not set'}`);
-      
       // Navigate to payment page as guest
       navigateWithTable('/payment');
-      
-      console.log('🚀 Navigating to payment as guest user');
-      
+            
     } catch (error) {
       console.error('❌ Error initializing guest session:', error);
       // Still navigate even if there's an error

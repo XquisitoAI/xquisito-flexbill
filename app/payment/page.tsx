@@ -66,7 +66,6 @@ export default function PaymentPage() {
       alert('Please add a payment method first to split the bill');
       return;
     }
-    // Navegar a la página de choose to pay
     navigateWithTable('/choose-to-pay');
   };
 

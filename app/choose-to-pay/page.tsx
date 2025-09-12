@@ -18,13 +18,12 @@ export default function ChooseToPayPage() {
   };
 
   const handleSplitEqually = () => {
-    // Navegar a la página de seleccionar total a pagar
-    navigateWithTable('/select-total-pay');
+    // Navegar a la página de seleccionar total a pagar con parámetro de división equitativa
+    navigateWithTable('/select-total-pay?splitEqually=true');
   };
 
   const handleSelectItems = () => {
     // Lógica para seleccionar items específicos
-    console.log('Select Items selected');
     alert('Select specific items to pay for...');
   };
 

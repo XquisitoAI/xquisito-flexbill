@@ -143,13 +143,6 @@ class ApiService {
     tableNumber?: string;
     restaurantId?: string;
   }): Promise<ApiResponse<any>> {
-    console.log('🔄 Processing payment with apiService:', {
-      url: `${this.baseURL}/payments`,
-      paymentData: { 
-        ...paymentData, 
-        paymentMethodId: paymentData.paymentMethodId?.substring(0, 10) + '...' 
-      }
-    });
     
     return this.makeRequest('/payments', {
       method: 'POST',

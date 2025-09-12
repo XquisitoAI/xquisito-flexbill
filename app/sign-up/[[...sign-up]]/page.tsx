@@ -1,31 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import * as Clerk from '@clerk/elements/common'
 import * as SignUp from '@clerk/elements/sign-up'
-import { useUser } from '@clerk/nextjs'
+import { useUser, useSignUp } from '@clerk/nextjs'
+import { useUserData } from '../../context/UserDataContext'
 
 export default function SignUpPage() {
   const [age, setAge] = useState('')
   const [gender, setGender] = useState('')
+  
   const { user } = useUser()
+  const { signUp, isLoaded } = useSignUp()
+  const { updateSignUpData } = useUserData()
+
 
   const handleContinueSubmit = async () => {
-    // Save custom fields to user metadata
-    if (user && (age || gender)) {
-      try {
-        await user.update({
-          unsafeMetadata: {
-            ...user.unsafeMetadata,
-            age: age ? parseInt(age) : null,
-            gender: gender || null
-          }
-        })
-        console.log('✅ Custom fields saved to metadata:', { age, gender })
-      } catch (error) {
-        console.error('❌ Error saving custom fields:', error)
-      }
-    }
+    // This function is handled by the dashboard sync now
   }
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center px-4">
@@ -138,7 +129,10 @@ export default function SignUpPage() {
                       <select 
                         required
                         value={age}
-                        onChange={(e) => setAge(e.target.value)}
+                        onChange={(e) => {
+                          setAge(e.target.value)
+                          updateSignUpData({ age: e.target.value ? parseInt(e.target.value) : null })
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                       >
                         <option value="">Select age</option>
@@ -153,7 +147,10 @@ export default function SignUpPage() {
                       <select 
                         required
                         value={gender}
-                        onChange={(e) => setGender(e.target.value)}
+                        onChange={(e) => {
+                          setGender(e.target.value)
+                          updateSignUpData({ gender: e.target.value || null })
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                       >
                         <option value="">Select gender</option>

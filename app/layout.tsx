@@ -5,6 +5,7 @@ import { CartProvider } from "./context/CartContext";
 import { TableProvider } from "./context/TableContext";
 import { GuestProvider } from "./context/GuestContext";
 import { PaymentProvider } from "./context/PaymentContext";
+import { UserDataProvider } from "./context/UserDataContext";
 import { ClerkProvider } from '@clerk/nextjs';
 
 const geistSans = Geist({
@@ -40,7 +41,9 @@ export default function RootLayout({
             <TableProvider>
               <GuestProvider>
                 <PaymentProvider>
-                  {children}
+                  <UserDataProvider>
+                    {children}
+                  </UserDataProvider>
                 </PaymentProvider>
               </GuestProvider>
             </TableProvider>

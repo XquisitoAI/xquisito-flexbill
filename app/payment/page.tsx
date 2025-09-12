@@ -7,7 +7,8 @@ import { useGuest, useIsGuest } from "../context/GuestContext";
 import { usePayment } from "../context/PaymentContext";
 import MenuHeader from "../components/MenuHeader";
 import { getRestaurantData } from "../utils/restaurantData";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useUser } from '@clerk/nextjs';
 
 export default function PaymentPage() {
   const { state } = useTable();
@@ -15,13 +16,20 @@ export default function PaymentPage() {
   const router = useRouter();
   const restaurantData = getRestaurantData();
   const isGuest = useIsGuest();
-  const { guestId, tableNumber } = useGuest();
+  const { guestId, tableNumber, setAsAuthenticated } = useGuest();
   const { hasPaymentMethods } = usePayment();
+  const { user, isLoaded } = useUser();
   const [name, setName] = useState(state.currentUserName);
   const [email, setEmail] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('mastercard');
 
-  debugger
+  // Sync Clerk authentication with GuestContext
+  useEffect(() => {
+    if (isLoaded && user) {
+      // User is authenticated, clear guest session
+      setAsAuthenticated(user.id);
+    }
+  }, [isLoaded, user, setAsAuthenticated]);
 
   // Calcular total de la mesa
   const tableTotalPrice = state.orders.reduce((sum, order) => sum + parseFloat(order.total_price.toString()), 0);
@@ -99,41 +107,43 @@ export default function PaymentPage() {
           </div>
         )} */}
 
-        {/* Your details */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Your details</h2>
-          <p className="text-sm text-gray-600 mb-6">Need a receipt? Enter your email</p>
-          
-          <div className="space-y-4">
-            {/* Name Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              />
-            </div>
+        {/* Your details - Only show for guest users */}
+        {isGuest && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Your details</h2>
+            <p className="text-sm text-gray-600 mb-6">Need a receipt? Enter your email</p>
+            
+            <div className="space-y-4">
+              {/* Name Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+              </div>
 
-            {/* Email Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email (optional)
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="mail@gmail.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              />
+              {/* Email Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email (optional)
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="mail@gmail.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Payment Method */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">

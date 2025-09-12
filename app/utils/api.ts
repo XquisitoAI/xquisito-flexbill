@@ -38,10 +38,6 @@ class ApiService {
 
   constructor() {
     this.baseURL = API_BASE_URL;
-    console.log('🔧 ApiService initialized:', {
-      baseURL: this.baseURL,
-      API_BASE_URL: API_BASE_URL
-    });
   }
 
   private async makeRequest<T = any>(

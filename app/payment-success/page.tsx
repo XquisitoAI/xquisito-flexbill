@@ -176,7 +176,7 @@ export default function PaymentSuccessPage() {
           </button>
           
           <button 
-            onClick={handleBackToMenu}
+            onClick={() => router.push('/sign-up')}
             className="w-full py-4 bg-gray-200 text-gray-700 rounded-lg font-semibold text-lg hover:bg-gray-300 transition-colors"
           >
             Sign Up

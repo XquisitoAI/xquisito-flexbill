@@ -6,16 +6,20 @@ import { useGuest } from "../context/GuestContext";
 import { apiService } from "../utils/api";
 import { SignInButton, SignedIn, SignedOut, useUser } from '@clerk/nextjs';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function CheckoutPage() {
   const { state } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const { setAsGuest } = useGuest();
   const { user, isLoaded } = useUser();
+  const router = useRouter();
 
   // Redirect authenticated users automatically
   useEffect(() => {
     if (isLoaded && user) {
+      console.log('🔐 User authenticated on checkout page, redirecting to payment...');
+      // Use navigateWithTable to preserve table context
       navigateWithTable('/payment');
     }
   }, [isLoaded, user, navigateWithTable]);
@@ -65,7 +69,11 @@ export default function CheckoutPage() {
           <div className="space-y-3">
             <SignedOut>
               {/* Sign In Button */}
-              <SignInButton mode="modal">
+              <SignInButton 
+                mode="modal"
+                fallbackRedirectUrl={`/payment${state.tableNumber ? `?table=${state.tableNumber}` : ''}`}
+                forceRedirectUrl={`/payment${state.tableNumber ? `?table=${state.tableNumber}` : ''}`}
+              >
                 <button className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors group">
                   <div className="flex items-center gap-3">
                     <div className="w-6 h-6 flex items-center justify-center">

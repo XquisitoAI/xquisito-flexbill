@@ -27,13 +27,22 @@ export default function PaymentSuccessPage() {
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedPayment = localStorage.getItem('xquisito-pending-payment');
+      // Check for completed payment (old flow)
+      let storedPayment = localStorage.getItem('xquisito-pending-payment');
+      
+      // Check for payment intent (new SDK flow)
+      if (!storedPayment) {
+        storedPayment = localStorage.getItem('xquisito-payment-intent');
+      }
+      
       if (storedPayment) {
         try {
           const parsed = JSON.parse(storedPayment);
           setPaymentDetails(parsed);
           // Clean up after retrieval
           localStorage.removeItem('xquisito-pending-payment');
+          localStorage.removeItem('xquisito-payment-intent');
+          localStorage.removeItem('xquisito-completed-payment');
         } catch (e) {
           console.error('Failed to parse stored payment details:', e);
         }

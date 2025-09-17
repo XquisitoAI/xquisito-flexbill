@@ -32,8 +32,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      signInFallbackRedirectUrl="/payment"
+      signUpFallbackRedirectUrl="/dashboard"
+    >
       <html lang="en">
+        <head>
+
+          {/*  Production Environment  */}
+          {/* <script src="https://ecartpay.com/sdk/pay.js"></script> */}
+
+          {/* Sandbox Environment (For testing purposes) */}
+          <script src="https://sandbox.ecartpay.com/sdk/pay.js" async></script>
+        </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >

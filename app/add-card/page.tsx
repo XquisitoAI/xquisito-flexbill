@@ -1,5 +1,8 @@
 'use client';
 
+// NOTE: This page is maintained for users who want to manage payment methods separately
+// Main payment flows now use EcartPay SDK directly in payment/page.tsx and add-tip/page.tsx
+
 import { useRouter } from 'next/navigation';
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";

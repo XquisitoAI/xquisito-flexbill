@@ -23,8 +23,8 @@ export default function ChooseToPayPage() {
   };
 
   const handleSelectItems = () => {
-    // Lógica para seleccionar items específicos
-    alert('Select specific items to pay for...');
+    // Navegar a la página de seleccionar items específicos
+    navigateWithTable('/select-items');
   };
 
   return (

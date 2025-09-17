@@ -9,6 +9,8 @@ import MenuHeader from "../components/MenuHeader";
 import { getRestaurantData } from "../utils/restaurantData";
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
+import { useEcartPay } from "../hooks/useEcartPay";
+import { EcartPayCheckoutOptions } from "../types/ecartpay";
 
 export default function PaymentPage() {
   const { state } = useTable();
@@ -19,6 +21,7 @@ export default function PaymentPage() {
   const { guestId, tableNumber, setAsAuthenticated } = useGuest();
   const { hasPaymentMethods } = usePayment();
   const { user, isLoaded } = useUser();
+  const { createCheckout, isLoading: paymentLoading, error: paymentError, waitForSDK } = useEcartPay();
   const [name, setName] = useState(state.currentUserName);
   const [email, setEmail] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('mastercard');
@@ -39,22 +42,79 @@ export default function PaymentPage() {
     router.back();
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!name.trim()) {
       alert('Please enter your name');
       return;
     }
     
-    console.log('Processing payment...', {
-      name,
-      email,
-      paymentMethod: selectedPayment,
-      total: tableTotalPrice,
-      tableNumber: state.tableNumber,
-      orders: state.orders
-    });
-    
-    alert(`Payment of $${tableTotalPrice.toFixed(2)} processed successfully! Thank you ${name}!`);
+    try {
+      // Wait for SDK to load
+      const sdkLoaded = await waitForSDK();
+      if (!sdkLoaded) {
+        throw new Error('EcartPay SDK failed to load. Please refresh and try again.');
+      }
+
+      const publicKey = process.env.NEXT_PUBLIC_ECARTPAY_PUBLIC_KEY;
+      if (!publicKey) {
+        throw new Error('EcartPay configuration missing');
+      }
+
+      // Use provided user data or fallback to defaults
+      const userEmail = email.trim() || 'guest@xquisito.com';
+      const [firstName, ...lastNameParts] = name.trim().split(' ');
+      const lastName = lastNameParts.join(' ') || 'User';
+
+      // Prepare checkout options
+      const checkoutOptions: EcartPayCheckoutOptions = {
+        publicID: publicKey,
+        order: {
+          email: userEmail,
+          first_name: firstName,
+          last_name: lastName,
+          phone: '5551234567', // Default phone
+          currency: 'USD',
+          items: [
+            {
+              name: `Xquisito Restaurant - Table ${state.tableNumber || 'N/A'} - Full Bill`,
+              price: tableTotalPrice,
+              quantity: 1
+            }
+          ]
+        }
+      };
+
+      console.log('🚀 Initiating EcartPay checkout for full bill with options:', checkoutOptions);
+
+      // Create checkout using the hook
+      const result = await createCheckout(checkoutOptions);
+      
+      console.log('💳 EcartPay checkout result:', result);
+
+      if (result.success && result.payment) {
+        // Payment successful
+        console.log('✅ Full bill payment successful:', result.payment.id);
+        
+        // Store payment details
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('xquisito-completed-payment', JSON.stringify({
+            paymentId: result.payment.id,
+            amount: tableTotalPrice,
+            tableNumber: state.tableNumber,
+            orders: state.orders,
+            payerName: name,
+            payerEmail: email
+          }));
+        }
+
+        // Navigate to success page
+        navigateWithTable(`/payment-success?paymentId=${result.payment.id}&amount=${tableTotalPrice}&type=full-bill`);
+      }
+
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      alert(`Payment failed: ${error.message}`);
+    }
   };
 
   const handleAddCard = () => {
@@ -210,12 +270,26 @@ export default function PaymentPage() {
           )} */}
         </div>
 
+        {/* Error Message */}
+        {paymentError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <p className="text-red-800 text-sm text-center">
+              {paymentError}
+            </p>
+          </div>
+        )}
+
         {/* Pay Button */}
         <button 
           onClick={handlePayment}
-          className="w-full bg-teal-700 text-white py-4 rounded-lg font-semibold text-lg hover:bg-teal-800 transition-colors"
+          disabled={paymentLoading || !name.trim()}
+          className={`w-full py-4 rounded-lg font-semibold text-lg transition-colors ${
+            paymentLoading || !name.trim()
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+              : 'bg-teal-700 text-white hover:bg-teal-800'
+          }`}
         >
-          Pay: ${tableTotalPrice.toFixed(2)}
+          {paymentLoading ? 'Processing Payment...' : `Pay: $${tableTotalPrice.toFixed(2)}`}
         </button>
       </div>
     </div>

@@ -38,12 +38,7 @@ export default function RootLayout({
     >
       <html lang="en">
         <head>
-
-          {/*  Production Environment  */}
-          {/* <script src="https://ecartpay.com/sdk/pay.js"></script> */}
-
-          {/* Sandbox Environment (For testing purposes) */}
-          <script src="https://sandbox.ecartpay.com/sdk/pay.js" async></script>
+          
         </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}

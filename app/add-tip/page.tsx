@@ -18,12 +18,9 @@ export default function AddTipPage() {
   const isGuest = useIsGuest();
   const { guestId, tableNumber } = useGuest();
   
-  // Obtener datos de la URL
   const baseAmount = parseFloat(searchParams.get('amount') || '0');
   const selectedUsers = searchParams.get('users')?.split(',') || [];
-  
-  console.log('Raw users param:', searchParams.get('users'));
-  
+    
   // Estados para manejar la propina
   const [selectedTipPercentage, setSelectedTipPercentage] = useState<number | null>(null);
   const [customTipAmount, setCustomTipAmount] = useState<string>('');
@@ -69,17 +66,10 @@ export default function AddTipPage() {
   };
 
   const handlePay = async () => {
+    debugger
     const tipAmount = calculateTipAmount();
     const totalAmount = getTotalAmount();
-    
-    console.log('Payment Details:', {
-      baseAmount,
-      tipAmount,
-      totalAmount,
-      selectedUsers,
-      tipType: showCustomTip ? 'custom' : `${selectedTipPercentage}%`
-    });
-    
+        
     setIsProcessing(true);
     
     try {
@@ -106,10 +96,7 @@ export default function AddTipPage() {
       const paymentMethods = paymentMethodsResult.data.paymentMethods;
       const defaultPaymentMethod = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
 
-      console.log('💳 Using saved payment method:', defaultPaymentMethod.id);
-
       // Process payment directly with saved payment method
-      // Add forceDirectPayment flag to try to avoid EcartPay redirects
       const paymentResult = await apiService.processPayment({
         paymentMethodId: defaultPaymentMethod.id,
         amount: totalAmount,
@@ -117,31 +104,24 @@ export default function AddTipPage() {
         description: `Xquisito Restaurant Payment - Table ${state.tableNumber || 'N/A'} - Users: ${selectedUsers.join(', ')} - Tip: $${tipAmount.toFixed(2)}`,
         orderId: `order-${Date.now()}-attempt-${paymentAttempts + 1}`,
         tableNumber: state.tableNumber,
-        restaurantId: 'xquisito-main',
-        forceDirectPayment: true, // Request direct processing without redirects
-        skipRedirects: true // Another flag to indicate we want direct processing
+        restaurantId: 'xquisito-main'
       });
-
-      console.log('💰 Payment result:', paymentResult);
 
       if (!paymentResult.success) {
         throw new Error(paymentResult.error?.message || 'Payment processing failed');
       }
       
-      // Handle payment result
       const payment = paymentResult.data?.payment;
       const order = paymentResult.data?.order;
-      
-      if (payment?.type === 'direct_charge') {
-        // Direct charge successful - go straight to success page
-        console.log('✅ Direct charge successful:', payment.id);
+
+      if (payment?.type === 'direct_charge' || (payment && !payment.payLink && !order?.payLink)) {
         navigateWithTable(`/payment-success?paymentId=${payment.id}&amount=${totalAmount}&type=direct`);
-      } else if (order?.payLink || payment?.payLink) {
-        // If we still get a payLink, that means EcartPay requires additional verification
-        // This usually happens in sandbox mode or when additional verification is needed
-        const payLink = order?.payLink || payment?.payLink;
-        console.log('🔗 EcartPay requires verification, redirecting to:', payLink);
-        
+        return;
+      }
+
+      // Check if we have a payLink (fallback to EcartPay verification)
+      const payLink = order?.payLink || payment?.payLink;
+      if (payLink) {
         // Store order details for later reference
         if (typeof window !== 'undefined') {
           localStorage.setItem('xquisito-pending-payment', JSON.stringify({
@@ -152,37 +132,35 @@ export default function AddTipPage() {
             tip: tipAmount
           }));
         }
-        
-        // In production, this should rarely happen with saved payment methods
-        // For now, we'll still redirect but log it as potential issue
-        console.warn('⚠️ Saved payment method still requires EcartPay verification. This may indicate backend configuration issue or sandbox limitations.');
-        
+
         setPaymentAttempts(prev => prev + 1);
-        
+
         // Show user-friendly message before redirect
         const shouldRedirect = confirm(
-          `Payment requires additional verification through EcartPay.\n\n` +
-          `This usually happens in sandbox/testing mode. ` +
-          `In production with your payment keys, this step should be skipped.\n\n` +
-          `Click OK to continue with verification, or Cancel to try again.`
+          `Your saved payment method requires verification through EcartPay.\n\n` +
+          `This is normal in testing/sandbox mode. In production, this step is usually skipped.\n\n` +
+          `Click OK to complete verification, or Cancel to try again.`
         );
-        
+
         if (shouldRedirect) {
-          // Redirect to eCartPay payment page for verification
           window.location.href = payLink;
         } else {
           setIsProcessing(false);
         }
-      } else {
-        // Payment successful without additional verification
-        const paymentId = payment?.id || order?.id || 'completed';
-        console.log('✅ Payment completed successfully:', paymentId);
-        navigateWithTable(`/payment-success?paymentId=${paymentId}&amount=${totalAmount}&type=saved-card`);
+        return;
       }
+
+      if (payment || order) {
+        const paymentId = payment?.id || order?.id || 'completed';
+        console.log('✅ Payment completed successfully (no verification needed):', paymentId);
+        navigateWithTable(`/payment-success?paymentId=${paymentId}&amount=${totalAmount}&type=saved-card`);
+        return;
+      }
+
+      throw new Error('Unexpected payment response format');
 
     } catch (error: any) {
       console.error('Payment error:', error);
-      alert(`Payment failed: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -199,7 +177,6 @@ export default function AddTipPage() {
     <div className="min-h-screen bg-gray-50">
       <MenuHeader restaurant={restaurantData} tableNumber={state.tableNumber} />
       
-      {/* Back Button */}
       <div className="max-w-md mx-auto px-4 py-4">
         <button 
           onClick={handleBack}
@@ -213,7 +190,6 @@ export default function AddTipPage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-6">
-        {/* Guest User Indicator */}
         {isGuest && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <div className="flex items-center gap-2">
@@ -232,7 +208,6 @@ export default function AddTipPage() {
           </div>
         )}
 
-        {/* Selected Users Info */}
         {selectedUsers.length > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <p className="text-blue-800 font-medium text-sm mb-1">Paying for:</p>
@@ -243,13 +218,11 @@ export default function AddTipPage() {
           </div>
         )}
 
-        {/* Tip Selection Card */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-800 text-center mb-6">
             Add a tip for our staff
           </h2>
           
-          {/* Tip Percentage Buttons */}
           <div className="grid grid-cols-2 gap-3 mb-4">
             {tipPercentages.map((tip) => (
               <button
@@ -266,7 +239,6 @@ export default function AddTipPage() {
             ))}
           </div>
 
-          {/* Custom Amount Button */}
           <button
             onClick={handleCustomTip}
             className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
@@ -278,7 +250,6 @@ export default function AddTipPage() {
             + Other amount
           </button>
 
-          {/* Custom Tip Input */}
           {showCustomTip && (
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -299,7 +270,6 @@ export default function AddTipPage() {
             </div>
           )}
 
-          {/* Tip Amount Display */}
           {(selectedTipPercentage !== null || (showCustomTip && customTipAmount)) && (
             <div className="mt-4 p-3 bg-gray-50 rounded-lg">
               <p className="text-center text-gray-600 text-sm">
@@ -309,7 +279,6 @@ export default function AddTipPage() {
           )}
         </div>
 
-        {/* Total Summary */}
         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
           <div className="flex justify-between items-center mb-2">
             <span className="text-gray-600">Subtotal:</span>
@@ -326,7 +295,6 @@ export default function AddTipPage() {
           </div>
         </div>
 
-        {/* Pay Button */}
         <button 
           onClick={handlePay}
           disabled={!isPayButtonEnabled() || isProcessing}
@@ -339,7 +307,6 @@ export default function AddTipPage() {
           {isProcessing ? 'Processing Payment...' : `Pay: $${getTotalAmount().toFixed(2)}`}
         </button>
 
-        {/* Help Text */}
         {!isPayButtonEnabled() && (
           <p className="text-center text-gray-500 text-sm mt-4">
             Please select a tip option to continue

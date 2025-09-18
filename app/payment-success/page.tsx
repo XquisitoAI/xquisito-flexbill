@@ -93,7 +93,17 @@ export default function PaymentSuccessPage() {
   };
 
   const handleOrderAgain = () => {
-    // Since session is cleared, redirect to home page to start new session
+    // Go back to the same table with a clean session
+    const currentTable = state.tableNumber || tableNumber;
+    if (currentTable) {
+      router.push(`/order?table=${currentTable}&reset=true`);
+    } else {
+      router.push('/');
+    }
+  };
+
+  const handleGoHome = () => {
+    // Complete exit - go to home page
     router.push('/');
   };
 
@@ -177,18 +187,25 @@ export default function PaymentSuccessPage() {
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          <button 
+          <button
             onClick={handleOrderAgain}
             className="w-full py-4 bg-teal-700 text-white rounded-lg font-semibold text-lg hover:bg-teal-800 transition-colors"
           >
-            View Order
+            Order Again at Table {state.tableNumber || tableNumber}
           </button>
-          
-          <button 
-            onClick={() => router.push('/sign-up')}
+
+          <button
+            onClick={handleGoHome}
             className="w-full py-4 bg-gray-200 text-gray-700 rounded-lg font-semibold text-lg hover:bg-gray-300 transition-colors"
           >
-            Sign Up
+            Exit & Go Home
+          </button>
+
+          <button
+            onClick={() => router.push('/sign-up')}
+            className="w-full py-3 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-colors"
+          >
+            Create Account
           </button>
         </div>
 

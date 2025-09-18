@@ -21,6 +21,7 @@ interface TableState {
   currentUserTotalPrice: number;
   isLoading: boolean;
   error: string | null;
+  skipAutoLoad: boolean; // Flag para saltar carga automática de órdenes
 }
 
 // Acciones del contexto de mesa
@@ -34,7 +35,9 @@ type TableAction =
   | { type: 'CLEAR_CURRENT_USER_CART' }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'SET_ORDERS'; payload: UserOrder[] };
+  | { type: 'SET_ORDERS'; payload: UserOrder[] }
+  | { type: 'CLEAR_ORDERS' }
+  | { type: 'SET_SKIP_AUTO_LOAD'; payload: boolean };
 
 // Estado inicial
 const initialState: TableState = {
@@ -45,7 +48,8 @@ const initialState: TableState = {
   currentUserTotalItems: 0,
   currentUserTotalPrice: 0,
   isLoading: false,
-  error: null
+  error: null,
+  skipAutoLoad: false
 };
 
 // Función para calcular totales
@@ -158,11 +162,28 @@ function tableReducer(state: TableState, action: TableAction): TableState {
       };
 
     case 'SET_ORDERS':
+      console.log('📋 SET_ORDERS action dispatched with', action.payload.length, 'orders');
       return {
         ...state,
         orders: action.payload,
         isLoading: false,
         error: null
+      };
+
+    case 'CLEAR_ORDERS':
+      console.log('🧹 CLEAR_ORDERS action dispatched - clearing', state.orders.length, 'orders');
+      return {
+        ...state,
+        orders: [],
+        isLoading: false,
+        error: null
+      };
+
+    case 'SET_SKIP_AUTO_LOAD':
+      console.log('🔧 SET_SKIP_AUTO_LOAD action dispatched:', action.payload);
+      return {
+        ...state,
+        skipAutoLoad: action.payload
       };
 
     default:
@@ -176,28 +197,32 @@ const TableContext = createContext<{
   dispatch: React.Dispatch<TableAction>;
   submitOrder: (userName?: string) => Promise<void>;
   refreshOrders: () => Promise<void>;
+  loadTableOrders: () => Promise<void>;
 } | null>(null);
 
 // Provider del contexto de mesa
 export function TableProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(tableReducer, initialState);
   
-  // Cargar órdenes cuando se establece el número de mesa
+  // Cargar órdenes cuando se establece el número de mesa (si no se está saltando la carga automática)
   useEffect(() => {
-    if (state.tableNumber) {
+    if (state.tableNumber && !state.skipAutoLoad) {
       loadTableOrders();
     }
-  }, [state.tableNumber]);
+  }, [state.tableNumber, state.skipAutoLoad]);
 
   const loadTableOrders = async () => {
     if (!state.tableNumber) return;
 
+    console.log('🔄 loadTableOrders called for table:', state.tableNumber, 'skipAutoLoad:', state.skipAutoLoad);
+
     dispatch({ type: 'SET_LOADING', payload: true });
-    
+
     try {
       const response = await tableApi.getTableOrders(parseInt(state.tableNumber));
-      
+
       if (response.success && response.data) {
+        console.log('📋 Orders loaded from API:', response.data.length);
         dispatch({ type: 'SET_ORDERS', payload: response.data });
       } else {
         dispatch({ type: 'SET_ERROR', payload: response.error || 'Failed to load orders' });
@@ -255,7 +280,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   };
   
   return (
-    <TableContext.Provider value={{ state, dispatch, submitOrder, refreshOrders }}>
+    <TableContext.Provider value={{ state, dispatch, submitOrder, refreshOrders, loadTableOrders }}>
       {children}
     </TableContext.Provider>
   );

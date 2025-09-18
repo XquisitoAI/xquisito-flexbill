@@ -133,7 +133,6 @@ export default function PaymentPage() {
     <div className="min-h-screen bg-gray-50">
       <MenuHeader restaurant={restaurantData} tableNumber={state.tableNumber} />
       
-      {/* Back Button */}
       <div className="max-w-md mx-auto px-4 py-4">
         <button 
           onClick={handleBack}
@@ -147,26 +146,6 @@ export default function PaymentPage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-6">
-        {/* Guest User Indicator */}
-        {/* {isGuest && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-blue-800 font-medium text-sm">Continuing as Guest</p>
-                <p className="text-blue-600 text-xs">
-                  {tableNumber ? `Table ${tableNumber}` : 'Guest user'} • Payment methods stored temporarily
-                </p>
-              </div>
-            </div>
-          </div>
-        )} */}
-
-        {/* Your details - Only show for guest users */}
         {isGuest && (
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-2">Your details</h2>
@@ -187,7 +166,6 @@ export default function PaymentPage() {
                 />
               </div>
 
-              {/* Email Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email (optional)
@@ -204,7 +182,6 @@ export default function PaymentPage() {
           </div>
         )}
 
-        {/* Payment Method */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h3 className="text-sm font-medium text-gray-800 mb-4">Select your payment method</h3>
           
@@ -236,7 +213,6 @@ export default function PaymentPage() {
             Add card
           </button>
 
-          {/* Split Bill Option */}
           <button 
             onClick={handleSplitBill}
             disabled={isGuest && !hasPaymentMethods}
@@ -255,7 +231,6 @@ export default function PaymentPage() {
           </button>
         </div>
 
-        {/* Order Summary */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex justify-between items-center">
             <span className="text-lg font-bold text-gray-800">Total</span>
@@ -270,7 +245,6 @@ export default function PaymentPage() {
           )} */}
         </div>
 
-        {/* Error Message */}
         {paymentError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
             <p className="text-red-800 text-sm text-center">
@@ -279,7 +253,6 @@ export default function PaymentPage() {
           </div>
         )}
 
-        {/* Pay Button */}
         <button 
           onClick={handlePayment}
           disabled={paymentLoading || !name.trim()}

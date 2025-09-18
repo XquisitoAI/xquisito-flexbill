@@ -19,6 +19,13 @@ export default function OrderStatus() {
   const { goBack, navigateWithTable } = useTableNavigation();
   const restaurantData = getRestaurantData();
 
+  const handleRefresh = () => {
+    // Solo refrescar si no estamos en modo nueva sesión
+    if (!state.skipAutoLoad) {
+      refreshOrders();
+    }
+  };
+
   const handleGoBack = () => {
     goBack();
   };
@@ -47,9 +54,9 @@ export default function OrderStatus() {
             Back
           </button>
           
-          <button 
-            onClick={refreshOrders}
-            disabled={state.isLoading}
+          <button
+            onClick={handleRefresh}
+            disabled={state.isLoading || state.skipAutoLoad}
             className="flex items-center gap-2 text-teal-600 hover:text-teal-800 transition-colors disabled:text-gray-400"
           >
             <svg className={`w-5 h-5 ${state.isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">

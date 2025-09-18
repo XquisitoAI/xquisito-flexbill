@@ -225,7 +225,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
           price: item.price,
           quantity: item.quantity,
           description: item.description,
-          image: item.image
+          images: item.images
         })),
         total_items: state.currentUserTotalItems,
         total_price: state.currentUserTotalPrice

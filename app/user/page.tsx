@@ -62,7 +62,7 @@ export default function UserPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43]">
       <MenuHeader restaurant={restaurantData} tableNumber={state.tableNumber} />
       
       {/* Back button */}

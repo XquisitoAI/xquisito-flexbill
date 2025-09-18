@@ -3,5 +3,6 @@ export interface MenuItemData {
   name: string;
   description: string;
   price: number;
-  image: string;
+  images: string[];
+  features: string[];
 }

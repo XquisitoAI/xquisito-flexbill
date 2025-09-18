@@ -4,16 +4,16 @@ import { Restaurant } from "../interfaces/restaurante";
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, Receipt } from "lucide-react";
+import { ShoppingCart, Receipt, ChevronLeft } from "lucide-react";
 
 interface MenuHeaderProps {
   restaurant: Restaurant;
   tableNumber?: string;
 }
 
-export default function MenuHeader({ restaurant, tableNumber }: MenuHeaderProps) {
+export default function MenuHeaderBack({ restaurant, tableNumber }: MenuHeaderProps) {
   const { state } = useTable();
-  const { navigateWithTable } = useTableNavigation();
+  const { navigateWithTable, goBack } = useTableNavigation();
   const pathname = usePathname();
 
   const handleCartClick = () => {
@@ -22,13 +22,12 @@ export default function MenuHeader({ restaurant, tableNumber }: MenuHeaderProps)
 
   return (
       <header className="container mx-auto px-5 pt-5 z-10">
-        <div className="flex items-center justify-end z-10">
-          {/*<div className="flex items-center z-10">
-            <img src="/logo-short-green.webp" alt="Xquisito Logo" className="size-10 justify-self-center" />
-            <span className="text-lg font-semibold text-gray-800">
-              Table {tableNumber || restaurant.tableNumber}
-            </span>
-          </div>*/}
+        <div className="flex items-center justify-between z-10">
+          <div className="flex items-center z-10">
+            <div onClick={goBack} className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
+              <ChevronLeft className="text-primary"/>
+            </div>
+          </div>
           
           <div className="flex items-center space-x-2 z-10">
             {pathname === '/order' ? (

@@ -56,7 +56,7 @@ export default function DishDetailPage() {
 
   if (!dishData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Platillo no encontrado</h1>
           <button 
@@ -73,7 +73,7 @@ export default function DishDetailPage() {
   const { dish, category } = dishData;  
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43]">
       <MenuHeader restaurant={restaurantData} tableNumber={tableNumber} />
       
       <main className="container mx-auto px-4 py-6">

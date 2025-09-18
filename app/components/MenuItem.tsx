@@ -3,6 +3,7 @@
 import { MenuItemData } from "../interfaces/menuItemData";
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
+import { Plus, Minus } from "lucide-react";
 
 interface MenuItemProps {
   item: MenuItemData;
@@ -22,38 +23,48 @@ export default function MenuItem({ item }: MenuItemProps) {
   };
   
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-4 hover:shadow-xl transition-shadow duration-300 relative">
+    <div className="border-b border-gray-300 py-4 relative" onClick={handleImageClick}>
       <div className="flex items-center gap-4">
-        <div className="flex-shrink-0">
+
+        {/* Image */}
+        <div className="flex-shrink-0 cursor-pointer">
           <div 
-            onClick={handleImageClick}
-            className="w-16 h-16 bg-gradient-to-br from-orange-200 to-amber-200 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200"
+            className="size-36 bg-gray-300 rounded-xl flex items-center justify-center hover:scale-105 transition-transform duration-200"
           >
-            <div className="text-2xl">🍽️</div>
+            {item.images[0] ? (
+              <img src={item.images[0]} alt="Dish preview"  className="w-full h-full object-cover rounded-xl"/>
+            ) : (
+              <img src={'/logo-short-green.webp'} alt="Logo Xquisito" className="size-18 object-contain"/>
+            )}
+            
           </div>
         </div>
         
+        {/* Content */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-bold text-gray-800 leading-tight truncate">
-            {item.name}
-          </h3>
-          <p className="text-gray-600 text-sm mt-1 line-clamp-2">
+          <div className="flex justify-between">
+            <h3 className="text-lg font-semibold text-black leading-tight">
+              {item.name}
+            </h3>
+            <div className="flex gap-1.5 px-3 py-0.5 h-fit bg-[#f9f9f9] rounded-full border border-[#8e8e8e]/50 font-thin items-center justify-center">
+              <Minus className="size-4 cursor-no-drop text-black/50" onClick={()=>{}}/>
+              <p className="text-black">0</p>
+              <Plus className="size-4 cursor-pointer text-black" onClick={handleAddToCart}/>
+            </div>
+          </div>
+          <div className="flex gap-1 mt-1 mb-3">
+            {item.features.map((feature, index)=>(
+              <div key={index} className="text-sm text-black font-semibold border border-[#bfbfbf]/50 rounded-3xl px-3 py-1 shadow-sm">{feature}</div>
+            ))}
+          </div>
+          <p className="text-black/70 text-base line-clamp-2 leading-4">
             {item.description}
           </p>
           <div className="flex items-center justify-between mt-2">
-            <span className="text-lg font-bold text-orange-600">
+            <span className="text-lg text-black">
               ${item.price.toFixed(2)}
             </span>
           </div>
-        </div>
-        
-        <div className="flex-shrink-0">
-          <button 
-            onClick={handleAddToCart}
-            className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full flex items-center justify-center hover:from-orange-600 hover:to-red-600 transition-colors duration-300 text-lg font-bold cursor-pointer"
-          >
-            +
-          </button>
         </div>
       </div>
     </div>

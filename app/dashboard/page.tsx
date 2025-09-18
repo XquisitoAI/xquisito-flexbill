@@ -19,8 +19,6 @@ export default function DashboardPage() {
   const { signOut } = useClerk();
   const router = useRouter();
 
-  
-
   // Loading state
   if (!isLoaded) {
     return (
@@ -50,7 +48,6 @@ export default function DashboardPage() {
       </div>
     );
   }
-  //Test jjjj
 
   const handleContinueToPayment = () => {
     navigateWithTable('/payment');
@@ -77,7 +74,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43]">
       <MenuHeader restaurant={restaurantData} tableNumber={state.tableNumber} />
       
       <div className="max-w-4xl mx-auto px-4 py-6">

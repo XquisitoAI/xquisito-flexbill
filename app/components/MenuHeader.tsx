@@ -4,6 +4,7 @@ import { Restaurant } from "../interfaces/restaurante";
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { usePathname } from 'next/navigation';
+import { ShoppingCart, Receipt } from "lucide-react";
 
 interface MenuHeaderProps {
   restaurant: Restaurant;
@@ -20,20 +21,20 @@ export default function MenuHeader({ restaurant, tableNumber }: MenuHeaderProps)
   };
 
   return (
-    <header className="bg-white shadow-sm border-b">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <span className="text-lg font-semibold text-gray-800">
+      <header className="container mx-auto px-5 pt-5 z-10">
+        <div className="flex items-center justify-between z-10">
+          <div className="flex items-center z-10">
+            <img src="/logo-short-green.webp" alt="Xquisito Logo" className="size-10 justify-self-center" />
+            {/*<span className="text-lg font-semibold text-gray-800">
               Table {tableNumber || restaurant.tableNumber}
-            </span>
+            </span>*/}
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 z-10">
             {pathname === '/order' ? (
               <div className="relative">
-                <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
-                  <span className="text-white text-sm">Bill</span>
+                <div className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
+                  <Receipt className="text-primary"/>
                 </div>
                 {state.orders && state.orders.length > 0 && state.orders.reduce((sum, order) => sum + order.total_items, 0) > 0 && (
                   <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
@@ -42,27 +43,26 @@ export default function MenuHeader({ restaurant, tableNumber }: MenuHeaderProps)
                 )}
               </div>
             ) : (
-              <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
-                <span className="text-white text-sm">Bill</span>
+              <div className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
+                <Receipt className="text-primary size-5"/>
               </div>
             )}
             
             <div className="relative">
               <div 
                 onClick={handleCartClick}
-                className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors"
+                className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
               >
-                <span className="text-white text-sm">🛒</span>
+                <ShoppingCart className="text-primary size-5"/>
               </div>
               {state.currentUserTotalItems > 0 && (
-                <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full size-5 flex items-center justify-center text-xs font-bold">
                   {state.currentUserTotalItems}
                 </div>
               )}
             </div>
           </div>
         </div>
-      </div>
     </header>
   );
 }

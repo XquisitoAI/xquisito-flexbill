@@ -12,10 +12,13 @@ export default function Home() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Redirigiendo...</h1>
-        <p className="text-gray-600">Por favor espere</p>
+        <div className='mb-6'>
+          <img src="/logo-short-green.webp" alt="Xquisito Logo" className="size-18 justify-self-center" />
+        </div>
+        <h1 className="text-2xl font-bold text-primary mb-4">Redirigiendo...</h1>
+        <p className="text-primary">Por favor espere</p>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
-import MenuItem from './MenuItem';
-import { Category } from '../interfaces/category';
+import MenuItem from "./MenuItem";
+import { Category } from "../interfaces/category";
 
 interface MenuCategoryProps {
   category: Category;
@@ -14,8 +14,8 @@ export default function MenuCategory({ category }: MenuCategoryProps) {
           {category.category}
         </h2>
       </div>*/}
-      
-      <div className="grid md:grid-cols-1 lg:grid-cols-2">
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6">
         {category.items.map((item) => (
           <MenuItem key={item.id} item={item} />
         ))}

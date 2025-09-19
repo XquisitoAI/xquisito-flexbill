@@ -78,14 +78,6 @@ export default function AddTipPage() {
   };
 
   const handlePaymentSuccess = async (paymentId: string, amount: number, type: string) => {
-    console.log('🎯 handlePaymentSuccess called with:');
-    console.log('   paymentId:', paymentId);
-    console.log('   amount:', amount);
-    console.log('   type:', type);
-    console.log('   selectedUsers:', selectedUsers);
-    console.log('   selectedUsers.length:', selectedUsers.length);
-    console.log('   selectedUsers type:', typeof selectedUsers);
-    console.log('   selectedUsers array check:', Array.isArray(selectedUsers));
 
     try {
       // Marcar órdenes como pagadas

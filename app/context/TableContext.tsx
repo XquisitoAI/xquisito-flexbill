@@ -21,11 +21,10 @@ interface TableState {
   currentUserTotalPrice: number;
   isLoading: boolean;
   error: string | null;
-  skipAutoLoad: boolean; // Flag para saltar carga automática de órdenes
 }
 
 // Acciones del contexto de mesa
-type TableAction = 
+type TableAction =
   | { type: 'SET_TABLE_NUMBER'; payload: string }
   | { type: 'ADD_ITEM_TO_CURRENT_USER'; payload: MenuItemData }
   | { type: 'REMOVE_ITEM_FROM_CURRENT_USER'; payload: number }
@@ -36,8 +35,7 @@ type TableAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_ORDERS'; payload: UserOrder[] }
-  | { type: 'CLEAR_ORDERS' }
-  | { type: 'SET_SKIP_AUTO_LOAD'; payload: boolean };
+  | { type: 'CLEAR_ORDERS' };
 
 // Estado inicial
 const initialState: TableState = {
@@ -48,8 +46,7 @@ const initialState: TableState = {
   currentUserTotalItems: 0,
   currentUserTotalPrice: 0,
   isLoading: false,
-  error: null,
-  skipAutoLoad: false
+  error: null
 };
 
 // Función para calcular totales
@@ -162,7 +159,6 @@ function tableReducer(state: TableState, action: TableAction): TableState {
       };
 
     case 'SET_ORDERS':
-      console.log('📋 SET_ORDERS action dispatched with', action.payload.length, 'orders');
       return {
         ...state,
         orders: action.payload,
@@ -171,19 +167,11 @@ function tableReducer(state: TableState, action: TableAction): TableState {
       };
 
     case 'CLEAR_ORDERS':
-      console.log('🧹 CLEAR_ORDERS action dispatched - clearing', state.orders.length, 'orders');
       return {
         ...state,
         orders: [],
         isLoading: false,
         error: null
-      };
-
-    case 'SET_SKIP_AUTO_LOAD':
-      console.log('🔧 SET_SKIP_AUTO_LOAD action dispatched:', action.payload);
-      return {
-        ...state,
-        skipAutoLoad: action.payload
       };
 
     default:
@@ -198,23 +186,22 @@ const TableContext = createContext<{
   submitOrder: (userName?: string) => Promise<void>;
   refreshOrders: () => Promise<void>;
   loadTableOrders: () => Promise<void>;
+  markOrdersAsPaid: (orderIds?: string[], userNames?: string[]) => Promise<void>;
 } | null>(null);
 
 // Provider del contexto de mesa
 export function TableProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(tableReducer, initialState);
   
-  // Cargar órdenes cuando se establece el número de mesa (si no se está saltando la carga automática)
+  // Cargar órdenes cuando se establece el número de mesa
   useEffect(() => {
-    if (state.tableNumber && !state.skipAutoLoad) {
+    if (state.tableNumber) {
       loadTableOrders();
     }
-  }, [state.tableNumber, state.skipAutoLoad]);
+  }, [state.tableNumber]);
 
   const loadTableOrders = async () => {
     if (!state.tableNumber) return;
-
-    console.log('🔄 loadTableOrders called for table:', state.tableNumber, 'skipAutoLoad:', state.skipAutoLoad);
 
     dispatch({ type: 'SET_LOADING', payload: true });
 
@@ -222,7 +209,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
       const response = await tableApi.getTableOrders(parseInt(state.tableNumber));
 
       if (response.success && response.data) {
-        console.log('📋 Orders loaded from API:', response.data.length);
         dispatch({ type: 'SET_ORDERS', payload: response.data });
       } else {
         dispatch({ type: 'SET_ERROR', payload: response.error || 'Failed to load orders' });
@@ -278,9 +264,47 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const refreshOrders = async () => {
     await loadTableOrders();
   };
-  
+
+  const markOrdersAsPaid = async (orderIds?: string[], userNames?: string[]) => {
+    if (!state.tableNumber) {
+      return;
+    }
+
+    dispatch({ type: 'SET_LOADING', payload: true });
+
+    try {
+      let specificOrderIds = orderIds;
+
+      // Si se proporcionan nombres de usuario pero no IDs específicos,
+      // obtener los IDs de las órdenes de esos usuarios
+      if (!specificOrderIds && userNames && userNames.length > 0) {
+        console.log('🎯 markOrdersAsPaid: Filtering orders for specific users:', userNames);
+
+        specificOrderIds = state.orders
+          .filter(order => userNames.includes(order.user_name))
+          .map(order => order.id);
+
+        console.log(`📋 Found ${specificOrderIds.length} orders to mark as paid for users: ${userNames.join(', ')}`);
+      } else if (!specificOrderIds) {
+        console.log('🌍 markOrdersAsPaid: Marking ALL orders as paid for table');
+      }
+
+      const response = await tableApi.markOrdersAsPaid(parseInt(state.tableNumber), specificOrderIds);
+
+      if (response.success) {
+        console.log(`✅ ${response.data?.count || 0} orders marked as paid successfully`);
+        // Recargar órdenes para actualizar la vista (solo mostrará las no pagadas)
+        await loadTableOrders();
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: response.error || 'Failed to mark orders as paid' });
+      }
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: 'Network error occurred' });
+    }
+  };
+
   return (
-    <TableContext.Provider value={{ state, dispatch, submitOrder, refreshOrders, loadTableOrders }}>
+    <TableContext.Provider value={{ state, dispatch, submitOrder, refreshOrders, loadTableOrders, markOrdersAsPaid }}>
       {children}
     </TableContext.Provider>
   );

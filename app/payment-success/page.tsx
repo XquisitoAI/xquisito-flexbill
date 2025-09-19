@@ -10,7 +10,7 @@ import { getRestaurantData } from "../utils/restaurantData";
 import { apiService } from "../utils/api";
 
 export default function PaymentSuccessPage() {
-  const { state } = useTable();
+  const { state, markOrdersAsPaid } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -24,21 +24,37 @@ export default function PaymentSuccessPage() {
   
   // Try to get stored payment details
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
-  
+  const [ordersMarkedAsPaid, setOrdersMarkedAsPaid] = useState(false);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Check for completed payment (old flow)
-      let storedPayment = localStorage.getItem('xquisito-pending-payment');
-      
-      // Check for payment intent (new SDK flow)
+      console.log('🔍 Payment success page - checking localStorage for payment data');
+
+      // Check for completed payment first (most recent flow)
+      let storedPayment = localStorage.getItem('xquisito-completed-payment');
+      let storageKey = 'xquisito-completed-payment';
+
+      // Check for pending payment (EcartPay redirect flow)
+      if (!storedPayment) {
+        storedPayment = localStorage.getItem('xquisito-pending-payment');
+        storageKey = 'xquisito-pending-payment';
+      }
+
+      // Check for payment intent (SDK flow)
       if (!storedPayment) {
         storedPayment = localStorage.getItem('xquisito-payment-intent');
+        storageKey = 'xquisito-payment-intent';
       }
-      
+
+      console.log('📦 Found payment data in:', storageKey);
+      console.log('📦 Raw stored data:', storedPayment);
+
       if (storedPayment) {
         try {
           const parsed = JSON.parse(storedPayment);
+          console.log('📦 Parsed payment details:', parsed);
           setPaymentDetails(parsed);
+
           // Clean up after retrieval
           localStorage.removeItem('xquisito-pending-payment');
           localStorage.removeItem('xquisito-payment-intent');
@@ -46,12 +62,62 @@ export default function PaymentSuccessPage() {
         } catch (e) {
           console.error('Failed to parse stored payment details:', e);
         }
+      } else {
+        console.log('📦 No payment data found in localStorage');
       }
 
       // Clear all session data after successful payment
       clearGuestSession();
     }
   }, []);
+
+  // Mark orders as paid when payment is successful
+  useEffect(() => {
+    const markOrdersPaid = async () => {
+      // Check if already processed (prevent double execution)
+      const alreadyProcessed = paymentDetails?.alreadyProcessed || new URLSearchParams(window.location.search).get('processed') === 'true';
+
+      console.log('🔍 Payment success page - checking if should mark orders as paid:');
+      console.log('   ordersMarkedAsPaid:', ordersMarkedAsPaid);
+      console.log('   alreadyProcessed:', alreadyProcessed);
+      console.log('   paymentId:', paymentId);
+      console.log('   paymentDetails:', paymentDetails);
+      console.log('   tableNumber:', state.tableNumber || tableNumber);
+
+      if (!ordersMarkedAsPaid && !alreadyProcessed && (paymentId || paymentDetails) && (state.tableNumber || tableNumber)) {
+        try {
+          // Intentar obtener usuarios específicos desde los detalles del pago almacenados
+          const specificUsers = paymentDetails?.users;
+
+          console.log('🔍 Payment success page - marking orders as paid:');
+          console.log('   specificUsers from paymentDetails:', specificUsers);
+
+          if (specificUsers && specificUsers.length > 0) {
+            console.log('🎯 Payment success page loaded, marking orders as paid for specific users:', specificUsers);
+            await markOrdersAsPaid(undefined, specificUsers);
+            console.log('✅ Specific user orders marked as paid successfully from payment success page');
+          } else {
+            console.log('🎉 Payment success page loaded, marking all orders as paid for table:', state.tableNumber || tableNumber);
+            await markOrdersAsPaid();
+            console.log('✅ All orders marked as paid successfully from payment success page');
+          }
+
+          setOrdersMarkedAsPaid(true);
+        } catch (error) {
+          console.error('❌ Error marking orders as paid from payment success page:', error);
+          // Don't block the success page if this fails
+        }
+      } else {
+        console.log('⏭️ Skipping order marking - already processed or conditions not met');
+        if (alreadyProcessed) {
+          console.log('✅ Orders already processed by add-tip page');
+          setOrdersMarkedAsPaid(true);
+        }
+      }
+    };
+
+    markOrdersPaid();
+  }, [paymentId, paymentDetails?.users, paymentDetails?.alreadyProcessed, state.tableNumber, tableNumber, ordersMarkedAsPaid]);
 
   const clearGuestSession = async () => {
     if (typeof window !== 'undefined') {
@@ -92,15 +158,6 @@ export default function PaymentSuccessPage() {
     router.push('/');
   };
 
-  const handleOrderAgain = () => {
-    // Go back to the same table with a clean session
-    const currentTable = state.tableNumber || tableNumber;
-    if (currentTable) {
-      router.push(`/order?table=${currentTable}&reset=true`);
-    } else {
-      router.push('/');
-    }
-  };
 
   const handleGoHome = () => {
     // Complete exit - go to home page
@@ -188,17 +245,10 @@ export default function PaymentSuccessPage() {
         {/* Action Buttons */}
         <div className="space-y-3">
           <button
-            onClick={handleOrderAgain}
+            onClick={handleGoHome}
             className="w-full py-4 bg-teal-700 text-white rounded-lg font-semibold text-lg hover:bg-teal-800 transition-colors"
           >
-            Order Again at Table {state.tableNumber || tableNumber}
-          </button>
-
-          <button
-            onClick={handleGoHome}
-            className="w-full py-4 bg-gray-200 text-gray-700 rounded-lg font-semibold text-lg hover:bg-gray-300 transition-colors"
-          >
-            Exit & Go Home
+            Go to Home
           </button>
 
           <button

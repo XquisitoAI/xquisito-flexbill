@@ -20,10 +20,7 @@ export default function OrderStatus() {
   const restaurantData = getRestaurantData();
 
   const handleRefresh = () => {
-    // Solo refrescar si no estamos en modo nueva sesión
-    if (!state.skipAutoLoad) {
-      refreshOrders();
-    }
+    refreshOrders();
   };
 
   const handleGoBack = () => {
@@ -56,7 +53,7 @@ export default function OrderStatus() {
           
           <button
             onClick={handleRefresh}
-            disabled={state.isLoading || state.skipAutoLoad}
+            disabled={state.isLoading}
             className="flex items-center gap-2 text-teal-600 hover:text-teal-800 transition-colors disabled:text-gray-400"
           >
             <svg className={`w-5 h-5 ${state.isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,7 +165,7 @@ export default function OrderStatus() {
       {state.orders.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
           <div className="max-w-md mx-auto">
-            <button 
+            <button
               onClick={handleCheckOut}
               className="w-full bg-teal-700 text-white py-4 rounded-lg font-medium hover:bg-teal-800 transition-colors"
             >

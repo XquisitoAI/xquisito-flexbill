@@ -32,6 +32,8 @@ export interface UserOrder {
   total_items: number;
   total_price: number;
   status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  payment_status: 'pending' | 'paid' | 'refunded' | 'cancelled';
+  paid_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -149,6 +151,17 @@ class TableApiService {
   // Detener polling
   stopPolling(intervalId: NodeJS.Timeout): void {
     clearInterval(intervalId);
+  }
+
+  // Marcar órdenes como pagadas
+  async markOrdersAsPaid(
+    tableNumber: number,
+    orderIds?: string[]
+  ): Promise<ApiResponse<{ updatedOrders: UserOrder[]; count: number }>> {
+    return this.request<{ updatedOrders: UserOrder[]; count: number }>(`/tables/${tableNumber}/orders/mark-paid`, {
+      method: 'POST',
+      body: JSON.stringify({ orderIds }),
+    });
   }
 }
 

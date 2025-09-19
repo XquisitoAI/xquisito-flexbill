@@ -10,16 +10,28 @@ import { getRestaurantData } from "../utils/restaurantData";
 import { apiService } from "../utils/api";
 
 export default function AddTipPage() {
-  const { state } = useTable();
+  const { state, markOrdersAsPaid } = useTable();
   const { goBack, navigateWithTable } = useTableNavigation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const restaurantData = getRestaurantData();
   const isGuest = useIsGuest();
   const { guestId, tableNumber } = useGuest();
-  
+
   const baseAmount = parseFloat(searchParams.get('amount') || '0');
-  const selectedUsers = searchParams.get('users')?.split(',') || [];
+  const usersParam = searchParams.get('users');
+  const selectedUsers = usersParam ? usersParam.split(',').filter(user => user.trim() !== '') : [];
+
+  // Debug: Log para verificar los parámetros recibidos
+  console.log('🔍 AddTipPage - Received parameters:');
+  console.log('   baseAmount:', baseAmount);
+  console.log('   usersParam (raw):', usersParam);
+  console.log('   selectedUsers (parsed):', selectedUsers);
+  console.log('   selectedUsers.length:', selectedUsers.length);
+  console.log('   state.tableNumber:', state.tableNumber);
+  console.log('   state.orders.length:', state.orders.length);
+  console.log('   URL table param:', searchParams.get('table'));
+  console.log('   state.orders:', state.orders.map(o => ({ id: o.id, user_name: o.user_name, total_price: o.total_price })));
     
   // Estados para manejar la propina
   const [selectedTipPercentage, setSelectedTipPercentage] = useState<number | null>(null);
@@ -63,6 +75,55 @@ export default function AddTipPage() {
 
   const getTotalAmount = () => {
     return baseAmount + calculateTipAmount();
+  };
+
+  const handlePaymentSuccess = async (paymentId: string, amount: number, type: string) => {
+    console.log('🎯 handlePaymentSuccess called with:');
+    console.log('   paymentId:', paymentId);
+    console.log('   amount:', amount);
+    console.log('   type:', type);
+    console.log('   selectedUsers:', selectedUsers);
+    console.log('   selectedUsers.length:', selectedUsers.length);
+    console.log('   selectedUsers type:', typeof selectedUsers);
+    console.log('   selectedUsers array check:', Array.isArray(selectedUsers));
+
+    try {
+      // Marcar órdenes como pagadas
+      if (selectedUsers.length > 0) {
+        // Si hay usuarios específicos seleccionados, marcar solo sus órdenes
+        console.log('🎯 Payment successful, marking orders as paid for SPECIFIC users:', selectedUsers);
+        console.log('🔍 About to call markOrdersAsPaid with userNames:', selectedUsers);
+        await markOrdersAsPaid(undefined, selectedUsers);
+        console.log('✅ Specific user orders marked as paid successfully');
+      } else {
+        // Si no hay usuarios específicos, marcar todas las órdenes de la mesa
+        console.log('🎉 Payment successful, marking ALL orders as paid for table:', state.tableNumber);
+        console.log('🔍 About to call markOrdersAsPaid without parameters');
+        await markOrdersAsPaid();
+        console.log('✅ All orders marked as paid successfully');
+      }
+
+      // Store payment success data for payment-success page (prevent double execution)
+      if (typeof window !== 'undefined') {
+        const successData = {
+          paymentId,
+          amount,
+          users: selectedUsers.length > 0 ? selectedUsers : null,
+          tableNumber: state.tableNumber,
+          type,
+          alreadyProcessed: true // Flag to prevent double processing
+        };
+        console.log('💾 Storing payment success data for payment-success page:', successData);
+        localStorage.setItem('xquisito-completed-payment', JSON.stringify(successData));
+      }
+
+    } catch (error) {
+      console.error('❌ Error marking orders as paid:', error);
+      // No bloquear la navegación si hay error marcando las órdenes
+    } finally {
+      // Navegar a la página de éxito
+      navigateWithTable(`/payment-success?paymentId=${paymentId}&amount=${amount}&type=${type}&processed=true`);
+    }
   };
 
   const handlePay = async () => {
@@ -115,7 +176,8 @@ export default function AddTipPage() {
       const order = paymentResult.data?.order;
 
       if (payment?.type === 'direct_charge' || (payment && !payment.payLink && !order?.payLink)) {
-        navigateWithTable(`/payment-success?paymentId=${payment.id}&amount=${totalAmount}&type=direct`);
+        console.log('💳 Direct payment successful, proceeding to handlePaymentSuccess with userNames:', selectedUsers);
+        await handlePaymentSuccess(payment.id, totalAmount, 'direct');
         return;
       }
 
@@ -124,13 +186,16 @@ export default function AddTipPage() {
       if (payLink) {
         // Store order details for later reference
         if (typeof window !== 'undefined') {
-          localStorage.setItem('xquisito-pending-payment', JSON.stringify({
+          const paymentData = {
             orderId: order?.id || payment?.id,
             amount: totalAmount,
-            users: selectedUsers,
+            users: selectedUsers.length > 0 ? selectedUsers : null, // Solo almacenar si hay usuarios específicos
             tableNumber: state.tableNumber,
             tip: tipAmount
-          }));
+          };
+
+          console.log('💾 Storing payment data in localStorage:', paymentData);
+          localStorage.setItem('xquisito-pending-payment', JSON.stringify(paymentData));
         }
 
         setPaymentAttempts(prev => prev + 1);
@@ -153,7 +218,7 @@ export default function AddTipPage() {
       if (payment || order) {
         const paymentId = payment?.id || order?.id || 'completed';
         console.log('✅ Payment completed successfully (no verification needed):', paymentId);
-        navigateWithTable(`/payment-success?paymentId=${paymentId}&amount=${totalAmount}&type=saved-card`);
+        await handlePaymentSuccess(paymentId, totalAmount, 'saved-card');
         return;
       }
 
@@ -217,6 +282,21 @@ export default function AddTipPage() {
             </p>
           </div>
         )}
+
+        {/* DEBUG: Información de depuración */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-xs">
+          <p className="font-bold text-yellow-800 mb-2">🔍 DEBUG INFO:</p>
+          <p><strong>URL table param:</strong> {searchParams.get('table')}</p>
+          <p><strong>state.tableNumber:</strong> {state.tableNumber}</p>
+          <p><strong>usersParam:</strong> {JSON.stringify(usersParam)}</p>
+          <p><strong>selectedUsers:</strong> {JSON.stringify(selectedUsers)}</p>
+          <p><strong>selectedUsers.length:</strong> {selectedUsers.length}</p>
+          <p><strong>baseAmount:</strong> ${baseAmount}</p>
+          <p><strong>Available orders:</strong> {state.orders.length}</p>
+          {state.orders.map((order, i) => (
+            <p key={i}><strong>Order {i + 1}:</strong> {order.user_name} - ${order.total_price}</p>
+          ))}
+        </div>
 
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-800 text-center mb-6">
@@ -295,7 +375,7 @@ export default function AddTipPage() {
           </div>
         </div>
 
-        <button 
+        <button
           onClick={handlePay}
           disabled={!isPayButtonEnabled() || isProcessing}
           className={`w-full py-4 rounded-lg font-semibold text-lg transition-colors ${
@@ -305,6 +385,17 @@ export default function AddTipPage() {
           }`}
         >
           {isProcessing ? 'Processing Payment...' : `Pay: $${getTotalAmount().toFixed(2)}`}
+        </button>
+
+        {/* DEBUG: Botón de prueba temporal */}
+        <button
+          onClick={() => {
+            console.log('🧪 TEST BUTTON - Direct call to handlePaymentSuccess');
+            handlePaymentSuccess('test-payment-id', getTotalAmount(), 'test');
+          }}
+          className="w-full py-2 mt-2 rounded-lg font-medium text-sm bg-red-500 text-white hover:bg-red-600 transition-colors"
+        >
+          🧪 TEST: Mark Orders as Paid (Debug)
         </button>
 
         {!isPayButtonEnabled() && (

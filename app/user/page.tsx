@@ -1,50 +1,46 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useTable } from '../context/TableContext';
-import { useTableNavigation } from '../hooks/useTableNavigation';
-import MenuHeader from '../components/MenuHeader';
-import { getRestaurantData } from '../utils/restaurantData';
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useTable } from "../context/TableContext";
+import { useTableNavigation } from "../hooks/useTableNavigation";
+import { getRestaurantData } from "../utils/restaurantData";
+import MenuHeaderBack from "../components/MenuHeaderBack";
 
 export default function UserPage() {
-  const [userName, setUserName] = useState('');
+  const [userName, setUserName] = useState("");
   const { state, dispatch, submitOrder } = useTable();
-  const { tableNumber, navigateWithTable, goBack } = useTableNavigation();
+  const { tableNumber, navigateWithTable } = useTableNavigation();
   const router = useRouter();
   const restaurantData = getRestaurantData();
 
   useEffect(() => {
     if (!tableNumber) {
       // Redirigir a home si no hay número de mesa
-      router.push('/');
+      router.push("/");
       return;
     }
 
     if (isNaN(parseInt(tableNumber))) {
       // Redirigir si el número de mesa no es válido
-      router.push('/');
+      router.push("/");
       return;
     }
 
     // Establecer el número de mesa en el contexto
-    dispatch({ type: 'SET_TABLE_NUMBER', payload: tableNumber });
+    dispatch({ type: "SET_TABLE_NUMBER", payload: tableNumber });
   }, [tableNumber, dispatch, router]);
-
-  const handleGoBack = () => {
-    goBack();
-  };
 
   const handleProceedToOrder = async () => {
     if (userName.trim()) {
-      debugger
+      debugger;
       try {
         // Enviar la orden a la API con el nombre del usuario directamente
         await submitOrder(userName.trim());
         // Navegar a la página de órdenes
-        navigateWithTable('/order');
+        navigateWithTable("/order");
       } catch (error) {
-        console.error('Error submitting order:', error);
+        console.error("Error submitting order:", error);
         // El error se maneja en el contexto
       }
     }
@@ -54,7 +50,9 @@ export default function UserPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Mesa Inválida</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">
+            Mesa Inválida
+          </h1>
           <p className="text-gray-600">Por favor escanee el código QR</p>
         </div>
       </div>
@@ -62,30 +60,72 @@ export default function UserPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43]">
-      <MenuHeader restaurant={restaurantData} tableNumber={state.tableNumber} />
-      
-      {/* Back button */}
-      <div className="max-w-md mx-auto px-4 py-4">
-        <button 
-          onClick={handleGoBack}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <MenuHeaderBack
+        restaurant={restaurantData}
+        tableNumber={state.tableNumber}
+      />
+
+      <div className="px-4 w-full flex-1 flex flex-col">
+        <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
+          <div className="py-6 px-8 flex flex-col justify-center">
+            <h2 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
+              Ingresa tu nombre para continuar
+            </h2>
+          </div>
+        </div>
+
+        <div className="flex-1 h-full flex flex-col ">
+          <div className="bg-white rounded-t-4xl flex-1 z-10 flex flex-col px-6">
+            <div className="flex-1 flex flex-col items-center w-full h-full">
+              <div className="pt-48 mb-6">
+                <h2 className="text-lg font-semibold text-black">Tu nombre</h2>
+              </div>
+
+              <div className="w-full">
+                <input
+                  type="text"
+                  placeholder="Nombre"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="w-full px-4 py-3 border-0 border-b border-black text-black text-2xl text-center font-bold focus:outline-none focus:border-teal-500"
+                />
+              </div>
+
+              {/* Spacer to push button to bottom */}
+              <div className="flex-1"></div>
+
+              {/* Fixed bottom section */}
+              <div className="mb-4 w-full">
+                <button
+                  onClick={handleProceedToOrder}
+                  disabled={!userName.trim() || state.isLoading}
+                  className={`w-full py-3 rounded-full transition-colors text-white cursor-pointer ${
+                    userName.trim() && !state.isLoading
+                      ? "bg-black hover:bg-stone-950"
+                      : "bg-stone-800 cursor-not-allowed"
+                  }`}
+                >
+                  Continuar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* User Form */}
-      <div className="max-w-md mx-auto px-4 pb-32">
+      {/*<div className="max-w-md mx-auto px-4 pb-32">
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="mb-6">
-            <h2 className="text-lg font-medium text-gray-800 mb-2">Enter your name</h2>
-            <p className="text-sm text-gray-600">We need your name to process your order</p>
+            <h2 className="text-lg font-medium text-gray-800 mb-2">
+              Enter your name
+            </h2>
+            <p className="text-sm text-gray-600">
+              We need your name to process your order
+            </p>
           </div>
-          
+
           <div className="mb-6">
             <input
               type="text"
@@ -96,24 +136,26 @@ export default function UserPage() {
             />
           </div>
         </div>
-      </div>
+      </div>*/}
 
       {/* Order Button - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+      {/*<div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
         <div className="max-w-md mx-auto">
-          <button 
+          <button
             onClick={handleProceedToOrder}
             disabled={!userName.trim() || state.isLoading}
             className={`w-full py-4 rounded-lg font-medium transition-colors ${
               userName.trim() && !state.isLoading
-                ? 'bg-teal-700 text-white hover:bg-teal-800'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? "bg-teal-700 text-white hover:bg-teal-800"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
-            {state.isLoading ? 'Placing Order...' : `Order ${state.currentUserTotalItems} items`}
+            {state.isLoading
+              ? "Placing Order..."
+              : `Order ${state.currentUserTotalItems} items`}
           </button>
         </div>
-      </div>
+      </div>*/}
     </div>
   );
 }

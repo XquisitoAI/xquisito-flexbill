@@ -1,5 +1,6 @@
 // Configuración de la API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 // Tipos para las respuestas de la API
 export interface ApiResponse<T> {
@@ -12,7 +13,7 @@ export interface ApiResponse<T> {
 export interface TableInfo {
   id: string;
   table_number: number;
-  status: 'available' | 'occupied' | 'reserved' | 'maintenance';
+  status: "available" | "occupied" | "reserved" | "maintenance";
   created_at: string;
   updated_at: string;
 }
@@ -27,11 +28,17 @@ export interface UserOrder {
     price: number;
     quantity: number;
     description?: string;
-    image?: string;
+    images?: string[];
   }>;
   total_items: number;
   total_price: number;
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  status:
+    | "pending"
+    | "confirmed"
+    | "preparing"
+    | "ready"
+    | "delivered"
+    | "cancelled";
   created_at: string;
   updated_at: string;
 }
@@ -44,28 +51,32 @@ export interface TableStats {
 }
 
 class TableApiService {
-  private async request<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
+  private async request<T>(
+    endpoint: string,
+    options?: RequestInit
+  ): Promise<ApiResponse<T>> {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...options?.headers,
         },
         ...options,
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(data.message || data.error || 'API request failed');
+        throw new Error(data.message || data.error || "API request failed");
       }
 
       return data;
     } catch (error) {
-      console.error('API Error:', error);
+      console.error("API Error:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
       };
     }
   }
@@ -82,7 +93,7 @@ class TableApiService {
 
   // Crear una nueva orden de usuario
   async createUserOrder(
-    tableNumber: number, 
+    tableNumber: number,
     orderData: {
       user_name: string;
       items: Array<{
@@ -98,18 +109,18 @@ class TableApiService {
     }
   ): Promise<ApiResponse<UserOrder>> {
     return this.request<UserOrder>(`/tables/${tableNumber}/orders`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(orderData),
     });
   }
 
   // Actualizar el estado de una orden
   async updateOrderStatus(
-    orderId: string, 
-    status: UserOrder['status']
+    orderId: string,
+    status: UserOrder["status"]
   ): Promise<ApiResponse<UserOrder>> {
     return this.request<UserOrder>(`/orders/${orderId}/status`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify({ status }),
     });
   }
@@ -122,14 +133,14 @@ class TableApiService {
   // Limpiar órdenes de una mesa
   async clearTableOrders(tableNumber: number): Promise<ApiResponse<null>> {
     return this.request<null>(`/tables/${tableNumber}/orders`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
   // Polling para obtener órdenes actualizadas
   startPolling(
-    tableNumber: number, 
-    callback: (orders: UserOrder[]) => void, 
+    tableNumber: number,
+    callback: (orders: UserOrder[]) => void,
     intervalMs: number = 5000
   ): NodeJS.Timeout {
     const poll = async () => {
@@ -141,7 +152,7 @@ class TableApiService {
 
     // Ejecutar inmediatamente
     poll();
-    
+
     // Configurar polling
     return setInterval(poll, intervalMs);
   }

@@ -90,7 +90,7 @@ export default function CartView() {
                               </div>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="text-sm font-medium text-gray-800 truncate">
+                              <h3 className="text-sm font-medium text-black truncate">
                                 {item.name}
                               </h3>
                             </div>

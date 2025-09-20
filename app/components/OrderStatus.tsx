@@ -2,9 +2,13 @@
 
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
+import { useGuest } from "../context/GuestContext";
+import { SignInButton, useUser } from "@clerk/nextjs";
+import { useState, useEffect } from "react";
 import MenuHeader from "./MenuHeader";
 import { getRestaurantData } from "../utils/restaurantData";
 import MenuHeaderBack from "./MenuHeaderBack";
+import { ChevronRight, X } from "lucide-react";
 
 // Tipos para el estado de los items
 type OrderItemStatus = "En preparación" | "En camino" | "Entregado";
@@ -22,6 +26,9 @@ const getRandomStatus = (): OrderItemStatus => {
 export default function OrderStatus() {
   const { state, refreshOrders } = useTable();
   const { goBack, navigateWithTable } = useTableNavigation();
+  const { setAsGuest } = useGuest();
+  const { user, isLoaded } = useUser();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const restaurantData = getRestaurantData();
 
   const handleRefresh = () => {
@@ -32,7 +39,30 @@ export default function OrderStatus() {
   };
 
   const handleCheckOut = () => {
-    navigateWithTable("/checkout");
+    if (isLoaded && user) {
+      // User is authenticated, redirect directly to payment options
+      navigateWithTable("/payment-options");
+    } else {
+      // User is guest, show authentication modal
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleContinueAsGuest = () => {
+    try {
+      const tableNum = state.tableNumber?.toString() || undefined;
+      setAsGuest(tableNum);
+      setShowAuthModal(false);
+      navigateWithTable("/payment-options");
+    } catch (error) {
+      console.error("❌ Error initializing guest session:", error);
+      navigateWithTable("/payment-options");
+    }
+  };
+
+  const handleSignUp = () => {
+    setShowAuthModal(false);
+    navigateWithTable("/sign-up");
   };
 
   // Calcular totales de toda la mesa
@@ -63,7 +93,7 @@ export default function OrderStatus() {
         </div>
 
         <div className="flex-1 h-full flex flex-col">
-          <div className="bg-white rounded-t-4xl flex-1 z-10 flex flex-col px-6">
+          <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col px-6">
             {/* Ordered Items */}
             <div className="w-full mx-auto pb-6">
               <div className="flex justify-between mt-6">
@@ -204,13 +234,67 @@ export default function OrderStatus() {
                   onClick={handleCheckOut}
                   className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-medium cursor-pointer transition-colors"
                 >
-                  Continuar
+                  Pagar
                 </button>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Authentication Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
+          <div className="bg-white rounded-4xl shadow-lg p-6 w-full max-w-md relative">
+            {/* Close button */}
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <X className="size-6" />
+            </button>
+
+            {/* Content */}
+            <div className="mt-4">
+              <h1 className="text-2xl font-medium text-gray-800 text-center mb-6">
+                ¡Bienvenido!
+              </h1>
+
+              <div className="space-y-3">
+                {/* Sign In Button */}
+                <SignInButton
+                  mode="modal"
+                  fallbackRedirectUrl={`/payment-options${state.tableNumber ? `?table=${state.tableNumber}` : ""}`}
+                  forceRedirectUrl={`/payment-options${state.tableNumber ? `?table=${state.tableNumber}` : ""}`}
+                >
+                  <button className="flex items-center justify-between bg-black hover:bg-stone-950 w-full text-white py-3 px-4 rounded-full font-medium cursor-pointer transition-colors">
+                    <span>Sign In</span>
+                    <ChevronRight className="size-4 text-white" />
+                  </button>
+                </SignInButton>
+
+                {/* Sign Up Button */}
+                <button
+                  onClick={handleSignUp}
+                  className="flex items-center justify-between bg-black hover:bg-stone-950 w-full text-white py-3 px-4 rounded-full font-medium cursor-pointer transition-colors"
+                >
+                  <span>Sign Up</span>
+                  <ChevronRight className="size-4 text-white" />
+                </button>
+
+                {/* Continue as Guest */}
+                <button
+                  onClick={handleContinueAsGuest}
+                  className="flex items-center justify-between bg-black hover:bg-stone-950 w-full text-white py-3 px-4 rounded-full font-medium cursor-pointer transition-colors"
+                >
+                  <span>Continue as Guest</span>
+                  <ChevronRight className="size-4 text-white" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

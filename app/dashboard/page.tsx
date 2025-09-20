@@ -38,7 +38,7 @@ export default function DashboardPage() {
     : "Bienvenido";
 
   const handleContinueToPayment = () => {
-    navigateWithTable("/payment");
+    navigateWithTable("/payment-options");
   };
 
   const handleSignOut = async () => {

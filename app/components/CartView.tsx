@@ -45,7 +45,7 @@ export default function CartView() {
 
         <div className="flex-1 h-full flex flex-col">
           {/* Cart Items */}
-          <div className="bg-white rounded-t-4xl flex-1 z-10 flex flex-col px-6">
+          <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col px-6">
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto flex flex-col">
               <div className="pt-6">

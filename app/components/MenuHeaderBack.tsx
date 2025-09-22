@@ -1,67 +1,236 @@
-'use client';
+"use client";
 
 import { Restaurant } from "../interfaces/restaurante";
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
-import { usePathname } from 'next/navigation';
-import { ShoppingCart, Receipt, ChevronLeft } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ShoppingCart, Receipt, ChevronLeft, X } from "lucide-react";
+import { useState } from "react";
+import { useUser } from "@clerk/nextjs";
 
 interface MenuHeaderProps {
   restaurant: Restaurant;
   tableNumber?: string;
 }
 
-export default function MenuHeaderBack({ restaurant, tableNumber }: MenuHeaderProps) {
+export default function MenuHeaderBack({
+  restaurant,
+  tableNumber,
+}: MenuHeaderProps) {
+  const router = useRouter();
   const { state } = useTable();
   const { navigateWithTable, goBack } = useTableNavigation();
   const pathname = usePathname();
+  const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
+  const { user, isLoaded } = useUser();
+
+  const handleBack = () => {
+    router.back();
+  };
 
   const handleCartClick = () => {
-    navigateWithTable('/cart');
+    navigateWithTable("/cart");
+  };
+
+  // Extraer participantes únicos de los pedidos
+  const participants = Array.from(
+    new Set(state.orders.map((order) => order.user_name))
+  ).filter(Boolean);
+
+  const visibleParticipants = participants.slice(0, 2);
+  const remainingCount = participants.length - 2;
+
+  // Generar inicial
+  const getInitials = (name: string) => {
+    return name.charAt(0).toUpperCase();
+  };
+
+  // Generar colos segun el nombre (siempre el mismo color para ese nombre)
+  const getAvatarColor = (name: string) => {
+    const colors = [
+      "bg-blue-500",
+      "bg-green-500",
+      "bg-purple-500",
+      "bg-pink-500",
+      "bg-indigo-500",
+      "bg-red-500",
+      "bg-yellow-500",
+      "bg-teal-500",
+      "bg-orange-500",
+      "bg-cyan-500",
+      "bg-emerald-500",
+      "bg-violet-500",
+      "bg-rose-500",
+      "bg-lime-500",
+      "bg-amber-500",
+      "bg-sky-500",
+      "bg-fuchsia-500",
+      "bg-slate-500",
+      "bg-zinc-500",
+      "bg-neutral-500",
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
   };
 
   return (
-      <header className="container mx-auto px-5 pt-5 z-10">
-        <div className="flex items-center justify-between z-10">
-          <div className="flex items-center z-10">
-            <div onClick={goBack} className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-              <ChevronLeft className="text-primary"/>
-            </div>
+    <header className="container mx-auto px-5 pt-5 z-10">
+      <div className="relative flex items-center justify-between z-10">
+        {/* Back */}
+        <div className="flex items-center z-10">
+          <div
+            onClick={handleBack}
+            className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+          >
+            <ChevronLeft className="text-primary" />
           </div>
-          
-          <div className="flex items-center space-x-2 z-10">
-            {pathname === '/order' ? (
-              <div className="relative">
-                <div className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-                  <Receipt className="text-primary"/>
-                </div>
-                {state.orders && state.orders.length > 0 && state.orders.reduce((sum, order) => sum + order.total_items, 0) > 0 && (
-                  <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                    {state.orders.reduce((sum, order) => sum + order.total_items, 0)}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-                <Receipt className="text-primary size-5"/>
+        </div>
+
+        {/* Xquisito Logo */}
+        <div className="absolute left-1/2 transform -translate-x-1/2 size-10">
+          <img src="/logo-short-green.webp" alt="Xquisito Logo" />
+        </div>
+
+        {/* Participantes */}
+        {!isLoaded ? (
+          // Loading
+          <div className="flex items-center space-x-1">
+            <div className="size-10 bg-gray-300 animate-pulse rounded-full border border-white shadow-sm"></div>
+          </div>
+        ) : participants.length > 0 ? (
+          <div className="flex items-center space-x-1">
+            {remainingCount > 0 && (
+              <div
+                onClick={() => setIsParticipantsModalOpen(true)}
+                className="size-10 bg-white rounded-full flex items-center justify-center text-black text-base font-semibold border border-[#8e8e8e] shadow-sm cursor-pointer"
+              >
+                +{remainingCount}
               </div>
             )}
-            
-            <div className="relative">
-              <div 
-                onClick={handleCartClick}
-                className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
-              >
-                <ShoppingCart className="text-primary size-5"/>
-              </div>
-              {state.currentUserTotalItems > 0 && (
-                <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full size-5 flex items-center justify-center text-xs font-bold">
-                  {state.currentUserTotalItems}
+            {visibleParticipants.map((participant, index) => {
+              return (
+                <div
+                  key={participant}
+                  onClick={() => setIsParticipantsModalOpen(true)}
+                  className={`size-10 rounded-full flex items-center justify-center text-white text-base font-semibold border border-white shadow-sm cursor-pointer overflow-hidden ${getAvatarColor(participant)}`}
+                  style={{
+                    marginLeft: remainingCount > 0 || index > 0 ? "-12px" : "0",
+                  }}
+                >
+                  {getInitials(participant)}
                 </div>
-              )}
+              );
+            })}
+          </div>
+        ) : null}
+
+        {/* Cart and order buttons */}
+        {/*<div className="flex items-center space-x-2 z-10">
+          {pathname === "/order" ? (
+            <div className="relative">
+              <div className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
+                <Receipt className="text-primary" />
+              </div>
+              {state.orders &&
+                state.orders.length > 0 &&
+                state.orders.reduce(
+                  (sum, order) => sum + order.total_items,
+                  0
+                ) > 0 && (
+                  <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                    {state.orders.reduce(
+                      (sum, order) => sum + order.total_items,
+                      0
+                    )}
+                  </div>
+                )}
+            </div>
+          ) : (
+            <div className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
+              <Receipt className="text-primary size-5" />
+            </div>
+          )}
+
+          <div className="relative">
+            <div
+              onClick={handleCartClick}
+              className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+            >
+              <ShoppingCart className="text-primary size-5" />
+            </div>
+            {state.currentUserTotalItems > 0 && (
+              <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full size-5 flex items-center justify-center text-xs font-bold">
+                {state.currentUserTotalItems}
+              </div>
+            )}
+          </div>
+        </div>*/}
+      </div>
+
+      {/* Modal participantes */}
+      {isParticipantsModalOpen && (
+        <div
+          className="fixed inset-0 flex items-end justify-center"
+          style={{ zIndex: 99999 }}
+        >
+          {/* Fondo */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setIsParticipantsModalOpen(false)}
+          ></div>
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-t-4xl w-full mx-4">
+            {/* Titulo */}
+            <div className="px-6 pt-4">
+              <div className="flex items-center justify-between pb-4 border-b border-[#8e8e8e]">
+                <h3 className="text-lg font-semibold text-black">
+                  Participantes
+                </h3>
+                <button
+                  onClick={() => setIsParticipantsModalOpen(false)}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+                >
+                  <X className="size-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Lista de participantes */}
+            <div className="px-6 py-4 space-y-3 max-h-80 overflow-y-auto">
+              {participants.map((participant) => {
+                return (
+                  <div key={participant} className="flex items-center gap-3">
+                    <div
+                      className={`size-12 rounded-full flex items-center justify-center text-white text-base font-semibold overflow-hidden ${getAvatarColor(participant)}`}
+                    >
+                      {getInitials(participant)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-black">{participant}</p>
+                      <p className="text-sm text-[#8e8e8e]">
+                        {(() => {
+                          const orderCount = state.orders.filter(
+                            (order) => order.user_name === participant
+                          ).length;
+                          const itemCount = state.orders
+                            .filter((order) => order.user_name === participant)
+                            .reduce((sum, order) => sum + order.total_items, 0);
+
+                          return `${orderCount} ${orderCount === 1 ? "orden" : "ordenes"} • ${itemCount} ${itemCount === 1 ? "artículo" : "artículos"}`;
+                        })()}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
+      )}
     </header>
   );
 }

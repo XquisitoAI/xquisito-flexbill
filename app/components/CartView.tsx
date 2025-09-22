@@ -26,7 +26,9 @@ export default function CartView() {
         <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
           {state.currentUserItems.length === 0 ? (
             <div className="py-6 px-8 flex flex-col justify-center">
-              <h1 className="text-[#e0e0e0] text-xl">Mesa</h1>
+              <h1 className="text-[#e0e0e0] text-xl">
+                Mesa {state.tableNumber}
+              </h1>
               <h2 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
                 El carrito está vacío, agrega items y disfruta
               </h2>
@@ -45,7 +47,7 @@ export default function CartView() {
 
         <div className="flex-1 h-full flex flex-col">
           {/* Cart Items */}
-          <div className="bg-white rounded-t-4xl flex-1 z-10 flex flex-col px-6">
+          <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col px-6">
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto flex flex-col">
               <div className="pt-6">
@@ -90,7 +92,7 @@ export default function CartView() {
                               </div>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="text-sm font-medium text-gray-800 truncate">
+                              <h3 className="text-sm font-medium text-black truncate">
                                 {item.name}
                               </h3>
                             </div>

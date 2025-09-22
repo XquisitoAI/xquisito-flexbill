@@ -60,30 +60,11 @@ export default function CardSelectionPage() {
     0
   );
 
-  const getPaymentDescription = () => {
-    switch (paymentType) {
-      case "full-bill":
-        return `Mesa ${state.tableNumber || "N/A"} - Cuenta completa`;
-      case "equal-shares":
-        const participantCount = Array.from(
-          new Set(state.orders.map((order) => order.user_name))
-        ).length;
-        return `Mesa ${state.tableNumber || "N/A"} - División entre ${participantCount} personas`;
-      case "select-items":
-        return `Mesa ${state.tableNumber || "N/A"} - Platillos seleccionados`;
-      case "choose-amount":
-        return `Mesa ${state.tableNumber || "N/A"} - Monto personalizado`;
-      default:
-        return `Mesa ${state.tableNumber || "N/A"}`;
-    }
-  };
-
   const handlePayment = async () => {
     if (!name.trim()) {
       alert("Please enter your name");
       return;
     }
-
     try {
       const sdkLoaded = await waitForSDK();
       if (!sdkLoaded) {
@@ -111,7 +92,7 @@ export default function CardSelectionPage() {
           currency: "USD",
           items: [
             {
-              name: `Xquisito Restaurant - ${getPaymentDescription()}`,
+              name: `Xquisito Restaurant`,
               price: paymentAmount,
               quantity: 1,
             },
@@ -119,7 +100,10 @@ export default function CardSelectionPage() {
         },
       };
 
-      console.log("🚀 Initiating EcartPay checkout with options:", checkoutOptions);
+      console.log(
+        "🚀 Initiating EcartPay checkout with options:",
+        checkoutOptions
+      );
 
       const result = await createCheckout(checkoutOptions);
 
@@ -132,7 +116,7 @@ export default function CardSelectionPage() {
         addPayment({
           userName: name,
           amount: paymentAmount,
-          paymentType: paymentType
+          paymentType: paymentType,
         });
 
         if (typeof window !== "undefined") {
@@ -172,14 +156,6 @@ export default function CardSelectionPage() {
     navigateWithTable("/add-card");
   };
 
-  const handleSplitBill = () => {
-    if (isGuest && !hasPaymentMethods) {
-      alert("Please add a payment method first to split the bill");
-      return;
-    }
-    navigateWithTable("/choose-to-pay");
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43]">
       <MenuHeaderBack
@@ -188,29 +164,6 @@ export default function CardSelectionPage() {
       />
 
       <div className="px-4 py-6">
-        {/* Payment Type Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">
-            {paymentType === "full-bill" && "Pagar cuenta completa"}
-            {paymentType === "equal-shares" && "Pagar parte igual"}
-            {paymentType === "select-items" && "Pagar platillos seleccionados"}
-            {paymentType === "choose-amount" && "Pagar monto personalizado"}
-          </h2>
-          <p className="text-sm text-gray-600 mb-4">
-            {getPaymentDescription()}
-          </p>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-700">
-                Total a pagar:
-              </span>
-              <span className="text-lg font-bold text-gray-800">
-                ${paymentAmount.toFixed(2)}
-              </span>
-            </div>
-          </div>
-        </div>
-
         {/* Customer Information */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
@@ -254,26 +207,9 @@ export default function CardSelectionPage() {
 
           <button
             onClick={handleAddCard}
-            className="w-full bg-gray-800 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors mb-3"
+            className="w-full bg-gray-800 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
           >
             Add card
-          </button>
-
-          <button
-            onClick={handleSplitBill}
-            disabled={isGuest && !hasPaymentMethods}
-            className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors mb-3 ${
-              isGuest && !hasPaymentMethods
-                ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                : "bg-gray-800 text-white hover:bg-gray-700"
-            }`}
-          >
-            Split Bill
-            {isGuest && !hasPaymentMethods && (
-              <span className="block text-xs mt-1 text-gray-500">
-                Add a card first
-              </span>
-            )}
           </button>
         </div>
 
@@ -322,12 +258,12 @@ export default function CardSelectionPage() {
           onClick={handlePayment}
           disabled={paymentLoading || !name.trim()}
           className={`w-full py-4 rounded-lg font-semibold text-lg transition-colors ${
-            paymentLoading || !name.trim()
+            paymentLoading
               ? "bg-gray-400 text-gray-600 cursor-not-allowed"
               : "bg-teal-700 text-white hover:bg-teal-800"
           }`}
         >
-          {paymentLoading
+          {paymentLoading || !name.trim()
             ? "Procesando pago..."
             : `Pagar: $${paymentAmount.toFixed(2)}`}
         </button>

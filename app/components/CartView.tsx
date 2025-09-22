@@ -26,7 +26,9 @@ export default function CartView() {
         <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
           {state.currentUserItems.length === 0 ? (
             <div className="py-6 px-8 flex flex-col justify-center">
-              <h1 className="text-[#e0e0e0] text-xl">Mesa</h1>
+              <h1 className="text-[#e0e0e0] text-xl">
+                Mesa {state.tableNumber}
+              </h1>
               <h2 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
                 El carrito está vacío, agrega items y disfruta
               </h2>

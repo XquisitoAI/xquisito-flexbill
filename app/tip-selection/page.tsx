@@ -145,308 +145,274 @@ export default function TipSelectionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43]">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <MenuHeaderBack
         restaurant={restaurantData}
         tableNumber={state.tableNumber}
       />
 
-      <div className="px-4 py-6">
-        {/* Item Selection UI - Only show for select-items payment type */}
-        {paymentType === "select-items" && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Selecciona los platillos que quieres pagar
-            </h3>
-            <p className="text-sm text-gray-600 mb-6">
-              Puedes pagar por cualquier platillo de la mesa, sin importar quién
-              lo ordenó
-            </p>
+      <div
+        className={`px-4 w-full ${paymentType === "select-items" ? "flex-1 flex flex-col" : "fixed bottom-0 left-0 right-0"}`}
+      >
+        <div className="flex-1 flex flex-col relative">
+          <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
+            <div className="py-6 px-8 flex flex-col justify-center">
+              <h1 className="text-[#e0e0e0] text-xl">
+                Mesa {state.tableNumber}
+              </h1>
+              <h1 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
+                Revisa tu cuenta
+              </h1>
+            </div>
+          </div>
 
-            <div className="space-y-3 max-h-80 overflow-y-auto">
-              {getAllTableItems().map((item) => (
-                <div
-                  key={item.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selectedItems[item.id]
-                      ? "border-teal-500 bg-teal-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                  onClick={() => toggleItemSelection(item.id, item)}
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-800">
-                            {item.name}
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            Ordenado por: {item.orderedBy}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-800">
-                            ${item.price.toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
+          <div className="bg-white rounded-t-4xl relative z-10 flex flex-col px-8 flex-1 py-8">
+            {/* Seleccionar articulos */}
+            {paymentType === "select-items" && (
+              <div className="flex-1 flex flex-col">
+                {getAllTableItems().length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-gray-400 text-6xl mb-4">🛒</div>
+                      <p className="text-black text-2xl">
+                        No hay pedidos en la mesa
+                      </p>
                     </div>
-                    <div className="ml-4">
-                      <div
-                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                          selectedItems[item.id]
-                            ? "border-teal-500 bg-teal-500"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {selectedItems[item.id] && (
-                          <svg
-                            className="w-4 h-4 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <div className="text-black font-semibold text-sm flex gap-5 justify-end mb-3">
+                        <span>Cant.</span>
+                        <span>Precio</span>
+                      </div>
+                      <div>
+                        {getAllTableItems().map((item) => (
+                          <div
+                            key={item.id}
+                            className={`py-3 border-b border-[#8e8e8e] cursor-pointer transition-colors ${
+                              selectedItems[item.id]
+                                ? "bg-teal-50"
+                                : "hover:bg-gray-50"
+                            }`}
+                            onClick={() => toggleItemSelection(item.id, item)}
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        )}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="mr-2">
+                                  <div
+                                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                      selectedItems[item.id]
+                                        ? "border-teal-500 bg-teal-500"
+                                        : "border-gray-300"
+                                    }`}
+                                  >
+                                    {selectedItems[item.id] && (
+                                      <svg
+                                        className="w-4 h-4 text-white"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M5 13l4 4L19 7"
+                                        />
+                                      </svg>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex-shrink-0 mt-1">
+                                  <div className="size-16 bg-gray-300 rounded-sm flex items-center justify-center hover:scale-105 transition-transform duration-200">
+                                    {item.originalItem.images ? (
+                                      <img
+                                        src={item.originalItem.images[0]}
+                                        alt="Dish preview"
+                                        className="w-full h-full object-cover rounded-sm"
+                                      />
+                                    ) : (
+                                      <img
+                                        src={"/logo-short-green.webp"}
+                                        alt="Logo Xquisito"
+                                        className="size-18 object-contain rounded-sm"
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-sm text-[#8e8e8e]">
+                                    {item.orderedBy.toUpperCase()}
+                                  </h3>
+                                  <h4 className="text-base font-medium text-black">
+                                    {item.name}
+                                  </h4>
+                                </div>
+                              </div>
+                              <div className="text-right flex gap-5 items-center">
+                                <p className="text-black">{item.quantity}</p>
+                                <p className="font-medium text-black">
+                                  ${item.price.toFixed(2)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
+
+                      {/* Spacer to push content to bottom when items don't fill viewport */}
+                      <div className="flex-1"></div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {Object.keys(selectedItems).length > 0 && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">
-                    Platillos seleccionados: {Object.keys(selectedItems).length}
-                  </span>
-                  <span className="font-bold text-gray-800">
-                    ${selectedItemsTotal.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Custom Payment Amount Section - Only show for choose-amount payment type */}
-        {paymentType === "choose-amount" && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Introduce el monto que quieres pagar
-            </h3>
-
-            {/* Payment Status Summary */}
-            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-800">Total de la mesa:</span>
-                  <span className="text-sm font-semibold text-blue-800">
-                    ${tableTotalPrice.toFixed(2)}
-                  </span>
-                </div>
-                {totalPaidAmount > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-blue-600">Ya pagado por otros:</span>
-                    <span className="text-sm font-semibold text-blue-600">
-                      -${totalPaidAmount.toFixed(2)}
-                    </span>
-                  </div>
+                  </>
                 )}
-                <div className="flex justify-between items-center border-t border-blue-300 pt-2">
-                  <span className="text-sm font-bold text-blue-900">Restante por pagar:</span>
-                  <span className="text-sm font-bold text-blue-900">
-                    ${remainingTableAmount.toFixed(2)}
-                  </span>
-                </div>
               </div>
-            </div>
+            )}
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Monto a pagar
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  $
-                </span>
-                <input
-                  type="number"
-                  value={customPaymentAmount}
-                  onChange={(e) => setCustomPaymentAmount(e.target.value)}
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0"
-                  className={`w-full pl-8 pr-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-lg ${
-                    customPaymentAmount && parseFloat(customPaymentAmount) > remainingTableAmount
-                      ? "border-red-300 focus:ring-red-500"
-                      : "border-gray-300 focus:ring-teal-500"
-                  }`}
-                />
-              </div>
-              <p className="text-sm text-gray-500 mt-2">
-                Máximo: ${remainingTableAmount.toFixed(2)} (monto restante)
-              </p>
-              {customPaymentAmount && parseFloat(customPaymentAmount) > remainingTableAmount && (
-                <p className="text-sm text-red-600 mt-1">
-                  ⚠️ No puedes ingresar una cantidad mayor al monto restante
-                </p>
-              )}
-            </div>
-
-            {customPaymentAmount && parseFloat(customPaymentAmount) > 0 && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Tu pago:</span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      ${parseFloat(customPaymentAmount).toFixed(2)}
-                    </span>
+            {/* Selecionar monto a pagar */}
+            {paymentType === "choose-amount" && (
+              <div>
+                <div className="flex flex-col w-full items-center">
+                  <label className="block text-xl font-medium text-black mb-2">
+                    Monto a pagar
+                  </label>
+                  <div>
+                    <input
+                      type="number"
+                      value={customPaymentAmount}
+                      onChange={(e) => setCustomPaymentAmount(e.target.value)}
+                      placeholder="$0.00"
+                      step="0.01"
+                      min="0"
+                      className={`w-full text-center text-black border-b border-black focus:outline-none focus:ring-none text-3xl ${
+                        customPaymentAmount &&
+                        parseFloat(customPaymentAmount) > remainingTableAmount
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }`}
+                    />
                   </div>
-                  <div className="flex justify-between items-center border-t pt-2">
-                    <span className="text-sm font-medium text-gray-700">Quedaría por pagar:</span>
-                    <span className="text-sm font-bold text-gray-800">
-                      ${(remainingTableAmount - parseFloat(customPaymentAmount)).toFixed(2)}
-                    </span>
-                  </div>
+                  <p className="text-sm text-gray-500 mt-3">
+                    Máximo: ${remainingTableAmount.toFixed(2)} (monto restante)
+                  </p>
+                  {customPaymentAmount &&
+                    parseFloat(customPaymentAmount) > remainingTableAmount && (
+                      <p className="text-sm text-red-600 mt-1">
+                        No puedes ingresar una cantidad mayor al monto restante
+                      </p>
+                    )}
                 </div>
               </div>
             )}
           </div>
-        )}
+        </div>
 
         {/* Tip Selection Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            ¿Quieres agregar propina?
-          </h3>
-
-          {/* Tip Percentage Buttons */}
-          <div className="grid grid-cols-4 gap-3 mb-4">
-            {[0, 10, 15, 20].map((percentage) => (
-              <button
-                key={percentage}
-                onClick={() => handleTipPercentage(percentage)}
-                className={`py-3 px-2 rounded-lg border text-sm font-medium transition-colors ${
-                  tipPercentage === percentage
-                    ? "border-teal-500 bg-teal-50 text-teal-700"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                {percentage === 0 ? "0%" : `${percentage}%`}
-              </button>
-            ))}
+        <div className="bg-white px-8 pb-6 space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-black font-medium">Total de la mesa</span>
+            <span className="text-black font-medium">
+              ${tableTotalPrice.toFixed(2)} MXN
+            </span>
           </div>
-
-          {/* Custom Tip Input */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Propina personalizada
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                $
+          {paymentType !== "full-bill" && (
+            <div className="flex justify-between items-center">
+              <span className="text-black font-medium">Tu parte</span>
+              <span className="text-black font-medium">
+                ${baseAmount.toFixed(2)} MXN
               </span>
-              <input
-                type="number"
-                value={customTip}
-                onChange={(e) => handleCustomTipChange(e.target.value)}
-                placeholder="0.00"
-                step="0.01"
-                min="0"
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          {/* Tip Summary */}
-          {(tipPercentage > 0 || (customTip && parseFloat(customTip) > 0)) && (
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">
-                  {tipPercentage > 0
-                    ? `Propina (${tipPercentage}%):`
-                    : "Propina personalizada:"}
-                </span>
-                <span className="text-sm font-semibold text-gray-800">
-                  ${tipAmount.toFixed(2)}
-                </span>
-              </div>
             </div>
           )}
-        </div>
 
-        {/* Summary */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Total de la mesa:</span>
-              <span className="text-sm text-gray-600">
-                ${tableTotalPrice.toFixed(2)}
-              </span>
-            </div>
-            {paymentType !== "full-bill" && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Tu parte:</span>
-                <span className="text-sm text-gray-600">
-                  ${baseAmount.toFixed(2)}
-                </span>
+          <div className="mb-4">
+            <div className="flex gap-3">
+              <span className="text-black font-medium">Propina</span>
+              {/* Tip Percentage Buttons */}
+              <div className="grid grid-cols-5 gap-2">
+                {[0, 10, 15, 20].map((percentage) => (
+                  <button
+                    key={percentage}
+                    onClick={() => handleTipPercentage(percentage)}
+                    className={`py-1 rounded-full border border-[#8e8e8e]/40 text-black font-medium transition-colors ${
+                      tipPercentage === percentage
+                        ? "bg-[#ededed]"
+                        : "bg-[#f9f9f9] hover:border-gray-400"
+                    }`}
+                  >
+                    {percentage === 0 ? "0%" : `${percentage}%`}
+                  </button>
+                ))}
+                {/* Custom Tip Input */}
+                <div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      value={customTip}
+                      onChange={(e) => handleCustomTipChange(e.target.value)}
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                      className="w-full pl-6 pr-1 py-1 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
             {tipAmount > 0 && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Propina:</span>
-                <span className="text-sm text-gray-600">
-                  ${tipAmount.toFixed(2)}
+              <div className="flex justify-end mt-1">
+                <span className="text-black font-medium">
+                  ${tipAmount.toFixed(2)} MXN
                 </span>
               </div>
             )}
-            <div className="flex justify-between items-center border-t pt-2">
-              <span className="text-lg font-bold text-gray-800">
-                Total a pagar:
-              </span>
-              <span className="text-lg font-bold text-gray-800">
-                ${paymentAmount.toFixed(2)}
-              </span>
-            </div>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="font-bold text-black">Total a pagar:</span>
+            <span className="font-bold text-black">
+              ${paymentAmount.toFixed(2)} MXN
+            </span>
           </div>
         </div>
 
-        {/* Continue Button */}
-        <button
-          onClick={handleContinueToCardSelection}
-          disabled={
-            (paymentType === "select-items" &&
-              Object.keys(selectedItems).length === 0) ||
-            (paymentType === "select-items" && paymentAmount === 0) ||
-            (paymentType === "choose-amount" && (!customPaymentAmount || parseFloat(customPaymentAmount) <= 0 || parseFloat(customPaymentAmount) > remainingTableAmount))
-          }
-          className={`w-full py-4 rounded-lg font-semibold text-lg transition-colors ${
-            (paymentType === "select-items" &&
-              Object.keys(selectedItems).length === 0) ||
-            (paymentType === "select-items" && paymentAmount === 0) ||
-            (paymentType === "choose-amount" && (!customPaymentAmount || parseFloat(customPaymentAmount) <= 0 || parseFloat(customPaymentAmount) > remainingTableAmount))
-              ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-              : "bg-teal-700 text-white hover:bg-teal-800"
-          }`}
-        >
-          {paymentType === "select-items" &&
-          Object.keys(selectedItems).length === 0
-            ? "Selecciona platillos para continuar"
-            : paymentType === "choose-amount" && (!customPaymentAmount || parseFloat(customPaymentAmount) <= 0)
-            ? "Introduce un monto para continuar"
-            : paymentType === "choose-amount" && parseFloat(customPaymentAmount) > remainingTableAmount
-            ? "Monto excede lo que resta por pagar"
-            : "Continuar"}
-        </button>
+        {/* Pagar Button */}
+        <div className="bg-white p-6">
+          {(() => {
+            const isSelectItemsEmpty = paymentType === "select-items" && Object.keys(selectedItems).length === 0;
+            const isSelectItemsZero = paymentType === "select-items" && paymentAmount === 0;
+            const isChooseAmountInvalid = paymentType === "choose-amount" &&
+              (!customPaymentAmount ||
+                parseFloat(customPaymentAmount) <= 0 ||
+                parseFloat(customPaymentAmount) > remainingTableAmount);
+
+            const isDisabled = isSelectItemsEmpty || isSelectItemsZero || isChooseAmountInvalid;
+
+            return (
+              <button
+                onClick={handleContinueToCardSelection}
+                disabled={isDisabled}
+                className={`w-full text-white py-3 rounded-full cursor-pointer transition-colors ${
+                  isDisabled
+                    ? "bg-stone-800 cursor-not-allowed"
+                    : "bg-black hover:bg-stone-950"
+                }`}
+              >
+                {isSelectItemsEmpty
+                  ? "Selecciona platillos"
+                  : paymentType === "choose-amount" &&
+                      (!customPaymentAmount || parseFloat(customPaymentAmount) <= 0)
+                    ? "Introduce un monto"
+                    : paymentType === "choose-amount" &&
+                        parseFloat(customPaymentAmount) > remainingTableAmount
+                      ? "Monto excede lo que resta por pagar"
+                      : "Pagar"}
+              </button>
+            );
+          })()}
+        </div>
       </div>
     </div>
   );

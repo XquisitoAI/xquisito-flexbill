@@ -32,25 +32,19 @@ export default function AddCardPage() {
   const [postalCode, setPostalCode] = useState("");
   const [postalCodeError, setPostalCodeError] = useState("");
 
-  // Función para validar que solo se ingresen caracteres de texto válidos para nombres
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Expresión regular que permite letras, espacios, acentos y algunos caracteres especiales comunes en nombres
     const textOnlyRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]*$/;
 
-    // Solo actualiza el estado si el valor cumple con la validación o está vacío
     if (textOnlyRegex.test(value)) {
       setFullName(value);
     }
   };
 
-  // Función para validar caracteres válidos en email
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Expresión regular que permite caracteres válidos para emails
     const emailCharsRegex = /^[a-zA-Z0-9@._-]*$/;
 
-    // Solo actualiza el estado si el valor contiene caracteres válidos para email
     if (emailCharsRegex.test(value)) {
       setEmail(value);
     }
@@ -185,7 +179,6 @@ export default function AddCardPage() {
 
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Solo permitir números y espacios para el formato de tarjeta
     const numbersOnlyRegex = /^[0-9\s]*$/;
 
     if (numbersOnlyRegex.test(value)) {
@@ -205,10 +198,8 @@ export default function AddCardPage() {
     }
   };
 
-  // Validación mejorada para CVV - solo números
   const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Solo permitir números
     const numbersOnlyRegex = /^[0-9]*$/;
 
     if (numbersOnlyRegex.test(value)) {
@@ -218,19 +209,35 @@ export default function AddCardPage() {
 
   const handlePostalCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setPostalCode(value);
-    setPostalCodeError("");
+    let allowedCharsRegex: RegExp;
+    switch (country) {
+      case 'Mexico':
+      case 'USA':
+        allowedCharsRegex = /^[0-9-]*$/; // Solo números y guión para USA (formato ZIP+4)
+        break;
+      case 'Canada':
+        allowedCharsRegex = /^[A-Za-z0-9\s]*$/; // Letras, números y espacios
+        break;
+      case 'UK':
+        allowedCharsRegex = /^[A-Za-z0-9\s]*$/; // Letras, números y espacios
+        break;
+      default:
+        allowedCharsRegex = /^[A-Za-z0-9\s-]*$/; // Formato general
+    }
 
-    if (value.trim() && !validatePostalCode(value, country)) {
-      const formats = {
-        Mexico: "5 digits (e.g., 83120)",
-        USA: "5 digits or 5+4 format (e.g., 12345 or 12345-6789)",
-        Canada: "Format: A1A 1A1",
-        UK: "UK format (e.g., SW1A 1AA)",
-      };
-      setPostalCodeError(
-        `Invalid format. Expected: ${formats[country as keyof typeof formats]}`
-      );
+    if (allowedCharsRegex.test(value)) {
+      setPostalCode(value.toUpperCase()); 
+      setPostalCodeError('');
+
+      if (value.trim() && !validatePostalCode(value, country)) {
+        const formats = {
+          'Mexico': '5 digits (e.g., 83120)',
+          'USA': '5 digits or 5+4 format (e.g., 12345 or 12345-6789)',
+          'Canada': 'Format: A1A 1A1',
+          'UK': 'UK format (e.g., SW1A 1AA)'
+        };
+        setPostalCodeError(`Invalid format. Expected: ${formats[country as keyof typeof formats]}`);
+      }
     }
   };
 
@@ -300,7 +307,6 @@ export default function AddCardPage() {
 
             {/* Add Card Form */}
             <div className="space-y-4">
-              {/* Full Name Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nombre Completo
@@ -308,13 +314,12 @@ export default function AddCardPage() {
                 <input
                   type="text"
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  onChange={handleFullNameChange}
                   placeholder="John Doe"
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
 
-              {/* Email Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Correo Electronico
@@ -322,13 +327,12 @@ export default function AddCardPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleEmailChange}
                   placeholder="john@example.com"
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
 
-              {/* Card Number Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Número de tarjeta
@@ -366,9 +370,7 @@ export default function AddCardPage() {
                 <input
                   type="text"
                   value={cvv}
-                  onChange={(e) =>
-                    setCvv(e.target.value.replace(/\D/g, "").substring(0, 4))
-                  }
+                  onChange={handleCvvChange}
                   placeholder="123"
                   maxLength={4}
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"

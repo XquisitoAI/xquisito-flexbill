@@ -99,7 +99,7 @@ export default function UserPage() {
                   type="text"
                   placeholder="Nombre"
                   value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
+                  onChange={handleNameChange}
                   className="w-full px-4 py-3 border-0 border-b border-black text-black text-2xl text-center font-bold focus:outline-none focus:border-teal-500"
                 />
               </div>

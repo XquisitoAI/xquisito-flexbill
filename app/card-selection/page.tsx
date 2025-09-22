@@ -156,6 +156,15 @@ export default function CardSelectionPage() {
     navigateWithTable("/add-card");
   };
 
+   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;    
+    const textOnlyRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]*$/;    
+
+    if (textOnlyRegex.test(value)) {
+      setName(value);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43]">
       <MenuHeaderBack
@@ -178,7 +187,7 @@ export default function CardSelectionPage() {
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={handleNameChange}
                 placeholder="Tu nombre completo"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               />

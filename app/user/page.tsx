@@ -35,9 +35,18 @@ export default function UserPage() {
     goBack();
   };
 
+  // Función para validar que solo se ingresen caracteres de texto válidos para nombres
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;    
+    const textOnlyRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]*$/;    
+
+    if (textOnlyRegex.test(value)) {
+      setUserName(value);
+    }
+  };
+
   const handleProceedToOrder = async () => {
     if (userName.trim()) {
-      debugger
       try {
         // Enviar la orden a la API con el nombre del usuario directamente
         await submitOrder(userName.trim());
@@ -45,7 +54,6 @@ export default function UserPage() {
         navigateWithTable('/order');
       } catch (error) {
         console.error('Error submitting order:', error);
-        // El error se maneja en el contexto
       }
     }
   };
@@ -65,7 +73,6 @@ export default function UserPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43]">
       <MenuHeader restaurant={restaurantData} tableNumber={state.tableNumber} />
       
-      {/* Back button */}
       <div className="max-w-md mx-auto px-4 py-4">
         <button 
           onClick={handleGoBack}
@@ -78,7 +85,6 @@ export default function UserPage() {
         </button>
       </div>
 
-      {/* User Form */}
       <div className="max-w-md mx-auto px-4 pb-32">
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="mb-6">
@@ -91,14 +97,13 @@ export default function UserPage() {
               type="text"
               placeholder="Your name"
               value={userName}
-              onChange={(e) => setUserName(e.target.value)}
+              onChange={handleNameChange}
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             />
           </div>
         </div>
       </div>
 
-      {/* Order Button - Fixed at bottom */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
         <div className="max-w-md mx-auto">
           <button 

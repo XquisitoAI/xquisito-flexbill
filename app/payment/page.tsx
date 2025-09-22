@@ -38,7 +38,6 @@ export default function PaymentPage() {
   const tableTotalPrice = state.orders.reduce((sum, order) => sum + parseFloat(order.total_price.toString()), 0);
 
   const handleBack = () => {
-    // goBack();
     router.back();
   };
 
@@ -86,7 +85,6 @@ export default function PaymentPage() {
 
       console.log('🚀 Initiating EcartPay checkout for full bill with options:', checkoutOptions);
 
-      // Create checkout using the hook
       const result = await createCheckout(checkoutOptions);
       
       console.log('💳 EcartPay checkout result:', result);
@@ -129,6 +127,15 @@ export default function PaymentPage() {
     navigateWithTable('/choose-to-pay');
   };
 
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;    
+    const textOnlyRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]*$/;    
+
+    if (textOnlyRegex.test(value)) {
+      setName(value);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <MenuHeader restaurant={restaurantData} tableNumber={state.tableNumber} />
@@ -152,7 +159,6 @@ export default function PaymentPage() {
             <p className="text-sm text-gray-600 mb-6">Need a receipt? Enter your email</p>
             
             <div className="space-y-4">
-              {/* Name Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Name
@@ -160,7 +166,7 @@ export default function PaymentPage() {
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={handleNameChange}
                   placeholder="Your name"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />

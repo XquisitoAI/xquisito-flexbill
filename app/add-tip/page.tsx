@@ -128,7 +128,7 @@ export default function AddTipPage() {
     try {
       // Set guest and table info for API service
       if (isGuest && guestId) {
-        apiService.setGuestInfo(guestId, state.tableNumber || tableNumber);
+        apiService.setGuestInfo(guestId, state.tableNumber || tableNumber || undefined);
       }
 
       // Check if user has payment methods

@@ -190,7 +190,7 @@ export default function TipSelectionPage() {
                         {getAllTableItems().map((item) => (
                           <div
                             key={item.id}
-                            className={`py-3 border-b border-[#8e8e8e] cursor-pointer transition-colors ${
+                            className={`py-3 px-2 border-b border-[#8e8e8e] cursor-pointer transition-colors ${
                               selectedItems[item.id]
                                 ? "bg-teal-50"
                                 : "hover:bg-gray-50"
@@ -381,14 +381,19 @@ export default function TipSelectionPage() {
         {/* Pagar Button */}
         <div className="bg-white p-6">
           {(() => {
-            const isSelectItemsEmpty = paymentType === "select-items" && Object.keys(selectedItems).length === 0;
-            const isSelectItemsZero = paymentType === "select-items" && paymentAmount === 0;
-            const isChooseAmountInvalid = paymentType === "choose-amount" &&
+            const isSelectItemsEmpty =
+              paymentType === "select-items" &&
+              Object.keys(selectedItems).length === 0;
+            const isSelectItemsZero =
+              paymentType === "select-items" && paymentAmount === 0;
+            const isChooseAmountInvalid =
+              paymentType === "choose-amount" &&
               (!customPaymentAmount ||
                 parseFloat(customPaymentAmount) <= 0 ||
                 parseFloat(customPaymentAmount) > remainingTableAmount);
 
-            const isDisabled = isSelectItemsEmpty || isSelectItemsZero || isChooseAmountInvalid;
+            const isDisabled =
+              isSelectItemsEmpty || isSelectItemsZero || isChooseAmountInvalid;
 
             return (
               <button
@@ -403,7 +408,8 @@ export default function TipSelectionPage() {
                 {isSelectItemsEmpty
                   ? "Selecciona platillos"
                   : paymentType === "choose-amount" &&
-                      (!customPaymentAmount || parseFloat(customPaymentAmount) <= 0)
+                      (!customPaymentAmount ||
+                        parseFloat(customPaymentAmount) <= 0)
                     ? "Introduce un monto"
                     : paymentType === "choose-amount" &&
                         parseFloat(customPaymentAmount) > remainingTableAmount

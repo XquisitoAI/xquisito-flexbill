@@ -11,9 +11,10 @@ import { useUser } from "@clerk/nextjs";
 import { useEcartPay } from "../hooks/useEcartPay";
 import { EcartPayCheckoutOptions } from "../types/ecartpay";
 import MenuHeaderBack from "../components/MenuHeaderBack";
+import { apiService } from "../utils/api";
 
 export default function CardSelectionPage() {
-  const { state, addPayment } = useTable();
+  const { state, addPayment, markOrdersAsPaid } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const searchParams = useSearchParams();
   const restaurantData = getRestaurantData();
@@ -38,6 +39,8 @@ export default function CardSelectionPage() {
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [tipAmount, setTipAmount] = useState(0);
   const [baseAmount, setBaseAmount] = useState(0);
+  const [paymentAttempts, setPaymentAttempts] = useState(0);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -49,10 +52,18 @@ export default function CardSelectionPage() {
     const storedPaymentAmount = sessionStorage.getItem("paymentAmount");
     const storedTipAmount = sessionStorage.getItem("tipAmount");
     const storedBaseAmount = sessionStorage.getItem("baseAmount");
+    const storedSelectedUsers = sessionStorage.getItem("selectedUsers");
 
     if (storedPaymentAmount) setPaymentAmount(parseFloat(storedPaymentAmount));
     if (storedTipAmount) setTipAmount(parseFloat(storedTipAmount));
     if (storedBaseAmount) setBaseAmount(parseFloat(storedBaseAmount));
+    if (storedSelectedUsers) {
+      try {
+        setSelectedUsers(JSON.parse(storedSelectedUsers));
+      } catch (e) {
+        console.error('Error parsing selectedUsers from sessionStorage:', e);
+      }
+    }
   }, []);
 
   const tableTotalPrice = state.orders.reduce(
@@ -60,94 +71,142 @@ export default function CardSelectionPage() {
     0
   );
 
+  const handlePaymentSuccess = async (paymentId: string, amount: number, type: string) => {
+    try {
+      // Marcar órdenes como pagadas
+      if (selectedUsers.length > 0) {
+        // Si hay usuarios específicos seleccionados, marcar solo sus órdenes
+        console.log('🎯 Payment successful, marking orders as paid for SPECIFIC users:', selectedUsers);
+        console.log('🔍 About to call markOrdersAsPaid with userNames:', selectedUsers);
+        await markOrdersAsPaid(undefined, selectedUsers);
+        console.log('✅ Specific user orders marked as paid successfully');
+      } else {
+        // Si no hay usuarios específicos, marcar todas las órdenes de la mesa
+        console.log('🎉 Payment successful, marking ALL orders as paid for table:', state.tableNumber);
+        console.log('🔍 About to call markOrdersAsPaid without parameters');
+        await markOrdersAsPaid();
+        console.log('✅ All orders marked as paid successfully');
+      }
+
+      // Store payment success data for payment-success page (prevent double execution)
+      if (typeof window !== 'undefined') {
+        const successData = {
+          paymentId,
+          amount,
+          users: selectedUsers.length > 0 ? selectedUsers : null,
+          tableNumber: state.tableNumber,
+          type,
+          alreadyProcessed: true // Flag to prevent double processing
+        };
+        console.log('💾 Storing payment success data for payment-success page:', successData);
+        localStorage.setItem('xquisito-completed-payment', JSON.stringify(successData));
+      }
+
+    } catch (error) {
+      console.error('❌ Error marking orders as paid:', error);
+      // No bloquear la navegación si hay error marcando las órdenes
+    } finally {
+      // Navegar a la página de éxito
+      navigateWithTable(`/payment-success?paymentId=${paymentId}&amount=${amount}&type=${type}&processed=true`);
+    }
+  };
+
   const handlePayment = async () => {
     if (!name.trim()) {
       alert("Please enter your name");
       return;
     }
     try {
-      const sdkLoaded = await waitForSDK();
-      if (!sdkLoaded) {
-        throw new Error(
-          "EcartPay SDK failed to load. Please refresh and try again."
-        );
+      // Set guest and table info for API service
+      if (isGuest && guestId) {
+        apiService.setGuestInfo(guestId, state.tableNumber || undefined);
       }
 
-      const publicKey = process.env.NEXT_PUBLIC_ECARTPAY_PUBLIC_KEY;
-      if (!publicKey) {
-        throw new Error("EcartPay configuration missing");
+      // Check if user has payment methods
+      const paymentMethodsResult = await apiService.getPaymentMethods();
+
+      if (!paymentMethodsResult.success) {
+        throw new Error(paymentMethodsResult.error?.message || 'Failed to fetch payment methods');
       }
 
-      const userEmail = email.trim() || "guest@xquisito.com";
-      const [firstName, ...lastNameParts] = name.trim().split(" ");
-      const lastName = lastNameParts.join(" ") || "User";
+      if (!paymentMethodsResult.data?.paymentMethods || paymentMethodsResult.data.paymentMethods.length === 0) {
+        // No payment methods, redirect to add card page
+        alert('No payment methods found. Please add a payment method first.');
+        navigateWithTable(`/add-card?amount=${paymentAmount}&users=${selectedUsers.join(',')}&tip=${tipAmount}`);
+        return;
+      }
 
-      const checkoutOptions: EcartPayCheckoutOptions = {
-        publicID: publicKey,
-        order: {
-          email: userEmail,
-          first_name: firstName,
-          last_name: lastName,
-          phone: "5551234567",
-          currency: "USD",
-          items: [
-            {
-              name: `Xquisito Restaurant`,
-              price: paymentAmount,
-              quantity: 1,
-            },
-          ],
-        },
-      };
+      // Use the first/default payment method
+      const paymentMethods = paymentMethodsResult.data.paymentMethods;
+      const defaultPaymentMethod = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
 
-      console.log(
-        "🚀 Initiating EcartPay checkout with options:",
-        checkoutOptions
-      );
+      // Process payment directly with saved payment method
+      const paymentResult = await apiService.processPayment({
+        paymentMethodId: defaultPaymentMethod.id,
+        amount: paymentAmount,
+        currency: 'USD',
+        description: `Xquisito Restaurant Payment - Table ${state.tableNumber || 'N/A'} - Users: ${selectedUsers.join(', ')} - Tip: $${tipAmount.toFixed(2)}`,
+        orderId: `order-${Date.now()}-attempt-${paymentAttempts + 1}`,
+        tableNumber: state.tableNumber,
+        restaurantId: 'xquisito-main'
+      });
 
-      const result = await createCheckout(checkoutOptions);
+      if (!paymentResult.success) {
+        throw new Error(paymentResult.error?.message || 'Payment processing failed');
+      }
 
-      console.log("💳 EcartPay checkout result:", result);
+      const payment = paymentResult.data?.payment;
+      const order = paymentResult.data?.order;
 
-      if (result.success && result.payment) {
-        console.log("✅ Payment successful:", result.payment.id);
+      if (payment?.type === 'direct_charge' || (payment && !payment.payLink && !order?.payLink)) {
+        console.log('💳 Direct payment successful, proceeding to handlePaymentSuccess with userNames:', selectedUsers);
+        await handlePaymentSuccess(payment.id, paymentAmount, 'direct');
+        return;
+      }
 
-        // Record the payment in table context
-        addPayment({
-          userName: name,
-          amount: paymentAmount,
-          paymentType: paymentType,
-        });
+      // Check if we have a payLink (fallback to EcartPay verification)
+      const payLink = order?.payLink || payment?.payLink;
+      if (payLink) {
+        // Store order details for later reference
+        if (typeof window !== 'undefined') {
+          const paymentData = {
+            orderId: order?.id || payment?.id,
+            amount: paymentAmount,
+            users: selectedUsers.length > 0 ? selectedUsers : null,
+            tableNumber: state.tableNumber,
+            tip: tipAmount
+          };
 
-        if (typeof window !== "undefined") {
-          localStorage.setItem(
-            "xquisito-completed-payment",
-            JSON.stringify({
-              paymentId: result.payment.id,
-              amount: paymentAmount,
-              paymentType: paymentType,
-              tableNumber: state.tableNumber,
-              orders: state.orders,
-              payerName: name,
-              payerEmail: email,
-            })
-          );
+          console.log('💾 Storing payment data in localStorage:', paymentData);
+          localStorage.setItem('xquisito-pending-payment', JSON.stringify(paymentData));
         }
 
-        sessionStorage.removeItem("tipPercentage");
-        sessionStorage.removeItem("customTip");
-        sessionStorage.removeItem("tipAmount");
-        sessionStorage.removeItem("baseAmount");
-        sessionStorage.removeItem("paymentAmount");
-        sessionStorage.removeItem("selectedItems");
-        sessionStorage.removeItem("customPaymentAmount");
+        setPaymentAttempts(prev => prev + 1);
 
-        navigateWithTable(
-          `/payment-success?paymentId=${result.payment.id}&amount=${paymentAmount}&type=${paymentType}`
+        // Show user-friendly message before redirect
+        const shouldRedirect = confirm(
+          `Your saved payment method requires verification through EcartPay.\n\n` +
+          `This is normal in testing/sandbox mode. In production, this step is usually skipped.\n\n` +
+          `Click OK to complete verification, or Cancel to try again.`
         );
+
+        if (shouldRedirect) {
+          window.location.href = payLink;
+        }
+        return;
       }
+
+      if (payment || order) {
+        const paymentId = payment?.id || order?.id || 'completed';
+        console.log('✅ Payment completed successfully (no verification needed):', paymentId);
+        await handlePaymentSuccess(paymentId, paymentAmount, 'saved-card');
+        return;
+      }
+
+      throw new Error('Unexpected payment response format');
+
     } catch (error: any) {
-      console.error("Payment error:", error);
+      console.error('Payment error:', error);
       alert(`Payment failed: ${error.message}`);
     }
   };
@@ -172,110 +231,112 @@ export default function CardSelectionPage() {
         tableNumber={state.tableNumber}
       />
 
-      <div className="px-4 py-6">
-        {/* Customer Information */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Información del cliente
-          </h3>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nombre completo
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={handleNameChange}
-                placeholder="Tu nombre completo"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email (opcional)
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@email.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              />
+      <div className="px-4 w-full fixed bottom-0 left-0 right-0">
+        <div className="flex-1 flex flex-col relative">
+          <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
+            <div className="py-6 px-8 flex flex-col justify-center">
+              <h1 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
+                Selecciona tu método de pago
+              </h1>
             </div>
           </div>
-        </div>
 
-        {/* Payment Method Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h3 className="text-sm font-medium text-gray-800 mb-4">
-            Selecciona tu método de pago
-          </h3>
-
-          <button
-            onClick={handleAddCard}
-            className="w-full bg-gray-800 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
-          >
-            Add card
-          </button>
-        </div>
-
-        {/* Payment Summary */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Total de la mesa:</span>
-              <span className="text-sm text-gray-600">
-                ${tableTotalPrice.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Tu parte:</span>
-              <span className="text-sm text-gray-600">
-                ${baseAmount.toFixed(2)}
-              </span>
-            </div>
-            {tipAmount > 0 && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Propina:</span>
-                <span className="text-sm text-gray-600">
-                  ${tipAmount.toFixed(2)}
+          <div className="bg-white rounded-t-4xl relative z-10 flex flex-col px-6 flex-1 py-8">
+            {/* Payment Summary */}
+            <div className="space-y-2 mb-4">
+              <div className="mb-6">
+                <span className="text-black text-xl font-semibold">
+                  Mesa {state.tableNumber}
                 </span>
               </div>
-            )}
-            <div className="flex justify-between items-center border-t pt-2">
-              <span className="text-lg font-bold text-gray-800">
-                Total a pagar:
-              </span>
-              <span className="text-lg font-bold text-gray-800">
-                ${paymentAmount.toFixed(2)}
-              </span>
+              <div className="flex justify-between items-center">
+                <span className="text-black">Subtotal</span>
+                <span className="text-black">
+                  ${tableTotalPrice.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-black">Tu parte</span>
+                <span className="text-black">${baseAmount.toFixed(2)}</span>
+              </div>
+              {tipAmount > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-black">Propina</span>
+                  <span className="text-black">${tipAmount.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center border-t pt-2">
+                <span className="text-lg font-bold text-black">Total</span>
+                <span className="text-lg font-bold text-black">
+                  ${paymentAmount.toFixed(2)}
+                </span>
+              </div>
             </div>
+            {/* Customer Information */}
+            <div className="mb-6 text-center">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-black mb-2">
+                    Nombre completo
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={handleNameChange}
+                    placeholder="Tu nombre completo"
+                    className="w-full text-center text-black border-b border-black focus:outline-none focus:ring-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-black mb-2">
+                    Email (opcional)
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu@email.com"
+                    className="w-full text-center text-black border-b border-black focus:outline-none focus:ring-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Method Section */}
+            <div className="mb-4">
+              <button
+                onClick={handleAddCard}
+                className="w-full text-white py-3 rounded-full cursor-pointer transition-colors bg-black hover:bg-stone-950"
+              >
+                + Agregar método de pago
+              </button>
+            </div>
+
+            {paymentError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <p className="text-red-800 text-sm text-center">
+                  {paymentError}
+                </p>
+              </div>
+            )}
+
+            {/* Pay Button */}
+            <button
+              onClick={handlePayment}
+              disabled={paymentLoading || !name.trim()}
+              className={`w-full text-white py-3 rounded-full cursor-pointer transition-colors ${
+                paymentLoading
+                  ? "bg-stone-800 cursor-not-allowed"
+                  : "bg-black hover:bg-stone-950"
+              }`}
+            >
+              {paymentLoading || !name.trim()
+                ? "Procesando pago..."
+                : `Pagar: $${paymentAmount.toFixed(2)}`}
+            </button>
           </div>
         </div>
-
-        {paymentError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <p className="text-red-800 text-sm text-center">{paymentError}</p>
-          </div>
-        )}
-
-        {/* Pay Button */}
-        <button
-          onClick={handlePayment}
-          disabled={paymentLoading || !name.trim()}
-          className={`w-full py-4 rounded-lg font-semibold text-lg transition-colors ${
-            paymentLoading
-              ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-              : "bg-teal-700 text-white hover:bg-teal-800"
-          }`}
-        >
-          {paymentLoading || !name.trim()
-            ? "Procesando pago..."
-            : `Pagar: $${paymentAmount.toFixed(2)}`}
-        </button>
       </div>
     </div>
   );

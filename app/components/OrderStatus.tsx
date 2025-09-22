@@ -62,6 +62,11 @@ export default function OrderStatus() {
     navigateWithTable("/sign-up");
   };
 
+  const handleSignIn = () => {
+    setShowAuthModal(false);
+    navigateWithTable("/sign-in");
+  };
+
   // Calcular totales de toda la mesa
   const tableTotalItems = state.orders.reduce(
     (sum, order) => sum + order.total_items,
@@ -242,49 +247,58 @@ export default function OrderStatus() {
       {/* Authentication Modal */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
-          <div className="bg-white rounded-4xl shadow-lg p-6 w-full max-w-md relative">
+          <div className="bg-white rounded-2xl shadow-lg p-5 w-full max-w-md relative">
             {/* Close button */}
             <button
               onClick={() => setShowAuthModal(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors p-0.5 hover:bg-gray-100 rounded-md cursor-pointer"
             >
               <X className="size-6" />
             </button>
 
             {/* Content */}
-            <div className="mt-4">
-              <h1 className="text-2xl font-medium text-gray-800 text-center mb-6">
+            <div className="mt-8">
+              {/*<h1 className="text-xl font-medium text-black text-center mb-6">
                 ¡Bienvenido!
-              </h1>
+              </h1>*/}
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {/* Sign In Button */}
-                <SignInButton
-                  mode="modal"
-                  fallbackRedirectUrl={`/payment-options${state.tableNumber ? `?table=${state.tableNumber}` : ""}`}
-                  forceRedirectUrl={`/payment-options${state.tableNumber ? `?table=${state.tableNumber}` : ""}`}
+                <button
+                  onClick={handleSignIn}
+                  className="flex items-center justify-between bg-white border border-gray-700 hover:bg-gray-100 w-full text-gray-700 py-3 px-4 rounded-lg font-medium cursor-pointer transition-colors"
                 >
-                  <button className="flex items-center justify-between bg-black hover:bg-stone-950 w-full text-white py-3 px-4 rounded-full font-medium cursor-pointer transition-colors">
-                    <span>Sign In</span>
-                    <ChevronRight className="size-4 text-white" />
-                  </button>
-                </SignInButton>
-
+                  <span>Iniciar sesión</span>
+                  <ChevronRight className="size-4 text-white" />
+                </button>
+                {/*
+                  <SignInButton
+                    mode="modal"
+                    fallbackRedirectUrl={`/payment-options${state.tableNumber ? `?table=${state.tableNumber}` : ""}`}
+                    forceRedirectUrl={`/payment-options${state.tableNumber ? `?table=${state.tableNumber}` : ""}`}
+                  >
+                    <button className="flex items-center justify-between bg-white border border-gray-700 hover:bg-gray-100 w-full text-gray-700 py-3 px-4 rounded-lg font-medium cursor-pointer transition-colors">
+                      <span>Iniciar sesión</span>
+                      <ChevronRight className="size-4 text-white" />
+                    </button>
+                  </SignInButton>
+                */}
                 {/* Sign Up Button */}
+                {/*
                 <button
                   onClick={handleSignUp}
                   className="flex items-center justify-between bg-black hover:bg-stone-950 w-full text-white py-3 px-4 rounded-full font-medium cursor-pointer transition-colors"
                 >
                   <span>Sign Up</span>
                   <ChevronRight className="size-4 text-white" />
-                </button>
+                </button>*/}
 
                 {/* Continue as Guest */}
                 <button
                   onClick={handleContinueAsGuest}
-                  className="flex items-center justify-between bg-black hover:bg-stone-950 w-full text-white py-3 px-4 rounded-full font-medium cursor-pointer transition-colors"
+                  className="flex items-center justify-between bg-white border border-gray-700 hover:bg-gray-100 w-full text-gray-700 py-3 px-4 rounded-lg font-medium cursor-pointer transition-colors"
                 >
-                  <span>Continue as Guest</span>
+                  <span>Coninuar como invitado</span>
                   <ChevronRight className="size-4 text-white" />
                 </button>
               </div>

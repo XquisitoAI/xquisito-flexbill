@@ -7,8 +7,9 @@ import { SignInButton, useUser } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import MenuHeader from "./MenuHeader";
 import { getRestaurantData } from "../utils/restaurantData";
+import { saveUrlParams } from "../utils/urlParams";
 import MenuHeaderBack from "./MenuHeaderBack";
-import { ChevronRight, X } from "lucide-react";
+import { ChevronRight, X, Loader2 } from "lucide-react";
 
 // Tipos para el estado de los items
 type OrderItemStatus = "En preparación" | "En camino" | "Entregado";
@@ -29,19 +30,26 @@ export default function OrderStatus() {
   const { setAsGuest } = useGuest();
   const { user, isLoaded } = useUser();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const restaurantData = getRestaurantData();
 
   const handleRefresh = () => {
     refreshOrders();
   };
 
-  const handleCheckOut = () => {
-    if (isLoaded && user) {
-      // User is authenticated, redirect directly to payment options
-      navigateWithTable("/payment-options");
-    } else {
-      // User is guest, show authentication modal
-      setShowAuthModal(true);
+  const handleCheckOut = async () => {
+    setIsProcessingPayment(true);
+    try {
+      if (isLoaded && user) {
+        // User is authenticated, redirect directly to payment options
+        navigateWithTable("/payment-options");
+      } else {
+        // User is guest, show authentication modal
+        //setShowAuthModal(true);
+        navigateWithTable("/sign-in");
+      }
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
@@ -58,11 +66,13 @@ export default function OrderStatus() {
   };
 
   const handleSignUp = () => {
+    saveUrlParams();
     setShowAuthModal(false);
     navigateWithTable("/sign-up");
   };
 
   const handleSignIn = () => {
+    saveUrlParams();
     setShowAuthModal(false);
     navigateWithTable("/sign-in");
   };
@@ -105,7 +115,7 @@ export default function OrderStatus() {
                 <div>
                   <button
                     onClick={handleRefresh}
-                    disabled={state.isLoading || state.skipAutoLoad}
+                    disabled={state.isLoading}
                     className="flex items-center gap-2 text-teal-600 hover:text-teal-800 transition-colors disabled:text-gray-400"
                   >
                     <svg
@@ -234,9 +244,20 @@ export default function OrderStatus() {
               <div className="w-full mb-6">
                 <button
                   onClick={handleCheckOut}
-                  className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-medium cursor-pointer transition-colors"
+                  disabled={isProcessingPayment}
+                  className={`w-full py-3 rounded-full font-medium transition-colors text-white ${
+                    !isProcessingPayment
+                      ? "bg-black hover:bg-stone-950 cursor-pointer"
+                      : "bg-stone-800 cursor-not-allowed"
+                  }`}
                 >
-                  Pagar
+                  {isProcessingPayment ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    </div>
+                  ) : (
+                    "Pagar"
+                  )}
                 </button>
               </div>
             )}

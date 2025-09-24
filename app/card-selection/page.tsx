@@ -14,7 +14,7 @@ import MenuHeaderBack from "../components/MenuHeaderBack";
 import { apiService } from "../utils/api";
 
 export default function CardSelectionPage() {
-  const { state, addPayment, markOrdersAsPaid } = useTable();
+  const { state, markOrdersAsPaid } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const searchParams = useSearchParams();
   const restaurantData = getRestaurantData();
@@ -24,6 +24,8 @@ export default function CardSelectionPage() {
   const { user, isLoaded } = useUser();
 
   const paymentType = searchParams.get("type") || "full-bill";
+  const baseAmount = parseFloat(searchParams.get("amount") || "0");
+  const usersParam = searchParams.get("users");
 
   const {
     createCheckout,
@@ -38,9 +40,9 @@ export default function CardSelectionPage() {
 
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [tipAmount, setTipAmount] = useState(0);
-  const [baseAmount, setBaseAmount] = useState(0);
   const [paymentAttempts, setPaymentAttempts] = useState(0);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -56,21 +58,27 @@ export default function CardSelectionPage() {
 
     if (storedPaymentAmount) setPaymentAmount(parseFloat(storedPaymentAmount));
     if (storedTipAmount) setTipAmount(parseFloat(storedTipAmount));
-    if (storedBaseAmount) setBaseAmount(parseFloat(storedBaseAmount));
-    if (storedSelectedUsers) {
+    //if (storedBaseAmount) setBaseAmount(parseFloat(storedBaseAmount));
+    // Priorizar parámetros de URL sobre sessionStorage
+    if (usersParam) {
+      setSelectedUsers(
+        usersParam.split(",").filter((user) => user.trim() !== "")
+      );
+    } else if (storedSelectedUsers) {
       try {
         setSelectedUsers(JSON.parse(storedSelectedUsers));
       } catch (e) {
-        console.error('Error parsing selectedUsers from sessionStorage:', e);
+        console.error("Error parsing selectedUsers from sessionStorage:", e);
       }
     }
-  }, []);
+  }, [usersParam]);
 
   const tableTotalPrice = state.orders.reduce(
     (sum, order) => sum + parseFloat(order.total_price.toString()),
     0
   );
 
+  /*
   const handlePaymentSuccess = async (paymentId: string, amount: number, type: string) => {
     try {
       // Marcar órdenes como pagadas
@@ -209,15 +217,203 @@ export default function CardSelectionPage() {
       console.error('Payment error:', error);
       alert(`Payment failed: ${error.message}`);
     }
+  };*/
+
+  const handlePaymentSuccess = async (
+    paymentId: string,
+    amount: number,
+    type: string
+  ) => {
+    try {
+      // Marcar órdenes como pagadas
+      if (selectedUsers.length > 0) {
+        // Si hay usuarios específicos seleccionados, marcar solo sus órdenes
+        console.log(
+          "🎯 Payment successful, marking orders as paid for SPECIFIC users:",
+          selectedUsers
+        );
+        console.log(
+          "🔍 About to call markOrdersAsPaid with userNames:",
+          selectedUsers
+        );
+        await markOrdersAsPaid(undefined, selectedUsers);
+        console.log("✅ Specific user orders marked as paid successfully");
+      } else {
+        // Si no hay usuarios específicos, marcar todas las órdenes de la mesa
+        console.log(
+          "🎉 Payment successful, marking ALL orders as paid for table:",
+          state.tableNumber
+        );
+        console.log("🔍 About to call markOrdersAsPaid without parameters");
+        await markOrdersAsPaid();
+        console.log("✅ All orders marked as paid successfully");
+      }
+
+      // Store payment success data for payment-success page (prevent double execution)
+      if (typeof window !== "undefined") {
+        const successData = {
+          paymentId,
+          amount,
+          users: selectedUsers.length > 0 ? selectedUsers : null,
+          tableNumber: state.tableNumber,
+          type,
+          alreadyProcessed: true, // Flag to prevent double processing
+        };
+        console.log(
+          "💾 Storing payment success data for payment-success page:",
+          successData
+        );
+        localStorage.setItem(
+          "xquisito-completed-payment",
+          JSON.stringify(successData)
+        );
+      }
+    } catch (error) {
+      console.error("❌ Error marking orders as paid:", error);
+      // No bloquear la navegación si hay error marcando las órdenes
+    } finally {
+      // Navegar a la página de éxito
+      navigateWithTable(
+        `/payment-success?paymentId=${paymentId}&amount=${amount}&type=${type}&processed=true`
+      );
+    }
+  };
+
+  const handlePay = async () => {
+    const totalAmount = baseAmount;
+
+    setIsProcessing(true);
+
+    try {
+      // Set guest and table info for API service
+      if (isGuest && guestId) {
+        apiService.setGuestInfo(
+          guestId,
+          state.tableNumber || tableNumber || undefined
+        );
+      }
+
+      // Check if user has payment methods
+      const paymentMethodsResult = await apiService.getPaymentMethods();
+
+      if (!paymentMethodsResult.success) {
+        throw new Error(
+          paymentMethodsResult.error?.message ||
+            "Failed to fetch payment methods"
+        );
+      }
+
+      if (
+        !paymentMethodsResult.data?.paymentMethods ||
+        paymentMethodsResult.data.paymentMethods.length === 0
+      ) {
+        // No payment methods, redirect to add card page
+        setIsProcessing(false);
+        navigateWithTable(
+          `/add-card?amount=${totalAmount}&users=${selectedUsers.join(",")}&tip=${tipAmount}`
+        );
+        return;
+      }
+
+      // Use the first/default payment method
+      const paymentMethods = paymentMethodsResult.data.paymentMethods;
+      const defaultPaymentMethod =
+        paymentMethods.find((pm) => pm.isDefault) || paymentMethods[0];
+
+      // Process payment directly with saved payment method
+      const paymentResult = await apiService.processPayment({
+        paymentMethodId: defaultPaymentMethod.id,
+        amount: totalAmount,
+        currency: "USD",
+        description: `Xquisito Restaurant Payment - Table ${state.tableNumber || "N/A"} - Users: ${selectedUsers.join(", ")} - Tip: $${tipAmount.toFixed(2)}`,
+        orderId: `order-${Date.now()}-attempt-${paymentAttempts + 1}`,
+        tableNumber: state.tableNumber,
+        restaurantId: "xquisito-main",
+      });
+
+      if (!paymentResult.success) {
+        throw new Error(
+          paymentResult.error?.message || "Payment processing failed"
+        );
+      }
+
+      const payment = paymentResult.data?.payment;
+      const order = paymentResult.data?.order;
+
+      if (
+        payment?.type === "direct_charge" ||
+        (payment && !payment.payLink && !order?.payLink)
+      ) {
+        console.log(
+          "💳 Direct payment successful, proceeding to handlePaymentSuccess with userNames:",
+          selectedUsers
+        );
+        await handlePaymentSuccess(payment.id, totalAmount, "direct");
+        return;
+      }
+
+      // Check if we have a payLink (fallback to EcartPay verification)
+      const payLink = order?.payLink || payment?.payLink;
+      if (payLink) {
+        // Store order details for later reference
+        if (typeof window !== "undefined") {
+          const paymentData = {
+            orderId: order?.id || payment?.id,
+            amount: totalAmount,
+            users: selectedUsers.length > 0 ? selectedUsers : null, // Solo almacenar si hay usuarios específicos
+            tableNumber: state.tableNumber,
+            tip: tipAmount,
+          };
+
+          console.log("💾 Storing payment data in localStorage:", paymentData);
+          localStorage.setItem(
+            "xquisito-pending-payment",
+            JSON.stringify(paymentData)
+          );
+        }
+
+        setPaymentAttempts((prev) => prev + 1);
+
+        // Show user-friendly message before redirect
+        const shouldRedirect = confirm(
+          `Your saved payment method requires verification through EcartPay.\n\n` +
+            `This is normal in testing/sandbox mode. In production, this step is usually skipped.\n\n` +
+            `Click OK to complete verification, or Cancel to try again.`
+        );
+
+        if (shouldRedirect) {
+          window.location.href = payLink;
+        } else {
+          setIsProcessing(false);
+        }
+        return;
+      }
+
+      if (payment || order) {
+        const paymentId = payment?.id || order?.id || "completed";
+        console.log(
+          "✅ Payment completed successfully (no verification needed):",
+          paymentId
+        );
+        await handlePaymentSuccess(paymentId, totalAmount, "saved-card");
+        return;
+      }
+
+      throw new Error("Unexpected payment response format");
+    } catch (error: any) {
+      console.error("Payment error:", error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleAddCard = () => {
     navigateWithTable("/add-card");
   };
 
-   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;    
-    const textOnlyRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]*$/;    
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const textOnlyRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]*$/;
 
     if (textOnlyRegex.test(value)) {
       setName(value);
@@ -323,7 +519,7 @@ export default function CardSelectionPage() {
 
             {/* Pay Button */}
             <button
-              onClick={handlePayment}
+              onClick={handlePay}
               disabled={paymentLoading || !name.trim()}
               className={`w-full text-white py-3 rounded-full cursor-pointer transition-colors ${
                 paymentLoading

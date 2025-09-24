@@ -17,15 +17,6 @@ export interface CartItem extends MenuItemData {
 
 // Usar la interfaz UserOrder de la API
 
-// Interfaz para trackear pagos realizados
-export interface TablePayment {
-  id: string;
-  userName: string;
-  amount: number;
-  timestamp: string;
-  paymentType: string;
-}
-
 // Estado de la mesa
 interface TableState {
   tableNumber: string;
@@ -36,8 +27,6 @@ interface TableState {
   currentUserTotalPrice: number;
   isLoading: boolean;
   error: string | null;
-  skipAutoLoad: boolean; // Flag para saltar carga automática de órdenes
-  tablePayments: TablePayment[]; // Pagos realizados en la mesa
 }
 
 // Acciones del contexto de mesa
@@ -55,10 +44,7 @@ type TableAction =
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "SET_ORDERS"; payload: UserOrder[] }
-  | { type: "CLEAR_ORDERS" }
-  | { type: "SET_SKIP_AUTO_LOAD"; payload: boolean }
-  | { type: "ADD_TABLE_PAYMENT"; payload: TablePayment }
-  | { type: "SET_TABLE_PAYMENTS"; payload: TablePayment[] };
+  | { type: "CLEAR_ORDERS" };
 
 // Estado inicial
 const initialState: TableState = {
@@ -70,8 +56,6 @@ const initialState: TableState = {
   currentUserTotalPrice: 0,
   isLoading: false,
   error: null,
-  skipAutoLoad: false,
-  tablePayments: [],
 };
 
 // Función para calcular totales
@@ -196,11 +180,6 @@ function tableReducer(state: TableState, action: TableAction): TableState {
       };
 
     case "SET_ORDERS":
-      console.log(
-        "📋 SET_ORDERS action dispatched with",
-        action.payload.length,
-        "orders"
-      );
       return {
         ...state,
         orders: action.payload,
@@ -209,41 +188,11 @@ function tableReducer(state: TableState, action: TableAction): TableState {
       };
 
     case "CLEAR_ORDERS":
-      console.log(
-        "🧹 CLEAR_ORDERS action dispatched - clearing",
-        state.orders.length,
-        "orders"
-      );
       return {
         ...state,
         orders: [],
         isLoading: false,
         error: null,
-      };
-
-    case "SET_SKIP_AUTO_LOAD":
-      console.log("🔧 SET_SKIP_AUTO_LOAD action dispatched:", action.payload);
-      return {
-        ...state,
-        skipAutoLoad: action.payload,
-      };
-
-    case "ADD_TABLE_PAYMENT":
-      console.log("💰 ADD_TABLE_PAYMENT action dispatched:", action.payload);
-      return {
-        ...state,
-        tablePayments: [...state.tablePayments, action.payload],
-      };
-
-    case "SET_TABLE_PAYMENTS":
-      console.log(
-        "💰 SET_TABLE_PAYMENTS action dispatched with",
-        action.payload.length,
-        "payments"
-      );
-      return {
-        ...state,
-        tablePayments: action.payload,
       };
 
     default:
@@ -258,34 +207,25 @@ const TableContext = createContext<{
   submitOrder: (userName?: string) => Promise<void>;
   refreshOrders: () => Promise<void>;
   loadTableOrders: () => Promise<void>;
-  markOrdersAsPaid: (orderIds?: string[], userNames?: string[]) => Promise<void>;
-  addPayment: (payment: Omit<TablePayment, "id" | "timestamp">) => void;
-  loadTablePayments: () => void;
-  getTotalPaidAmount: () => number;
-  getRemainingAmount: () => number;
+  markOrdersAsPaid: (
+    orderIds?: string[],
+    userNames?: string[]
+  ) => Promise<void>;
 } | null>(null);
 
 // Provider del contexto de mesa
 export function TableProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(tableReducer, initialState);
 
-  // Cargar órdenes y pagos cuando se establece el número de mesa (si no se está saltando la carga automática)
+  // Cargar órdenes cuando se establece el número de mesa
   useEffect(() => {
     if (state.tableNumber) {
       loadTableOrders();
-      loadTablePayments();
     }
   }, [state.tableNumber]);
 
   const loadTableOrders = async () => {
     if (!state.tableNumber) return;
-
-    console.log(
-      "🔄 loadTableOrders called for table:",
-      state.tableNumber,
-      "skipAutoLoad:",
-      state.skipAutoLoad
-    );
 
     dispatch({ type: "SET_LOADING", payload: true });
 
@@ -295,7 +235,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
       );
 
       if (response.success && response.data) {
-        console.log("📋 Orders loaded from API:", response.data.length);
         dispatch({ type: "SET_ORDERS", payload: response.data });
       } else {
         dispatch({
@@ -365,12 +304,15 @@ export function TableProvider({ children }: { children: ReactNode }) {
     await loadTableOrders();
   };
 
-  const markOrdersAsPaid = async (orderIds?: string[], userNames?: string[]) => {
+  const markOrdersAsPaid = async (
+    orderIds?: string[],
+    userNames?: string[]
+  ) => {
     if (!state.tableNumber) {
       return;
     }
 
-    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: "SET_LOADING", payload: true });
 
     try {
       let specificOrderIds = orderIds;
@@ -378,79 +320,44 @@ export function TableProvider({ children }: { children: ReactNode }) {
       // Si se proporcionan nombres de usuario pero no IDs específicos,
       // obtener los IDs de las órdenes de esos usuarios
       if (!specificOrderIds && userNames && userNames.length > 0) {
-        console.log('🎯 markOrdersAsPaid: Filtering orders for specific users:', userNames);
+        console.log(
+          "🎯 markOrdersAsPaid: Filtering orders for specific users:",
+          userNames
+        );
 
         specificOrderIds = state.orders
-          .filter(order => userNames.includes(order.user_name))
-          .map(order => order.id);
+          .filter((order) => userNames.includes(order.user_name))
+          .map((order) => order.id);
 
-        console.log(`📋 Found ${specificOrderIds.length} orders to mark as paid for users: ${userNames.join(', ')}`);
+        console.log(
+          `📋 Found ${specificOrderIds.length} orders to mark as paid for users: ${userNames.join(", ")}`
+        );
       } else if (!specificOrderIds) {
-        console.log('🌍 markOrdersAsPaid: Marking ALL orders as paid for table');
+        console.log(
+          "🌍 markOrdersAsPaid: Marking ALL orders as paid for table"
+        );
       }
 
-      const response = await tableApi.markOrdersAsPaid(parseInt(state.tableNumber), specificOrderIds);
+      const response = await tableApi.markOrdersAsPaid(
+        parseInt(state.tableNumber),
+        specificOrderIds
+      );
 
       if (response.success) {
-        console.log(`✅ ${response.data?.count || 0} orders marked as paid successfully`);
+        console.log(
+          `✅ ${response.data?.count || 0} orders marked as paid successfully`
+        );
         // Recargar órdenes para actualizar la vista (solo mostrará las no pagadas)
         await loadTableOrders();
       } else {
-        dispatch({ type: 'SET_ERROR', payload: response.error || 'Failed to mark orders as paid' });
+        dispatch({
+          type: "SET_ERROR",
+          payload: response.error || "Failed to mark orders as paid",
+        });
       }
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Network error occurred' });
+      dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
     }
-  };
-
-  // Funciones para manejo de pagos
-  const loadTablePayments = () => {
-    if (!state.tableNumber) return;
-
-    const storageKey = `table_payments_${state.tableNumber}`;
-    const storedPayments = sessionStorage.getItem(storageKey);
-
-    if (storedPayments) {
-      try {
-        const payments: TablePayment[] = JSON.parse(storedPayments);
-        dispatch({ type: "SET_TABLE_PAYMENTS", payload: payments });
-      } catch (error) {
-        console.error("Error loading table payments:", error);
-      }
-    }
-  };
-
-  const addPayment = (payment: Omit<TablePayment, "id" | "timestamp">) => {
-    if (!state.tableNumber) return;
-
-    const newPayment: TablePayment = {
-      ...payment,
-      id: `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: new Date().toISOString(),
-    };
-
-    dispatch({ type: "ADD_TABLE_PAYMENT", payload: newPayment });
-
-    // Guardar en sessionStorage
-    const storageKey = `table_payments_${state.tableNumber}`;
-    const updatedPayments = [...state.tablePayments, newPayment];
-    sessionStorage.setItem(storageKey, JSON.stringify(updatedPayments));
-  };
-
-  const getTotalPaidAmount = (): number => {
-    return state.tablePayments.reduce(
-      (sum, payment) => sum + payment.amount,
-      0
-    );
-  };
-
-  const getRemainingAmount = (): number => {
-    const tableTotalPrice = state.orders.reduce(
-      (sum, order) => sum + parseFloat(order.total_price.toString()),
-      0
-    );
-    const totalPaid = getTotalPaidAmount();
-    return Math.max(0, tableTotalPrice - totalPaid);
   };
 
   return (
@@ -460,11 +367,8 @@ export function TableProvider({ children }: { children: ReactNode }) {
         dispatch,
         submitOrder,
         refreshOrders,
-        loadTableOrders, markOrdersAsPaid,
-        addPayment,
-        loadTablePayments,
-        getTotalPaidAmount,
-        getRemainingAmount,
+        loadTableOrders,
+        markOrdersAsPaid,
       }}
     >
       {children}

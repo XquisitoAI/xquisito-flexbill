@@ -6,9 +6,11 @@ import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { getRestaurantData } from "../utils/restaurantData";
 import MenuHeaderBack from "../components/MenuHeaderBack";
+import { Loader2 } from "lucide-react";
 
 export default function UserPage() {
   const [userName, setUserName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { state, dispatch, submitOrder } = useTable();
   const { tableNumber, navigateWithTable } = useTableNavigation();
   const router = useRouter();
@@ -37,8 +39,8 @@ export default function UserPage() {
 
   // Función para validar que solo se ingresen caracteres de texto válidos para nombres
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;    
-    const textOnlyRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]*$/;    
+    const value = e.target.value;
+    const textOnlyRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]*$/;
 
     if (textOnlyRegex.test(value)) {
       setUserName(value);
@@ -47,13 +49,16 @@ export default function UserPage() {
 
   const handleProceedToOrder = async () => {
     if (userName.trim()) {
+      setIsSubmitting(true);
       try {
         // Enviar la orden a la API con el nombre del usuario directamente
         await submitOrder(userName.trim());
         // Navegar a la página de órdenes
         navigateWithTable("/order");
       } catch (error) {
-        console.error('Error submitting order:', error);
+        console.error("Error submitting order:", error);
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
@@ -88,7 +93,7 @@ export default function UserPage() {
         </div>
 
         <div className="flex-1 h-full flex flex-col ">
-          <div className="bg-white rounded-t-4xl flex-1 z-10 flex flex-col px-6">
+          <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col px-6">
             <div className="flex-1 flex flex-col items-center w-full h-full">
               <div className="pt-48 mb-6">
                 <h2 className="text-lg font-semibold text-black">Tu nombre</h2>
@@ -111,14 +116,20 @@ export default function UserPage() {
               <div className="mb-4 w-full">
                 <button
                   onClick={handleProceedToOrder}
-                  disabled={!userName.trim() || state.isLoading}
+                  disabled={!userName.trim() || isSubmitting}
                   className={`w-full py-3 rounded-full transition-colors text-white cursor-pointer ${
-                    userName.trim() && !state.isLoading
+                    userName.trim() && !isSubmitting
                       ? "bg-black hover:bg-stone-950"
                       : "bg-stone-800 cursor-not-allowed"
                   }`}
                 >
-                  Continuar
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    </div>
+                  ) : (
+                    "Continuar"
+                  )}
                 </button>
               </div>
             </div>

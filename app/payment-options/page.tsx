@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { getRestaurantData } from "../utils/restaurantData";
+import { getSavedUrlParams, clearSavedUrlParams } from "../utils/urlParams";
 import MenuHeaderBack from "../components/MenuHeaderBack";
 import {
   ChevronRight,
@@ -15,7 +18,17 @@ import {
 export default function PaymentOptionsPage() {
   const { state } = useTable();
   const { navigateWithTable } = useTableNavigation();
+  const router = useRouter();
   const restaurantData = getRestaurantData();
+
+  useEffect(() => {
+    const savedParams = getSavedUrlParams();
+    if (savedParams) {
+      // Redirigir con los parámetros guardados
+      router.replace(`/payment-options${savedParams}`);
+      clearSavedUrlParams();
+    }
+  }, [router]);
 
   // Total de la mesa
   const tableTotalPrice = state.orders.reduce(
@@ -24,19 +37,50 @@ export default function PaymentOptionsPage() {
   );
 
   const handlePayFullBill = () => {
-    navigateWithTable("/tip-selection?type=full-bill");
+    // Para pagar la cuenta completa, pasamos el total de la mesa y todos los usuarios
+    const allUsers = state.orders.map((order) => order.user_name);
+    const uniqueUsers = [...new Set(allUsers)];
+
+    const queryParams = new URLSearchParams({
+      amount: tableTotalPrice.toString(),
+      users: uniqueUsers.join(","),
+      type: "full-bill",
+    });
+
+    navigateWithTable(`/tip-selection?${queryParams.toString()}`);
   };
 
   const handleSelectItems = () => {
-    navigateWithTable("/tip-selection?type=select-items");
+    // Para seleccionar items, el usuario elegirá qué pagar en la siguiente pantalla
+    const queryParams = new URLSearchParams({
+      type: "select-items",
+      users: state.currentUserName || "",
+    });
+    navigateWithTable(`/tip-selection?${queryParams.toString()}`);
   };
 
   const handleEqualShares = () => {
-    navigateWithTable("/tip-selection?type=equal-shares");
+    // Para división equitativa, calculamos el monto por persona
+    const allUsers = state.orders.map((order) => order.user_name);
+    const uniqueUsers = [...new Set(allUsers)];
+    const splitAmount =
+      uniqueUsers.length > 0 ? tableTotalPrice / uniqueUsers.length : 0;
+
+    const queryParams = new URLSearchParams({
+      amount: splitAmount.toString(),
+      users: state.currentUserName || "",
+      type: "equal-shares",
+    });
+    navigateWithTable(`/tip-selection?${queryParams.toString()}`);
   };
 
   const handleChooseAmount = () => {
-    navigateWithTable("/tip-selection?type=choose-amount");
+    // Para elegir monto, el usuario especificará la cantidad en la siguiente pantalla
+    const queryParams = new URLSearchParams({
+      type: "choose-amount",
+      users: state.currentUserName || "",
+    });
+    navigateWithTable(`/tip-selection?${queryParams.toString()}`);
   };
 
   return (

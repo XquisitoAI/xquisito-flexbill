@@ -8,12 +8,14 @@ import { useState, useEffect } from "react";
 import MenuHeaderBack from "../components/MenuHeaderBack";
 
 export default function TipSelectionPage() {
-  const { state, getTotalPaidAmount, getRemainingAmount } = useTable();
+  const { state } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const searchParams = useSearchParams();
   const restaurantData = getRestaurantData();
 
   const paymentType = searchParams.get("type") || "full-bill";
+  const amount = searchParams.get("amount");
+  const users = searchParams.get("users");
 
   const [tipPercentage, setTipPercentage] = useState(0);
   const [customTip, setCustomTip] = useState("");
@@ -34,9 +36,6 @@ export default function TipSelectionPage() {
     (sum, order) => sum + parseFloat(order.total_price.toString()),
     0
   );
-
-  const totalPaidAmount = getTotalPaidAmount();
-  const remainingTableAmount = getRemainingAmount();
 
   const selectedItemsTotal = Object.values(selectedItems).reduce(
     (sum, item) => sum + item.quantity * item.price,
@@ -141,7 +140,13 @@ export default function TipSelectionPage() {
       sessionStorage.setItem("customPaymentAmount", customPaymentAmount);
     }
 
-    navigateWithTable(`/card-selection?type=${paymentType}`);
+    const queryParams = new URLSearchParams({
+      type: paymentType,
+      ...(amount && { amount }),
+      ...(users && { users }),
+    });
+
+    navigateWithTable(`/card-selection?${queryParams.toString()}`);
   };
 
   return (
@@ -286,17 +291,17 @@ export default function TipSelectionPage() {
                       min="0"
                       className={`w-full text-center text-black border-b border-black focus:outline-none focus:ring-none text-3xl ${
                         customPaymentAmount &&
-                        parseFloat(customPaymentAmount) > remainingTableAmount
+                        parseFloat(customPaymentAmount) > baseAmount
                           ? "border-red-500"
                           : "border-gray-300"
                       }`}
                     />
                   </div>
                   <p className="text-sm text-gray-500 mt-3">
-                    Máximo: ${remainingTableAmount.toFixed(2)} (monto restante)
+                    Máximo: ${baseAmount.toFixed(2)} (monto restante)
                   </p>
                   {customPaymentAmount &&
-                    parseFloat(customPaymentAmount) > remainingTableAmount && (
+                    parseFloat(customPaymentAmount) > baseAmount && (
                       <p className="text-sm text-red-600 mt-1">
                         No puedes ingresar una cantidad mayor al monto restante
                       </p>
@@ -390,7 +395,7 @@ export default function TipSelectionPage() {
               paymentType === "choose-amount" &&
               (!customPaymentAmount ||
                 parseFloat(customPaymentAmount) <= 0 ||
-                parseFloat(customPaymentAmount) > remainingTableAmount);
+                parseFloat(customPaymentAmount) > baseAmount);
 
             const isDisabled =
               isSelectItemsEmpty || isSelectItemsZero || isChooseAmountInvalid;
@@ -412,7 +417,7 @@ export default function TipSelectionPage() {
                         parseFloat(customPaymentAmount) <= 0)
                     ? "Introduce un monto"
                     : paymentType === "choose-amount" &&
-                        parseFloat(customPaymentAmount) > remainingTableAmount
+                        parseFloat(customPaymentAmount) > baseAmount
                       ? "Monto excede lo que resta por pagar"
                       : "Pagar"}
               </button>

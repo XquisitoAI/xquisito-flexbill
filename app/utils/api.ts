@@ -35,14 +35,26 @@ export interface AddPaymentMethodRequest {
 
 class ApiService {
   private baseURL: string;
+  private authToken?: string;
 
   constructor() {
     this.baseURL = API_BASE_URL;
   }
 
+  // Set authentication token for Clerk users
+  setAuthToken(token: string) {
+    this.authToken = token;
+  }
+
+  // Clear authentication token
+  clearAuthToken() {
+    this.authToken = undefined;
+  }
+
   private async makeRequest<T = any>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    authToken?: string
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseURL}${endpoint}`;
@@ -54,23 +66,24 @@ class ApiService {
         },
       };
 
-      // Add guest identification headers
-      // In a real app, you might get these from context or localStorage
-      const guestId = this.getGuestId();
-      if (guestId) {
-        defaultOptions.headers['x-guest-id'] = guestId;
-      }
+      // Add authentication token for Clerk users
+      const tokenToUse = authToken || this.authToken;
+      if (tokenToUse) {
+        // For registered users, use auth token and skip guest headers
+        defaultOptions.headers['Authorization'] = `Bearer ${tokenToUse}`;
+      } else {
+        // For guests only, add guest identification headers
+        const guestId = this.getGuestId();
+        if (guestId) {
+          defaultOptions.headers['x-guest-id'] = guestId;
+        }
 
-      // Add table number if available
-      const tableNumber = this.getTableNumber();
-      if (tableNumber) {
-        defaultOptions.headers['x-table-number'] = tableNumber;
+        // Add table number if available
+        const tableNumber = this.getTableNumber();
+        if (tableNumber) {
+          defaultOptions.headers['x-table-number'] = tableNumber;
+        }
       }
-
-      // TODO: Add authentication token when auth is implemented
-      // if (authToken) {
-      //   defaultOptions.headers['Authorization'] = `Bearer ${authToken}`;
-      // }
 
       const response = await fetch(url, {
         ...defaultOptions,

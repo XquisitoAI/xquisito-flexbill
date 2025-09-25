@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiService } from '../utils/api';
+import { useSearchParams } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 
 interface GuestContextType {
   isGuest: boolean;
@@ -22,37 +24,83 @@ export function GuestProvider({ children }: GuestProviderProps) {
   const [isGuest, setIsGuest] = useState<boolean>(false);
   const [guestId, setGuestId] = useState<string | null>(null);
   const [tableNumber, setTableNumber] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const { user, isLoaded } = useUser();
 
-  // Initialize guest state on component mount
+  // Smart initialization: Auto-detect guest vs registered user context
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (!isLoaded) return; // Wait for Clerk to load
+
+    const tableParam = searchParams?.get('table');
+
+    if (user) {
+      // User is registered - clear any guest session
+      if (isGuest) {
+        console.log('🔐 Registered user detected - clearing guest session');
+        clearGuestSession();
+      }
+    } else {
+      // No registered user - check if we should be guest
+
       const storedGuestId = localStorage.getItem('xquisito-guest-id');
       const storedTableNumber = localStorage.getItem('xquisito-table-number');
-      
-      if (storedGuestId) {
+
+      // Priority 1: If URL has table parameter, use it (even if restoring session)
+      if (tableParam) {
+        console.log('👤 Table parameter detected:', tableParam, '- Setting up guest session');
+
+        // Use existing guest ID if available, or create new one
+        const guestIdToUse = storedGuestId || generateGuestId();
+
+        // Store to localStorage FIRST to ensure persistence
+        localStorage.setItem('xquisito-table-number', tableParam);
+        localStorage.setItem('xquisito-guest-id', guestIdToUse);
+
+        setIsGuest(true);
+        setGuestId(guestIdToUse);
+        setTableNumber(tableParam);
+        apiService.setTableNumber(tableParam);
+        console.log('👤 Guest session configured:', {
+          guestId: guestIdToUse,
+          tableNumber: tableParam,
+          wasRestored: !!storedGuestId
+        });
+        return;
+      }
+
+      // Priority 2: Restore existing guest session (only if no table param)
+      if (storedGuestId && storedTableNumber) {
         setIsGuest(true);
         setGuestId(storedGuestId);
         setTableNumber(storedTableNumber);
         console.log('🔄 Restored guest session:', { guestId: storedGuestId, tableNumber: storedTableNumber });
+        return;
       }
+
+      // Priority 3: No table param and no valid stored session - stay as non-guest
+      console.log('ℹ️ No table parameter and no valid guest session - staying as non-guest');
     }
-  }, []);
+  }, [isLoaded, user, searchParams]);
 
   const setAsGuest = (newTableNumber?: string) => {
     // Generate guest ID through apiService (which handles localStorage)
     const generatedGuestId = generateGuestId();
-    
+
+    // Ensure localStorage is updated immediately
+    localStorage.setItem('xquisito-guest-id', generatedGuestId);
+
     setIsGuest(true);
     setGuestId(generatedGuestId);
-    
+
     if (newTableNumber) {
+      localStorage.setItem('xquisito-table-number', newTableNumber);
       apiService.setTableNumber(newTableNumber);
       setTableNumber(newTableNumber);
     }
 
-    console.log('👤 Set as guest user:', { 
-      guestId: generatedGuestId, 
-      tableNumber: newTableNumber 
+    console.log('👤 Set as guest user:', {
+      guestId: generatedGuestId,
+      tableNumber: newTableNumber
     });
   };
 

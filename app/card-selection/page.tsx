@@ -20,7 +20,7 @@ export default function CardSelectionPage() {
   const restaurantData = getRestaurantData();
   const isGuest = useIsGuest();
   const { guestId, tableNumber, setAsAuthenticated } = useGuest();
-  const { hasPaymentMethods } = usePayment();
+  const { hasPaymentMethods, paymentMethods } = usePayment();
   const { user, isLoaded } = useUser();
 
   const paymentType = searchParams.get("type") || "full-bill";
@@ -35,6 +35,8 @@ export default function CardSelectionPage() {
   const [name, setName] = useState(state.currentUserName);
   const [email, setEmail] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("mastercard");
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string | null>(null);
+  const [paymentMethodType, setPaymentMethodType] = useState<"saved" | "new">("new");
 
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [tipAmount, setTipAmount] = useState(0);
@@ -65,6 +67,18 @@ export default function CardSelectionPage() {
       }
     }
   }, []);
+
+  // Set default payment method when payment methods are loaded
+  useEffect(() => {
+    if (hasPaymentMethods && paymentMethods.length > 0) {
+      const defaultMethod = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
+      setSelectedPaymentMethodId(defaultMethod.id);
+      setPaymentMethodType("saved");
+    } else {
+      setPaymentMethodType("new");
+      setSelectedPaymentMethodId(null);
+    }
+  }, [hasPaymentMethods, paymentMethods]);
 
   const tableTotalPrice = state.orders.reduce(
     (sum, order) => sum + parseFloat(order.total_price.toString()),
@@ -272,36 +286,120 @@ export default function CardSelectionPage() {
                 </span>
               </div>
             </div>
-            {/* Customer Information */}
-            <div className="mb-6 text-center">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-black mb-2">
-                    Nombre completo
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={handleNameChange}
-                    placeholder="Tu nombre completo"
-                    className="w-full text-center text-black border-b border-black focus:outline-none focus:ring-none"
-                  />
-                </div>
+            {/* Customer Information - Only show for guest users */}
+            {isGuest && (
+              <div className="mb-6 text-center">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-2">
+                      Nombre completo
+                    </label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={handleNameChange}
+                      placeholder="Tu nombre completo"
+                      className="w-full text-center text-black border-b border-black focus:outline-none focus:ring-none"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-black mb-2">
-                    Email (opcional)
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu@email.com"
-                    className="w-full text-center text-black border-b border-black focus:outline-none focus:ring-none"
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-2">
+                      Email (opcional)
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="tu@email.com"
+                      className="w-full text-center text-black border-b border-black focus:outline-none focus:ring-none"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Payment Method Selection */}
+            {user && hasPaymentMethods && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-black mb-4">
+                  Selecciona tu método de pago
+                </h3>
+
+                {/* Payment Method Type Toggle */}
+                <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
+                  <button
+                    onClick={() => setPaymentMethodType("saved")}
+                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                      paymentMethodType === "saved"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    Tarjetas guardadas
+                  </button>
+                  {/* <button
+                    onClick={() => setPaymentMethodType("new")}
+                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                      paymentMethodType === "new"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    Nueva tarjeta
+                  </button> */}
+                </div>
+
+                {/* Saved Cards List */}
+                {paymentMethodType === "saved" && (
+                  <div className="space-y-2 mb-4">
+                    {paymentMethods.map((method) => (
+                      <div
+                        key={method.id}
+                        onClick={() => setSelectedPaymentMethodId(method.id)}
+                        className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                          selectedPaymentMethodId === method.id
+                            ? "border-teal-500 bg-teal-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-5 bg-gradient-to-r from-blue-500 to-purple-500 rounded flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">
+                              {method.cardType === "credit" ? "C" :
+                               method.cardType === "mastercard" ? "MC" :
+                               method.cardType === "amex" ? "AX" : "•"}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800 capitalize">
+                              {method.cardType}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              •••• {method.lastFourDigits}
+                            </p>
+                          </div>
+                          {method.isDefault && (
+                            <span className="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded-full">
+                              Predeterminada
+                            </span>
+                          )}
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          selectedPaymentMethodId === method.id
+                            ? "border-teal-500 bg-teal-500"
+                            : "border-gray-300"
+                        }`}>
+                          {selectedPaymentMethodId === method.id && (
+                            <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Payment Method Section */}
             <div className="mb-4">

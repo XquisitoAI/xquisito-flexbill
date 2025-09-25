@@ -306,6 +306,8 @@ export function TableProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
     }
+
+    debugger
   };
 
   const submitOrder = async (userName?: string) => {

@@ -16,6 +16,7 @@ import {
   SquareMenu,
   TriangleAlert,
   X,
+  Wallet,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -354,6 +355,19 @@ export default function DashboardPage() {
               <div className="text-left">
                 <p className="font-medium text-black">Ver carrito</p>
                 <p className="text-sm text-gray-600">Revisa tu pedido</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => navigateWithTable("/saved-cards")}
+              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors group cursor-pointer"
+            >
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200">
+                <Wallet className="size-5 text-purple-700" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium text-black">Mis tarjetas</p>
+                <p className="text-sm text-gray-600">Gestionar métodos de pago</p>
               </div>
             </button>
           </div>

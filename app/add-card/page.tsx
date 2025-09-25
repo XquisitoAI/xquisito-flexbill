@@ -13,6 +13,7 @@ import { getRestaurantData } from "../utils/restaurantData";
 import { useState } from "react";
 import { apiService } from "../utils/api";
 import MenuHeaderBack from "../components/MenuHeaderBack";
+import { useUser, useAuth } from "@clerk/nextjs";
 
 export default function AddCardPage() {
   const { state } = useTable();
@@ -22,6 +23,8 @@ export default function AddCardPage() {
   const isGuest = useIsGuest();
   const { guestId, tableNumber } = useGuest();
   const { addPaymentMethod, refreshPaymentMethods } = usePayment();
+  const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -116,8 +119,17 @@ export default function AddCardPage() {
     setIsLoading(true);
 
     try {
-      // Ensure the API service has the correct guest context
-      if (isGuest && guestId && tableNumber) {
+      // Configure API service based on user type
+      if (user) {
+        // For registered users, set auth token
+        console.log('💳 Adding card for registered user:', user.id);
+        const token = await getToken();
+        if (token) {
+          apiService.setAuthToken(token);
+        }
+      } else if (isGuest && guestId && tableNumber) {
+        // For guests only (when no registered user)
+        console.log('💳 Adding card for guest:', guestId);
         apiService.setGuestInfo(guestId, tableNumber.toString());
       }
 
@@ -140,7 +152,15 @@ export default function AddCardPage() {
           await refreshPaymentMethods();
         }
         alert("Card added successfully!");
-        router.back();
+
+        // Check if we came from saved-cards page
+        const fromSavedCards = document.referrer.includes('/saved-cards');
+
+        if (fromSavedCards) {
+          navigateWithTable("/saved-cards");
+        } else {
+          router.back();
+        }
       } else {
         alert(result.error?.message || "Failed to add card. Please try again.");
       }
@@ -257,9 +277,12 @@ export default function AddCardPage() {
       <div className="px-4 w-full flex-1 flex flex-col">
         <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
           <div className="py-6 px-8 flex flex-col justify-center">
-            <h2 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
+            <h2 className="font-bold text-white text-3xl leading-7 mt-2 mb-2">
               Agrega tu tarjeta para continuar
             </h2>
+            <p className="text-white/80 text-sm">
+              Tu tarjeta se guardará de forma segura para pagos futuros
+            </p>
           </div>
         </div>
         {/* Guest User Indicator */}

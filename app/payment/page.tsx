@@ -11,6 +11,7 @@ import { useUser } from "@clerk/nextjs";
 import { useEcartPay } from "../hooks/useEcartPay";
 import { EcartPayCheckoutOptions } from "../types/ecartpay";
 import MenuHeaderBack from "../components/MenuHeaderBack";
+import { apiService } from "../utils/api";
 
 export default function PaymentPage() {
   const { state } = useTable();
@@ -20,7 +21,7 @@ export default function PaymentPage() {
   const restaurantData = getRestaurantData();
   const isGuest = useIsGuest();
   const { guestId, tableNumber, setAsAuthenticated } = useGuest();
-  const { hasPaymentMethods } = usePayment();
+  const { hasPaymentMethods, paymentMethods } = usePayment();
   const { user, isLoaded } = useUser();
   // Tipo de pago de URL params
   const paymentType = searchParams.get("type") || "full-bill";
@@ -33,6 +34,8 @@ export default function PaymentPage() {
   const [name, setName] = useState(state.currentUserName);
   const [email, setEmail] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("mastercard");
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string | null>(null);
+  const [paymentMethodType, setPaymentMethodType] = useState<"saved" | "new">("new");
 
   const [selectedItems, setSelectedItems] = useState<{
     [key: string]: { quantity: number; price: number };
@@ -47,6 +50,18 @@ export default function PaymentPage() {
       setAsAuthenticated(user.id);
     }
   }, [isLoaded, user, setAsAuthenticated]);
+
+  // Set default payment method when payment methods are loaded
+  useEffect(() => {
+    if (hasPaymentMethods && paymentMethods.length > 0) {
+      const defaultMethod = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
+      setSelectedPaymentMethodId(defaultMethod.id);
+      setPaymentMethodType("saved");
+    } else {
+      setPaymentMethodType("new");
+      setSelectedPaymentMethodId(null);
+    }
+  }, [hasPaymentMethods, paymentMethods]);
 
   // Calcular total de la mesa
   const tableTotalPrice = state.orders.reduce(
@@ -166,7 +181,69 @@ export default function PaymentPage() {
     setTipPercentage(0); // Limpiar porcentaje
   };
 
-  const handlePayment = async () => {
+  const handlePaymentWithSavedCard = async () => {
+    if (!selectedPaymentMethodId) {
+      alert("Please select a payment method");
+      return;
+    }
+
+    if (!name.trim()) {
+      alert("Please enter your name");
+      return;
+    }
+
+    try {
+      // Ensure the API service has the correct context
+      if (isGuest && guestId && tableNumber) {
+        apiService.setGuestInfo(guestId, tableNumber.toString());
+      }
+
+      const userEmail = email.trim() || user?.emailAddresses[0]?.emailAddress || "guest@xquisito.com";
+
+      const result = await apiService.processPayment({
+        paymentMethodId: selectedPaymentMethodId,
+        amount: paymentAmount,
+        currency: "USD",
+        description: getPaymentDescription(),
+        orderId: `order_${Date.now()}`,
+        tableNumber: state.tableNumber,
+        restaurantId: "xquisito_main",
+        selectedUsers: name,
+      });
+
+      if (result.success && result.data?.payment) {
+        console.log("✅ Payment with saved card successful:", result.data.payment.id);
+
+        // Store payment details
+        if (typeof window !== "undefined") {
+          localStorage.setItem(
+            "xquisito-completed-payment",
+            JSON.stringify({
+              paymentId: result.data.payment.id,
+              amount: paymentAmount,
+              paymentType: paymentType,
+              tableNumber: state.tableNumber,
+              orders: state.orders,
+              payerName: name,
+              payerEmail: userEmail,
+            })
+          );
+        }
+
+        // Navigate to success page
+        navigateWithTable(
+          `/payment-success?paymentId=${result.data.payment.id}&amount=${paymentAmount}&type=${paymentType}`
+        );
+      } else {
+        throw new Error(result.error?.message || "Payment failed");
+      }
+    } catch (error: any) {
+      console.error("❌ Payment with saved card failed:", error);
+      alert(`Payment failed: ${error.message}`);
+    }
+  };
+
+  const handlePaymentWithNewCard = async () => {
     if (!name.trim()) {
       alert("Please enter your name");
       return;
@@ -187,7 +264,7 @@ export default function PaymentPage() {
       }
 
       // Use provided user data or fallback to defaults
-      const userEmail = email.trim() || "guest@xquisito.com";
+      const userEmail = email.trim() || user?.emailAddresses[0]?.emailAddress || "guest@xquisito.com";
       const [firstName, ...lastNameParts] = name.trim().split(" ");
       const lastName = lastNameParts.join(" ") || "User";
 
@@ -211,7 +288,7 @@ export default function PaymentPage() {
       };
 
       console.log(
-        "🚀 Initiating EcartPay checkout for full bill with options:",
+        "🚀 Initiating EcartPay checkout for new card with options:",
         checkoutOptions
       );
 
@@ -222,7 +299,7 @@ export default function PaymentPage() {
 
       if (result.success && result.payment) {
         // Payment successful
-        console.log("✅ Full bill payment successful:", result.payment.id);
+        console.log("✅ Payment with new card successful:", result.payment.id);
 
         // Store payment details
         if (typeof window !== "undefined") {
@@ -235,7 +312,7 @@ export default function PaymentPage() {
               tableNumber: state.tableNumber,
               orders: state.orders,
               payerName: name,
-              payerEmail: email,
+              payerEmail: userEmail,
             })
           );
         }
@@ -246,8 +323,16 @@ export default function PaymentPage() {
         );
       }
     } catch (error: any) {
-      console.error("Payment error:", error);
+      console.error("❌ Payment with new card failed:", error);
       alert(`Payment failed: ${error.message}`);
+    }
+  };
+
+  const handlePayment = () => {
+    if (paymentMethodType === "saved" && selectedPaymentMethodId) {
+      return handlePaymentWithSavedCard();
+    } else {
+      return handlePaymentWithNewCard();
     }
   };
 
@@ -468,45 +553,121 @@ export default function PaymentPage() {
             Selecciona tu método de pago
           </h3>
 
-          {/* Selected Payment Method */}
-          {/* <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-5 bg-gradient-to-r from-red-500 to-yellow-500 rounded flex items-center justify-center">
-                <span className="text-white text-xs font-bold">MC</span>
+          {/* Payment Method Selection */}
+          {user && hasPaymentMethods ? (
+            <div className="space-y-4">
+              {/* Payment Method Type Toggle */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setPaymentMethodType("saved")}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                    paymentMethodType === "saved"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Tarjetas guardadas
+                </button>
+                <button
+                  onClick={() => setPaymentMethodType("new")}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                    paymentMethodType === "new"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Nueva tarjeta
+                </button>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-800">
-                  {selectedPayment === 'mastercard' ? 'Mastercard' : 'Visa'}
-                </p>
-                <p className="text-xs text-gray-500">
-                  ****{selectedPayment === 'mastercard' ? '3484' : '1234'}
-                </p>
-              </div>
+
+              {/* Saved Cards List */}
+              {paymentMethodType === "saved" && (
+                <div className="space-y-2">
+                  {paymentMethods.map((method) => (
+                    <div
+                      key={method.id}
+                      onClick={() => setSelectedPaymentMethodId(method.id)}
+                      className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedPaymentMethodId === method.id
+                          ? "border-teal-500 bg-teal-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-5 bg-gradient-to-r from-blue-500 to-purple-500 rounded flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">
+                            {method.cardType === "credit" ? "C" :
+                             method.cardType === "mastercard" ? "MC" :
+                             method.cardType === "amex" ? "AX" : "•"}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800 capitalize">
+                            {method.cardType}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            •••• {method.lastFourDigits}
+                          </p>
+                        </div>
+                        {method.isDefault && (
+                          <span className="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded-full">
+                            Predeterminada
+                          </span>
+                        )}
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border-2 ${
+                        selectedPaymentMethodId === method.id
+                          ? "border-teal-500 bg-teal-500"
+                          : "border-gray-300"
+                      }`}>
+                        {selectedPaymentMethodId === method.id && (
+                          <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* New Card Option */}
+              {paymentMethodType === "new" && (
+                <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
+                  <p className="text-gray-600 mb-3">
+                    Se abrirá EcartPay para procesar tu pago con una nueva tarjeta
+                  </p>
+                  <button
+                    onClick={handleAddCard}
+                    className="text-teal-600 hover:text-teal-700 text-sm font-medium"
+                  >
+                    ¿Quieres guardar una tarjeta primero?
+                  </button>
+                </div>
+              )}
             </div>
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div> */}
+          ) : (
+            /* No saved cards - show default options */
+            <div className="space-y-3">
+              <button
+                onClick={handleAddCard}
+                className="w-full bg-gray-800 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+              >
+                Add card
+              </button>
+            </div>
+          )}
 
-          {/* Change Method Button */}
-          <button
-            onClick={handleAddCard}
-            className="w-full bg-gray-800 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors mb-3"
-          >
-            Add card
-          </button>
-
+          {/* Split Bill Button */}
           <button
             onClick={handleSplitBill}
-            disabled={isGuest && !hasPaymentMethods}
-            className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors mb-3 ${
-              isGuest && !hasPaymentMethods
+            disabled={(isGuest && !hasPaymentMethods) || (!user && !isGuest)}
+            className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors mt-3 ${
+              (isGuest && !hasPaymentMethods) || (!user && !isGuest)
                 ? "bg-gray-400 text-gray-600 cursor-not-allowed"
                 : "bg-gray-800 text-white hover:bg-gray-700"
             }`}
           >
             Split Bill
-            {isGuest && !hasPaymentMethods && (
+            {(isGuest && !hasPaymentMethods) && (
               <span className="block text-xs mt-1 text-gray-500">
                 Add a card first
               </span>

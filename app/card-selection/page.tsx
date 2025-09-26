@@ -618,13 +618,12 @@ export default function CardSelectionPage() {
               }`}
             >
               {paymentLoading
-              {paymentLoading
                 ? "Procesando pago..."
                 : (isGuest && !name.trim())
                   ? "Ingresa tu nombre"
                   : (!isGuest && !selectedPaymentMethodId)
                     ? "Selecciona una tarjeta"
-                    : `Pagar: $${paymentAmount.toFixed(2)}`}
+                    : `Pagar: $${totalAmountWithTip.toFixed(2)}`}
             </button>
           </div>
         </div>

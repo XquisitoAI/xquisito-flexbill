@@ -32,9 +32,14 @@ export default function MenuHeaderBack({
     navigateWithTable("/cart");
   };
 
-  // Extraer participantes únicos de los pedidos
+  // Extraer participantes únicos de usuarios activos y órdenes de platillos
   const participants = Array.from(
-    new Set(state.orders.map((order) => order.user_name))
+    new Set([
+      // Obtener usuarios activos (verificar que sea array)
+      ...(Array.isArray(state.activeUsers) ? state.activeUsers.map((user) => user.guest_name) : []),
+      // También obtener de platillos por si hay algún usuario no registrado en activeUsers
+      ...(Array.isArray(state.dishOrders) ? state.dishOrders.map((order) => order.guest_name) : [])
+    ])
   ).filter(Boolean);
 
   const visibleParticipants = participants.slice(0, 2);
@@ -127,47 +132,7 @@ export default function MenuHeaderBack({
           </div>
         ) : null}
 
-        {/* Cart and order buttons */}
-        {/*<div className="flex items-center space-x-2 z-10">
-          {pathname === "/order" ? (
-            <div className="relative">
-              <div className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-                <Receipt className="text-primary" />
-              </div>
-              {state.orders &&
-                state.orders.length > 0 &&
-                state.orders.reduce(
-                  (sum, order) => sum + order.total_items,
-                  0
-                ) > 0 && (
-                  <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                    {state.orders.reduce(
-                      (sum, order) => sum + order.total_items,
-                      0
-                    )}
-                  </div>
-                )}
-            </div>
-          ) : (
-            <div className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-              <Receipt className="text-primary size-5" />
-            </div>
-          )}
-
-          <div className="relative">
-            <div
-              onClick={handleCartClick}
-              className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
-            >
-              <ShoppingCart className="text-primary size-5" />
-            </div>
-            {state.currentUserTotalItems > 0 && (
-              <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full size-5 flex items-center justify-center text-xs font-bold">
-                {state.currentUserTotalItems}
-              </div>
-            )}
-          </div>
-        </div>*/}
+        {/* Cart and order buttons - Available if needed */}
       </div>
 
       {/* Modal participantes */}
@@ -213,14 +178,23 @@ export default function MenuHeaderBack({
                       <p className="font-medium text-black">{participant}</p>
                       <p className="text-sm text-[#8e8e8e]">
                         {(() => {
-                          const orderCount = state.orders.filter(
-                            (order) => order.user_name === participant
-                          ).length;
-                          const itemCount = state.orders
-                            .filter((order) => order.user_name === participant)
-                            .reduce((sum, order) => sum + order.total_items, 0);
+                          const userOrders = Array.isArray(state.dishOrders)
+                            ? state.dishOrders.filter((order) => order.guest_name === participant)
+                            : [];
 
-                          return `${orderCount} ${orderCount === 1 ? "orden" : "ordenes"} • ${itemCount} ${itemCount === 1 ? "artículo" : "artículos"}`;
+                          const dishCount = userOrders.length;
+                          const totalValue = userOrders.reduce((sum, order) => sum + order.total_price, 0);
+
+                          // También mostrar información de activeUsers si está disponible
+                          const activeUser = Array.isArray(state.activeUsers)
+                            ? state.activeUsers.find((user) => user.guest_name === participant)
+                            : null;
+
+                          if (dishCount === 0 && activeUser) {
+                            return "Usuario activo en mesa";
+                          }
+
+                          return `${dishCount} ${dishCount === 1 ? "platillo" : "platillos"} • $${totalValue.toFixed(2)}`;
                         })()}
                       </p>
                     </div>

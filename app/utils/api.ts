@@ -1,6 +1,7 @@
 // API configuration and helper functions for Xquisito frontend
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export interface PaymentMethod {
   id: string;
@@ -58,10 +59,10 @@ class ApiService {
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseURL}${endpoint}`;
-      
+
       const defaultOptions: RequestInit = {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...options.headers,
         },
       };
@@ -96,53 +97,61 @@ class ApiService {
         return {
           success: false,
           error: {
-            type: 'http_error',
+            type: "http_error",
             message: data.error?.message || `HTTP Error: ${response.status}`,
-            details: data
-          }
+            details: data,
+          },
         };
       }
 
       return {
         success: true,
-        data: data
+        data: data,
       };
-
     } catch (error) {
-      console.error('API Request failed:', error);
-      
+      console.error("API Request failed:", error);
+
       return {
         success: false,
         error: {
-          type: 'network_error',
-          message: error instanceof Error ? error.message : 'Network error occurred',
-          details: error
-        }
+          type: "network_error",
+          message:
+            error instanceof Error ? error.message : "Network error occurred",
+          details: error,
+        },
       };
     }
   }
 
   // Payment Methods API
-  async addPaymentMethod(paymentData: AddPaymentMethodRequest): Promise<ApiResponse<{paymentMethod: PaymentMethod}>> {
-    return this.makeRequest('/payment-methods', {
-      method: 'POST',
-      body: JSON.stringify(paymentData)
+  async addPaymentMethod(
+    paymentData: AddPaymentMethodRequest
+  ): Promise<ApiResponse<{ paymentMethod: PaymentMethod }>> {
+    return this.makeRequest("/payment-methods", {
+      method: "POST",
+      body: JSON.stringify(paymentData),
     });
   }
 
-  async getPaymentMethods(): Promise<ApiResponse<{paymentMethods: PaymentMethod[]}>> {
-    return this.makeRequest('/payment-methods');
+  async getPaymentMethods(): Promise<
+    ApiResponse<{ paymentMethods: PaymentMethod[] }>
+  > {
+    return this.makeRequest("/payment-methods");
   }
 
-  async deletePaymentMethod(paymentMethodId: string): Promise<ApiResponse<{message: string}>> {
+  async deletePaymentMethod(
+    paymentMethodId: string
+  ): Promise<ApiResponse<{ message: string }>> {
     return this.makeRequest(`/payment-methods/${paymentMethodId}`, {
-      method: 'DELETE'
+      method: "DELETE",
     });
   }
 
-  async setDefaultPaymentMethod(paymentMethodId: string): Promise<ApiResponse<{message: string}>> {
+  async setDefaultPaymentMethod(
+    paymentMethodId: string
+  ): Promise<ApiResponse<{ message: string }>> {
     return this.makeRequest(`/payment-methods/${paymentMethodId}/default`, {
-      method: 'PUT'
+      method: "PUT",
     });
   }
 
@@ -156,29 +165,28 @@ class ApiService {
     tableNumber?: string;
     restaurantId?: string;
   }): Promise<ApiResponse<any>> {
-    
-    return this.makeRequest('/payments', {
-      method: 'POST',
-      body: JSON.stringify(paymentData)
+    return this.makeRequest("/payments", {
+      method: "POST",
+      body: JSON.stringify(paymentData),
     });
   }
 
   async getPaymentHistory(): Promise<ApiResponse<any>> {
-    return this.makeRequest('/payments/history');
+    return this.makeRequest("/payments/history");
   }
 
   // Helper methods for guest identification
   private getGuestId(): string | null {
     // Try to get existing guest ID from localStorage first
-    if (typeof window !== 'undefined') {
-      let guestId = localStorage.getItem('xquisito-guest-id');
-      
+    if (typeof window !== "undefined") {
+      let guestId = localStorage.getItem("xquisito-guest-id");
+
       if (!guestId) {
         // Generate new guest ID
         guestId = `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        localStorage.setItem('xquisito-guest-id', guestId);
+        localStorage.setItem("xquisito-guest-id", guestId);
       }
-      
+
       return guestId;
     }
     return null;
@@ -186,37 +194,175 @@ class ApiService {
 
   private getTableNumber(): string | null {
     // Get table number from localStorage or context
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('xquisito-table-number');
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("xquisito-table-number");
     }
     return null;
   }
 
   // Method to explicitly set guest and table info (for better context integration)
   setGuestInfo(guestId?: string, tableNumber?: string): void {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       if (guestId) {
-        localStorage.setItem('xquisito-guest-id', guestId);
+        localStorage.setItem("xquisito-guest-id", guestId);
       }
       if (tableNumber) {
-        localStorage.setItem('xquisito-table-number', tableNumber);
+        localStorage.setItem("xquisito-table-number", tableNumber);
       }
     }
   }
 
   // Method to set table number (call this when user scans QR or selects table)
   setTableNumber(tableNumber: string): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('xquisito-table-number', tableNumber);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("xquisito-table-number", tableNumber);
     }
   }
 
   // Method to clear guest session
   clearGuestSession(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('xquisito-guest-id');
-      localStorage.removeItem('xquisito-table-number');
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("xquisito-guest-id");
+      localStorage.removeItem("xquisito-table-number");
     }
+  }
+
+  // ===============================================
+  // TABLE API CALLS
+  // ===============================================
+
+  /**
+   * Get table summary information
+   */
+  async getTableSummary(tableNumber: string): Promise<ApiResponse<any>> {
+    return this.makeRequest(`/tables/${tableNumber}/summary`);
+  }
+
+  /**
+   * Get table orders
+   */
+  async getTableOrders(tableNumber: string): Promise<ApiResponse<any>> {
+    return this.makeRequest(`/tables/${tableNumber}/orders`);
+  }
+
+  /**
+   * Get active users for a table
+   */
+  async getActiveUsers(tableNumber: string): Promise<ApiResponse<any>> {
+    return this.makeRequest(`/tables/${tableNumber}/active-users`);
+  }
+
+  // ===============================================
+  // ORDER API CALLS
+  // ===============================================
+
+  /**
+   * Create a new dish order for a table
+   */
+  async createDishOrder(
+    tableNumber: string,
+    userId: string | null,
+    guestName: string,
+    item: string,
+    quantity: number,
+    price: number
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(`/tables/${tableNumber}/dishes`, {
+      method: "POST",
+      body: JSON.stringify({
+        userId,
+        guestName,
+        item,
+        quantity,
+        price,
+      }),
+    });
+  }
+
+  /**
+   * Update dish status (for kitchen)
+   */
+  async updateDishStatus(
+    dishId: string,
+    status: string
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(`/dishes/${dishId}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  // ===============================================
+  // PAYMENT API CALLS FOR TABLES
+  // ===============================================
+
+  /**
+   * Pay for a specific dish order
+   */
+  async payDishOrder(dishId: string): Promise<ApiResponse<any>> {
+    return this.makeRequest(`/dishes/${dishId}/pay`, {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Pay a specific amount for a table
+   */
+  async payTableAmount(
+    tableNumber: string,
+    amount: number
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(`/tables/${tableNumber}/pay`, {
+      method: "POST",
+      body: JSON.stringify({ amount }),
+    });
+  }
+
+  // ===============================================
+  // SPLIT BILL API CALLS
+  // ===============================================
+
+  /**
+   * Initialize split bill for a table
+   */
+  async initializeSplitBill(
+    tableNumber: string,
+    numberOfPeople: number,
+    userIds?: string[] | null,
+    guestNames?: string[] | null
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(`/tables/${tableNumber}/split-bill`, {
+      method: "POST",
+      body: JSON.stringify({
+        numberOfPeople,
+        userIds,
+        guestNames,
+      }),
+    });
+  }
+
+  /**
+   * Pay split amount for a table
+   */
+  async paySplitAmount(
+    tableNumber: string,
+    userId?: string | null,
+    guestName?: string | null
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(`/tables/${tableNumber}/pay-split`, {
+      method: "POST",
+      body: JSON.stringify({
+        userId,
+        guestName,
+      }),
+    });
+  }
+
+  /**
+   * Get split payment status for a table
+   */
+  async getSplitPaymentStatus(tableNumber: string): Promise<ApiResponse<any>> {
+    return this.makeRequest(`/tables/${tableNumber}/split-status`);
   }
 }
 
@@ -224,8 +370,8 @@ export const apiService = new ApiService();
 
 // Utility functions for payment data validation
 export const validateCardNumber = (cardNumber: string): boolean => {
-  const cleaned = cardNumber.replace(/\s/g, '');
-  
+  const cleaned = cardNumber.replace(/\s/g, "");
+
   // Basic Luhn algorithm validation
   let sum = 0;
   let shouldDouble = false;
@@ -246,13 +392,13 @@ export const validateCardNumber = (cardNumber: string): boolean => {
 };
 
 export const getCardType = (cardNumber: string): string => {
-  const cleaned = cardNumber.replace(/\s/g, '');
-  
+  const cleaned = cardNumber.replace(/\s/g, "");
+
   const patterns = {
     visa: /^4[0-9]{12}(?:[0-9]{3})?$/,
     mastercard: /^5[1-5][0-9]{14}$/,
     amex: /^3[47][0-9]{13}$/,
-    discover: /^6(?:011|5[0-9]{2})[0-9]{12}$/
+    discover: /^6(?:011|5[0-9]{2})[0-9]{12}$/,
   };
 
   for (const [type, pattern] of Object.entries(patterns)) {
@@ -261,19 +407,19 @@ export const getCardType = (cardNumber: string): string => {
     }
   }
 
-  return 'unknown';
+  return "unknown";
 };
 
 export const formatCardNumber = (cardNumber: string): string => {
-  const cleaned = cardNumber.replace(/\s/g, '');
+  const cleaned = cardNumber.replace(/\s/g, "");
   const groups = cleaned.match(/.{1,4}/g) || [];
-  return groups.join(' ').substr(0, 19); // Max 16 digits + 3 spaces
+  return groups.join(" ").substr(0, 19); // Max 16 digits + 3 spaces
 };
 
 export const formatExpiryDate = (value: string): string => {
-  const cleaned = value.replace(/\D/g, '');
+  const cleaned = value.replace(/\D/g, "");
   if (cleaned.length >= 2) {
-    return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4);
+    return cleaned.substring(0, 2) + "/" + cleaned.substring(2, 4);
   }
   return cleaned;
 };

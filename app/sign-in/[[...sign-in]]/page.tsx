@@ -5,9 +5,11 @@ import * as Clerk from "@clerk/elements/common";
 import * as SignIn from "@clerk/elements/sign-in";
 import { useRouter } from "next/navigation";
 import { ScanFace, Mail, KeyRound } from "lucide-react";
+import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 
 export default function SignInPage() {
   const router = useRouter();
+  const { navigateWithTable } = useTableNavigation();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col justify-center items-center px-4">
@@ -70,7 +72,9 @@ export default function SignInPage() {
 
               <div
                 className="text-white text-sm my-8 underline cursor-pointer"
-                onClick={() => {}}
+                onClick={() => {
+                  navigateWithTable("/payment-options");
+                }}
               >
                 Continuar como invitado
               </div>

@@ -7,6 +7,7 @@ import { useUser, useSignUp } from "@clerk/nextjs";
 import { useUserData } from "../../context/UserDataContext";
 import { useRouter } from "next/navigation";
 import { ScanFace, Mail, KeyRound, User } from "lucide-react";
+import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function SignUpPage() {
   const { user } = useUser();
   const { signUp, isLoaded } = useSignUp();
   const { updateSignUpData } = useUserData();
+  const { navigateWithTable } = useTableNavigation();
 
   const handleContinueSubmit = async () => {
     // This function is handled by the dashboard sync now
@@ -168,7 +170,9 @@ export default function SignUpPage() {
 
               <div
                 className="text-white text-sm my-8 underline cursor-pointer"
-                onClick={() => {}}
+                onClick={() => {
+                  navigateWithTable("/payment-options");
+                }}
               >
                 Continuar como invitado
               </div>

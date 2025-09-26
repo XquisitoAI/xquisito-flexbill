@@ -192,8 +192,8 @@ export default function PaymentSuccessPage() {
   };
 
   const handleGoHome = () => {
-    // Complete exit - go to home page
-    router.push("/");
+    // Complete exit - go to menu with table parameters
+    navigateWithTable("/menu");
   };
 
   return (

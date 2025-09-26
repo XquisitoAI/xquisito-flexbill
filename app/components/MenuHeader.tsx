@@ -45,44 +45,12 @@ export default function MenuHeader({
             >
               <Receipt className="text-primary size-5" />
             </div>
-            {state.orders &&
-              state.orders.length > 0 &&
-              state.orders.reduce((sum, order) => sum + order.total_items, 0) >
-                0 && (
-                <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                  {state.orders.reduce(
-                    (sum, order) => sum + order.total_items,
-                    0
-                  )}
-                </div>
-              )}
-          </div>
-          {/* 
-          {pathname === "/order" ? (
-            <div className="relative">
-              <div className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-                <Receipt className="text-primary" />
+            {Array.isArray(state.dishOrders) && state.dishOrders.length > 0 && (
+              <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                {state.dishOrders.length}
               </div>
-              {state.orders &&
-                state.orders.length > 0 &&
-                state.orders.reduce(
-                  (sum, order) => sum + order.total_items,
-                  0
-                ) > 0 && (
-                  <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                    {state.orders.reduce(
-                      (sum, order) => sum + order.total_items,
-                      0
-                    )}
-                  </div>
-                )}
-            </div>
-          ) : (
-            <div className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-              <Receipt className="text-primary size-5" />
-            </div>
-          )}
-            */}
+            )}
+          </div>
 
           <div className="relative">
             <div

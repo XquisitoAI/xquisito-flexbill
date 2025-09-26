@@ -1,3 +1,9 @@
+// ===============================================
+// PREVIOUS IMPLEMENTATION (COMMENTED OUT)
+// User-based orders system - replaced with dish-based system
+// ===============================================
+
+/*
 // Configuración de la API
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -32,6 +38,8 @@ export interface UserOrder {
   }>;
   total_items: number;
   total_price: number;
+  paid_amount?: number;
+  remaining_amount?: number;
   status:
     | "pending"
     | "confirmed"
@@ -39,7 +47,7 @@ export interface UserOrder {
     | "ready"
     | "delivered"
     | "cancelled";
-  payment_status: "pending" | "paid" | "refunded" | "cancelled";
+  payment_status: "unpaid" | "partial" | "paid";
   paid_at?: string;
   created_at: string;
   updated_at: string;
@@ -51,7 +59,57 @@ export interface TableStats {
   total_amount: number;
   status_breakdown: Record<string, number>;
 }
+*/
 
+// ===============================================
+// NEW IMPLEMENTATION - DISH-BASED SYSTEM
+// ===============================================
+
+// New types based on the backend service
+export interface DishOrder {
+  dish_order_id: string;
+  item: string;
+  quantity: number;
+  price: number;
+  total_price: number;
+  status: "pending" | "preparing" | "ready" | "delivered";
+  payment_status: "not_paid" | "paid";
+  user_id?: string;
+  guest_name: string;
+  table_order_id: string;
+}
+
+export interface TableSummary {
+  table_number: number;
+  total_amount: number;
+  paid_amount: number;
+  remaining_amount: number;
+  no_items: number;
+  status: "not_paid" | "partial" | "paid";
+}
+
+export interface ActiveUser {
+  table_number: number;
+  user_id?: string;
+  guest_name: string;
+  total_paid_individual: number;
+  total_paid_amount: number;
+  total_paid_split: number;
+  is_in_split: boolean;
+  updated_at: string;
+}
+
+export interface SplitPayment {
+  user_id?: string;
+  guest_name: string;
+  expected_amount: number;
+  amount_paid: number;
+  status: "pending" | "paid";
+  remaining: number;
+  paid_at?: string;
+}
+
+/*
 class TableApiService {
   private async request<T>(
     endpoint: string,
@@ -88,9 +146,31 @@ class TableApiService {
     return this.request<TableInfo>(`/tables/${tableNumber}`);
   }
 
-  // Obtener todas las órdenes de una mesa
+  // Obtener todas las órdenes de una mesa (solo pendientes)
   async getTableOrders(tableNumber: number): Promise<ApiResponse<UserOrder[]>> {
     return this.request<UserOrder[]>(`/tables/${tableNumber}/orders`);
+  }
+
+  // Obtener órdenes pagadas de una mesa
+  async getPaidTableOrders(
+    tableNumber: number
+  ): Promise<ApiResponse<UserOrder[]>> {
+    return this.request<UserOrder[]>(`/tables/${tableNumber}/paid-orders`);
+  }
+
+  // Verificar estado de la mesa
+  async getTableStatus(tableNumber: number): Promise<
+    ApiResponse<{
+      tableClosed: boolean;
+      pendingOrdersCount: number;
+      message?: string;
+    }>
+  > {
+    return this.request<{
+      tableClosed: boolean;
+      pendingOrdersCount: number;
+      message?: string;
+    }>(`/tables/${tableNumber}/status`);
   }
 
   // Crear una nueva orden de usuario
@@ -168,15 +248,101 @@ class TableApiService {
   async markOrdersAsPaid(
     tableNumber: number,
     orderIds?: string[]
-  ): Promise<ApiResponse<{ updatedOrders: UserOrder[]; count: number }>> {
-    return this.request<{ updatedOrders: UserOrder[]; count: number }>(
-      `/tables/${tableNumber}/orders/mark-paid`,
-      {
-        method: "POST",
-        body: JSON.stringify({ orderIds }),
-      }
-    );
+  ): Promise<
+    ApiResponse<{
+      updatedOrders: UserOrder[];
+      count: number;
+      tableClosed?: boolean;
+      closeMessage?: string;
+    }>
+  > {
+    return this.request<{
+      updatedOrders: UserOrder[];
+      count: number;
+      tableClosed?: boolean;
+      closeMessage?: string;
+    }>(`/tables/${tableNumber}/orders/mark-paid`, {
+      method: "POST",
+      body: JSON.stringify({ orderIds }),
+    });
+  }
+
+  // Realizar pago parcial
+  async addPartialPayment(
+    orderId: string,
+    amount: number,
+    paymentMethod?: string
+  ): Promise<
+    ApiResponse<{
+      success: boolean;
+      payment_id?: string;
+      order: UserOrder;
+    }>
+  > {
+    return this.request<{
+      success: boolean;
+      payment_id?: string;
+      order: UserOrder;
+    }>(`/orders/${orderId}/payments`, {
+      method: "POST",
+      body: JSON.stringify({
+        amount,
+        payment_method: paymentMethod,
+      }),
+    });
+  }
+
+  // Obtener historial de pagos de una orden
+  async getPaymentHistory(orderId: string): Promise<
+    ApiResponse<{
+      success: boolean;
+      order: UserOrder;
+      payments: Array<{
+        id: string;
+        payment_amount: number;
+        payment_method?: string;
+        payment_date: string;
+      }>;
+    }>
+  > {
+    return this.request<{
+      success: boolean;
+      order: UserOrder;
+      payments: Array<{
+        id: string;
+        payment_amount: number;
+        payment_method?: string;
+        payment_date: string;
+      }>;
+    }>(`/orders/${orderId}/payment-history`);
   }
 }
 
 export const tableApi = new TableApiService();
+*/
+
+// ===============================================
+// NEW TABLE API SERVICE - DISH-BASED SYSTEM
+// ===============================================
+
+// IMPORTANT: All table API functionality has been moved to utils/api.ts
+// This file now only exports types for backward compatibility
+
+// Re-export apiService as the new table API
+import { apiService } from "../utils/api";
+
+// Export the main API service
+export { apiService as tableApi };
+
+// Legacy compatibility - redirect old tableApi usage to new apiService
+export const legacyTableApi = {
+  // Deprecated: use apiService.getTableSummary() instead
+  getTableOrders: (tableNumber: number) =>
+    apiService.getTableOrders(tableNumber.toString()),
+
+  // Deprecated: use apiService.createDishOrder() instead
+  createUserOrder: (tableNumber: number, orderData: any) =>
+    console.warn("createUserOrder is deprecated. Use submitOrder from TableContext instead."),
+
+  // Add other legacy methods as needed for backward compatibility
+};

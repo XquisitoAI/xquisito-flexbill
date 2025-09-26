@@ -8,8 +8,19 @@ import React, {
   ReactNode,
 } from "react";
 import { MenuItemData } from "../interfaces/menuItemData";
-import { tableApi, UserOrder } from "../services/tableApi";
+import { apiService, ApiResponse } from "../utils/api";
+import {
+  DishOrder,
+  TableSummary,
+  ActiveUser,
+  SplitPayment,
+} from "../services/tableApi";
 
+// ===============================================
+// PREVIOUS IMPLEMENTATION (COMMENTED OUT)
+// ===============================================
+
+/*
 // Interfaz para un item del carrito
 export interface CartItem extends MenuItemData {
   quantity: number;
@@ -21,14 +32,43 @@ export interface CartItem extends MenuItemData {
 interface TableState {
   tableNumber: string;
   orders: UserOrder[];
+  paidOrders: UserOrder[];
   currentUserName: string;
   currentUserItems: CartItem[];
   currentUserTotalItems: number;
   currentUserTotalPrice: number;
   isLoading: boolean;
   error: string | null;
+  tableClosed: boolean;
+}
+*/
+
+// ===============================================
+// NEW IMPLEMENTATION - DISH-BASED SYSTEM
+// ===============================================
+
+// Interfaz para un item del carrito (mantiene la misma funcionalidad)
+export interface CartItem extends MenuItemData {
+  quantity: number;
 }
 
+// Nuevo estado de la mesa basado en platillos
+interface TableState {
+  tableNumber: string;
+  tableSummary: ApiResponse<TableSummary> | null;
+  dishOrders: DishOrder[];
+  activeUsers: ActiveUser[];
+  splitPayments: SplitPayment[];
+  currentUserName: string;
+  currentUserItems: CartItem[];
+  currentUserTotalItems: number;
+  currentUserTotalPrice: number;
+  isLoading: boolean;
+  error: string | null;
+  isSplitBillActive: boolean;
+}
+
+/*
 // Acciones del contexto de mesa
 type TableAction =
   | { type: "SET_TABLE_NUMBER"; payload: string }
@@ -44,20 +84,71 @@ type TableAction =
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "SET_ORDERS"; payload: UserOrder[] }
+  | { type: "SET_PAID_ORDERS"; payload: UserOrder[] }
+  | { type: "SET_TABLE_CLOSED"; payload: boolean }
   | { type: "CLEAR_ORDERS" };
+*/
 
+// Nuevas acciones para el sistema de platillos
+type TableAction =
+  | { type: "SET_TABLE_NUMBER"; payload: string }
+  | { type: "ADD_ITEM_TO_CURRENT_USER"; payload: MenuItemData }
+  | { type: "REMOVE_ITEM_FROM_CURRENT_USER"; payload: number }
+  | {
+      type: "UPDATE_QUANTITY_CURRENT_USER";
+      payload: { id: number; quantity: number };
+    }
+  | { type: "SET_CURRENT_USER_NAME"; payload: string }
+  | { type: "CLEAR_CURRENT_USER_CART" }
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_ERROR"; payload: string | null }
+  | { type: "SET_TABLE_SUMMARY"; payload: ApiResponse<TableSummary> | null }
+  | { type: "SET_DISH_ORDERS"; payload: DishOrder[] }
+  | { type: "SET_ACTIVE_USERS"; payload: ActiveUser[] }
+  | { type: "SET_SPLIT_PAYMENTS"; payload: SplitPayment[] }
+  | { type: "SET_SPLIT_BILL_ACTIVE"; payload: boolean }
+  | {
+      type: "UPDATE_DISH_STATUS";
+      payload: { dishId: string; status: DishOrder["status"] };
+    }
+  | {
+      type: "UPDATE_DISH_PAYMENT_STATUS";
+      payload: { dishId: string; paymentStatus: DishOrder["payment_status"] };
+    };
+
+/*
 // Estado inicial
 const initialState: TableState = {
   tableNumber: "",
   orders: [],
+  paidOrders: [],
   currentUserName: "",
   currentUserItems: [],
   currentUserTotalItems: 0,
   currentUserTotalPrice: 0,
   isLoading: false,
   error: null,
+  tableClosed: false,
+};
+*/
+
+// Nuevo estado inicial
+const initialState: TableState = {
+  tableNumber: "",
+  tableSummary: null,
+  dishOrders: [],
+  activeUsers: [],
+  splitPayments: [],
+  currentUserName: "",
+  currentUserItems: [],
+  currentUserTotalItems: 0,
+  currentUserTotalPrice: 0,
+  isLoading: false,
+  error: null,
+  isSplitBillActive: false,
 };
 
+/*
 // Función para calcular totales
 const calculateTotals = (items: CartItem[]) => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -67,8 +158,19 @@ const calculateTotals = (items: CartItem[]) => {
   );
   return { totalItems, totalPrice };
 };
+*/
 
-// Reducer del contexto de mesa
+// Función para calcular totales (mantiene la misma funcionalidad)
+const calculateTotals = (items: CartItem[]) => {
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  return { totalItems, totalPrice };
+};
+
+// Nuevo reducer para el sistema de platillos
 function tableReducer(state: TableState, action: TableAction): TableState {
   switch (action.type) {
     case "SET_TABLE_NUMBER":
@@ -77,6 +179,7 @@ function tableReducer(state: TableState, action: TableAction): TableState {
         tableNumber: action.payload,
       };
 
+    // Mantener la funcionalidad del carrito (sin cambios)
     case "ADD_ITEM_TO_CURRENT_USER": {
       const existingItem = state.currentUserItems.find(
         (item) => item.id === action.payload.id
@@ -145,19 +248,6 @@ function tableReducer(state: TableState, action: TableAction): TableState {
         currentUserName: action.payload,
       };
 
-    case "SUBMIT_CURRENT_USER_ORDER": {
-      if (state.currentUserItems.length === 0 || !state.currentUserName) {
-        return state;
-      }
-
-      // La creación de la orden se maneja en el provider con la API
-      return {
-        ...state,
-        isLoading: true,
-        error: null,
-      };
-    }
-
     case "CLEAR_CURRENT_USER_CART":
       return {
         ...state,
@@ -166,6 +256,7 @@ function tableReducer(state: TableState, action: TableAction): TableState {
         currentUserTotalPrice: 0,
       };
 
+    // Nuevas acciones para el sistema de platillos
     case "SET_LOADING":
       return {
         ...state,
@@ -179,27 +270,70 @@ function tableReducer(state: TableState, action: TableAction): TableState {
         isLoading: false,
       };
 
-    case "SET_ORDERS":
+    case "SET_TABLE_SUMMARY":
       return {
         ...state,
-        orders: action.payload,
+        tableSummary: action.payload,
         isLoading: false,
         error: null,
       };
 
-    case "CLEAR_ORDERS":
+    case "SET_DISH_ORDERS":
       return {
         ...state,
-        orders: [],
+        dishOrders: Array.isArray(action.payload) ? action.payload : [],
         isLoading: false,
         error: null,
       };
+
+    case "SET_ACTIVE_USERS":
+      return {
+        ...state,
+        activeUsers: Array.isArray(action.payload) ? action.payload : [],
+      };
+
+    case "SET_SPLIT_PAYMENTS":
+      return {
+        ...state,
+        splitPayments: Array.isArray(action.payload) ? action.payload : [],
+      };
+
+    case "SET_SPLIT_BILL_ACTIVE":
+      return {
+        ...state,
+        isSplitBillActive: action.payload,
+      };
+
+    case "UPDATE_DISH_STATUS": {
+      const updatedOrders = state.dishOrders.map((order) =>
+        order.dish_order_id === action.payload.dishId
+          ? { ...order, status: action.payload.status }
+          : order
+      );
+      return {
+        ...state,
+        dishOrders: updatedOrders,
+      };
+    }
+
+    case "UPDATE_DISH_PAYMENT_STATUS": {
+      const updatedOrders = state.dishOrders.map((order) =>
+        order.dish_order_id === action.payload.dishId
+          ? { ...order, payment_status: action.payload.paymentStatus }
+          : order
+      );
+      return {
+        ...state,
+        dishOrders: updatedOrders,
+      };
+    }
 
     default:
       return state;
   }
 }
 
+/*
 // Contexto de la mesa
 const TableContext = createContext<{
   state: TableState;
@@ -207,12 +341,45 @@ const TableContext = createContext<{
   submitOrder: (userName?: string) => Promise<void>;
   refreshOrders: () => Promise<void>;
   loadTableOrders: () => Promise<void>;
+  loadPaidOrders: () => Promise<void>;
   markOrdersAsPaid: (
     orderIds?: string[],
     userNames?: string[]
   ) => Promise<void>;
 } | null>(null);
+*/
 
+// Nuevo contexto de la mesa
+const TableContext = createContext<{
+  state: TableState;
+  dispatch: React.Dispatch<TableAction>;
+  // Funciones del carrito (mantiene funcionalidad existente)
+  submitOrder: (userName?: string) => Promise<void>;
+  // Nuevas funciones para el sistema de platillos
+  loadTableData: () => Promise<void>;
+  loadTableSummary: () => Promise<void>;
+  loadDishOrders: () => Promise<void>;
+  loadActiveUsers: () => Promise<void>;
+  loadSplitPayments: () => Promise<void>;
+  // Funciones de pago
+  payDishOrder: (dishId: string) => Promise<void>;
+  payTableAmount: (amount: number) => Promise<void>;
+  // Funciones de división de cuenta
+  initializeSplitBill: (
+    numberOfPeople: number,
+    userIds?: string[],
+    guestNames?: string[]
+  ) => Promise<void>;
+  paySplitAmount: (userId?: string, guestName?: string) => Promise<void>;
+  recalculateSplitBill: () => Promise<void>;
+  // Función para actualizar estado de platillo (cocina)
+  updateDishStatus: (
+    dishId: string,
+    status: DishOrder["status"]
+  ) => Promise<void>;
+} | null>(null);
+
+/*
 // Provider del contexto de mesa
 export function TableProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(tableReducer, initialState);
@@ -221,29 +388,162 @@ export function TableProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (state.tableNumber) {
       loadTableOrders();
+      loadPaidOrders();
+    }
+  }, [state.tableNumber]);
+*/
+
+// Nuevo Provider del contexto de mesa
+export function TableProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(tableReducer, initialState);
+
+  // Cargar todos los datos cuando se establece el número de mesa
+  useEffect(() => {
+    if (state.tableNumber) {
+      loadTableData();
     }
   }, [state.tableNumber]);
 
-  const loadTableOrders = async () => {
+  // Cargar todos los datos de la mesa
+  const loadTableData = async () => {
     if (!state.tableNumber) return;
 
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
-      const response = await tableApi.getTableOrders(
-        parseInt(state.tableNumber)
-      );
+      await Promise.all([
+        loadTableSummary(),
+        loadDishOrders(),
+        loadActiveUsers(),
+        loadSplitPayments(),
+      ]);
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Error loading table data" });
+    }
+  };
+
+  // Cargar resumen de la mesa
+  const loadTableSummary = async () => {
+    if (!state.tableNumber) return;
+
+    try {
+      const response = await apiService.getTableSummary(state.tableNumber);
 
       if (response.success && response.data) {
-        dispatch({ type: "SET_ORDERS", payload: response.data });
+        dispatch({ type: "SET_TABLE_SUMMARY", payload: response });
       } else {
         dispatch({
           type: "SET_ERROR",
-          payload: response.error || "Failed to load orders",
+          payload: response.error?.message || "Failed to load table summary",
         });
       }
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
+    }
+  };
+
+  // Cargar órdenes de platillos
+  const loadDishOrders = async () => {
+    if (!state.tableNumber) return;
+
+    try {
+      const response = await apiService.getTableOrders(state.tableNumber);
+
+      if (response.success && Array.isArray(response?.data?.data)) {
+        const dishOrders = response.data.data;
+        dispatch({ type: "SET_DISH_ORDERS", payload: dishOrders });
+      } else {
+        dispatch({
+          type: "SET_ERROR",
+          payload: response.error?.message || "Failed to load dish orders",
+        });
+      }
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
+    }
+  };
+
+  // Cargar usuarios activos
+  const loadActiveUsers = async () => {
+    if (!state.tableNumber) return;
+
+    try {
+      const response = await apiService.getActiveUsers(state.tableNumber);
+
+      if (response.success && response.data) {
+        dispatch({ type: "SET_ACTIVE_USERS", payload: response.data });
+      }
+    } catch (error) {
+      console.error("Error loading active users:", error);
+    }
+  };
+
+  // Cargar pagos divididos
+  const loadSplitPayments = async () => {
+    if (!state.tableNumber) return;
+
+    try {
+      const response = await apiService.getSplitPaymentStatus(
+        state.tableNumber
+      );
+
+      if (response.success && response.data) {
+        dispatch({ type: "SET_SPLIT_PAYMENTS", payload: response.data });
+        dispatch({
+          type: "SET_SPLIT_BILL_ACTIVE",
+          payload: response.data.length > 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading split payments:", error);
+    }
+  };
+
+  // Función para enviar orden (adaptada al nuevo sistema)
+  // Función helper para recalcular el split bill automáticamente
+  const recalculateSplitBill = async () => {
+    if (!state.tableNumber) return;
+
+    try {
+      // Verificar si hay un split status activo
+      const splitResponse = await apiService.getSplitPaymentStatus(state.tableNumber);
+
+      if (splitResponse.success && splitResponse.data?.data) {
+        // Hay split activo, obtener active users actualizados
+        const activeUsersResponse = await apiService.getActiveUsers(state.tableNumber);
+
+        if (activeUsersResponse.success && activeUsersResponse.data?.data) {
+          const activeUsers = activeUsersResponse.data.data;
+          const activeUserNames = activeUsers.map((user: any) => user.guest_name).filter(Boolean);
+
+          if (activeUserNames.length > 0) {
+            // Recalcular split bill con los active users
+            await initializeSplitBill(activeUserNames.length, undefined, activeUserNames);
+            console.log(`🔄 Split bill recalculated with ${activeUserNames.length} active users:`, activeUserNames);
+
+            // Recargar tableSummary después del recálculo
+            await loadTableSummary();
+          }
+        }
+      } else {
+        // No hay split activo, intentar inicializar si hay múltiples active users
+        const activeUsersResponse = await apiService.getActiveUsers(state.tableNumber);
+
+        if (activeUsersResponse.success && activeUsersResponse.data?.data) {
+          const activeUsers = activeUsersResponse.data.data;
+          const activeUserNames = activeUsers.map((user: any) => user.guest_name).filter(Boolean);
+
+          if (activeUserNames.length > 1) {
+            await initializeSplitBill(activeUserNames.length, undefined, activeUserNames);
+            console.log(`✅ Split bill auto-initialized with ${activeUserNames.length} active users:`, activeUserNames);
+
+            // Recargar tableSummary después de la inicialización
+            await loadTableSummary();
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error recalculating split bill:", error);
     }
   };
 
@@ -261,38 +561,73 @@ export function TableProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
-      const orderData = {
-        user_name: finalUserName,
-        items: state.currentUserItems.map((item) => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          description: item.description,
-          images: item.images,
-        })),
-        total_items: state.currentUserTotalItems,
-        total_price: state.currentUserTotalPrice,
-      };
+      // En el nuevo sistema, creamos órdenes de platillos individuales
+      for (const item of state.currentUserItems) {
+        for (let i = 0; i < item.quantity; i++) {
+          const response = await apiService.createDishOrder(
+            state.tableNumber,
+            null, // userId para huéspedes
+            finalUserName, // guestName
+            item.name, // item
+            1, // quantity (siempre 1 por platillo individual)
+            item.price // price
+          );
 
-      const response = await tableApi.createUserOrder(
-        parseInt(state.tableNumber),
-        orderData
-      );
+          if (!response.success) {
+            throw new Error(
+              response.error?.message || "Failed to create dish order"
+            );
+          }
+        }
+      }
+
+      // Actualizar el nombre del usuario en el estado si se pasó como parámetro
+      if (userName) {
+        dispatch({ type: "SET_CURRENT_USER_NAME", payload: finalUserName });
+      }
+
+      // Limpiar carrito actual
+      dispatch({ type: "CLEAR_CURRENT_USER_CART" });
+
+      // Recargar datos de la mesa
+      await loadTableData();
+
+      // Recalcular split bill automáticamente
+      await recalculateSplitBill();
+    } catch (error) {
+      dispatch({
+        type: "SET_ERROR",
+        payload:
+          error instanceof Error ? error.message : "Network error occurred",
+      });
+    }
+  };
+
+  // Nuevas funciones de pago
+  const payDishOrder = async (dishId: string) => {
+    if (!state.tableNumber) return;
+
+    dispatch({ type: "SET_LOADING", payload: true });
+
+    try {
+      const response = await apiService.payDishOrder(dishId);
 
       if (response.success) {
-        // Actualizar el nombre del usuario en el estado si se pasó como parámetro
-        if (userName) {
-          dispatch({ type: "SET_CURRENT_USER_NAME", payload: finalUserName });
-        }
-        // Limpiar carrito actual
-        dispatch({ type: "CLEAR_CURRENT_USER_CART" });
-        // Recargar órdenes
-        await loadTableOrders();
+        // Actualizar el estado del platillo localmente
+        dispatch({
+          type: "UPDATE_DISH_PAYMENT_STATUS",
+          payload: { dishId, paymentStatus: "paid" },
+        });
+
+        // Recargar datos de la mesa
+        await loadTableData();
+
+        // Recalcular split bill después del pago
+        await recalculateSplitBill();
       } else {
         dispatch({
           type: "SET_ERROR",
-          payload: response.error || "Failed to create order",
+          payload: response.error?.message || "Failed to pay dish order",
         });
       }
     } catch (error) {
@@ -300,8 +635,168 @@ export function TableProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const payTableAmount = async (amount: number) => {
+    if (!state.tableNumber) return;
+
+    dispatch({ type: "SET_LOADING", payload: true });
+
+    try {
+      const response = await apiService.payTableAmount(
+        state.tableNumber,
+        amount
+      );
+
+      if (response.success) {
+        // Recargar datos de la mesa
+        await loadTableData();
+
+        // Recalcular split bill después del pago
+        await recalculateSplitBill();
+      } else {
+        dispatch({
+          type: "SET_ERROR",
+          payload: response.error?.message || "Failed to pay table amount",
+        });
+      }
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
+    }
+  };
+
+  // Funciones de división de cuenta
+  const initializeSplitBill = async (
+    numberOfPeople: number,
+    userIds?: string[],
+    guestNames?: string[]
+  ) => {
+    if (!state.tableNumber) return;
+
+    dispatch({ type: "SET_LOADING", payload: true });
+
+    try {
+      const response = await apiService.initializeSplitBill(
+        state.tableNumber,
+        numberOfPeople,
+        userIds,
+        guestNames
+      );
+
+      if (response.success) {
+        dispatch({ type: "SET_SPLIT_BILL_ACTIVE", payload: true });
+        // Recargar datos de la mesa
+        await loadTableData();
+      } else {
+        dispatch({
+          type: "SET_ERROR",
+          payload: response.error?.message || "Failed to initialize split bill",
+        });
+      }
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
+    }
+  };
+
+  const paySplitAmount = async (userId?: string, guestName?: string) => {
+    if (!state.tableNumber) return;
+
+    dispatch({ type: "SET_LOADING", payload: true });
+
+    try {
+      const response = await apiService.paySplitAmount(
+        state.tableNumber,
+        userId,
+        guestName
+      );
+
+      if (response.success) {
+        // Recargar datos de la mesa
+        await loadTableData();
+      } else {
+        dispatch({
+          type: "SET_ERROR",
+          payload: response.error?.message || "Failed to pay split amount",
+        });
+      }
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
+    }
+  };
+
+  // Función para actualizar estado de platillo (cocina)
+  const updateDishStatus = async (
+    dishId: string,
+    status: DishOrder["status"]
+  ) => {
+    try {
+      const response = await apiService.updateDishStatus(dishId, status);
+
+      if (response.success) {
+        // Actualizar el estado del platillo localmente
+        dispatch({
+          type: "UPDATE_DISH_STATUS",
+          payload: { dishId, status },
+        });
+      } else {
+        dispatch({
+          type: "SET_ERROR",
+          payload: response.error?.message || "Failed to update dish status",
+        });
+      }
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
+    }
+  };
+
+  return (
+    <TableContext.Provider
+      value={{
+        state,
+        dispatch,
+        // Funciones del carrito (mantiene funcionalidad existente)
+        submitOrder,
+        // Nuevas funciones para el sistema de platillos
+        loadTableData,
+        loadTableSummary,
+        loadDishOrders,
+        loadActiveUsers,
+        loadSplitPayments,
+        // Funciones de pago
+        payDishOrder,
+        payTableAmount,
+        // Funciones de división de cuenta
+        initializeSplitBill,
+        paySplitAmount,
+        recalculateSplitBill,
+        // Función para actualizar estado de platillo (cocina)
+        updateDishStatus,
+      }}
+    >
+      {children}
+    </TableContext.Provider>
+  );
+
+  /*
+  const loadPaidOrders = async () => {
+    if (!state.tableNumber) return;
+
+    try {
+      const response = await tableApi.getPaidTableOrders(
+        parseInt(state.tableNumber)
+      );
+
+      if (response.success && response.data) {
+        dispatch({ type: "SET_PAID_ORDERS", payload: response.data });
+      } else {
+        console.error("Failed to load paid orders:", response.error);
+      }
+    } catch (error) {
+      console.error("Error loading paid orders:", error);
+    }
+  };
+
   const refreshOrders = async () => {
     await loadTableOrders();
+    await loadPaidOrders();
   };
 
   const markOrdersAsPaid = async (
@@ -347,8 +842,19 @@ export function TableProvider({ children }: { children: ReactNode }) {
         console.log(
           `✅ ${response.data?.count || 0} orders marked as paid successfully`
         );
-        // Recargar órdenes para actualizar la vista (solo mostrará las no pagadas)
-        await loadTableOrders();
+
+        // Verificar si la mesa se cerró
+        if (response.data?.tableClosed) {
+          console.log(
+            "🏁 Mesa cerrada completamente:",
+            response.data.closeMessage
+          );
+          dispatch({ type: "SET_TABLE_CLOSED", payload: true });
+        } else {
+          // Recargar órdenes para actualizar la vista
+          await loadTableOrders();
+          await loadPaidOrders();
+        }
       } else {
         dispatch({
           type: "SET_ERROR",
@@ -368,12 +874,14 @@ export function TableProvider({ children }: { children: ReactNode }) {
         submitOrder,
         refreshOrders,
         loadTableOrders,
+        loadPaidOrders,
         markOrdersAsPaid,
       }}
     >
       {children}
     </TableContext.Provider>
   );
+  */
 }
 
 // Hook personalizado para usar el contexto de mesa

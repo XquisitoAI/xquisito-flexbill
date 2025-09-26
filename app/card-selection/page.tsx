@@ -13,6 +13,23 @@ import { EcartPayCheckoutOptions } from "../types/ecartpay";
 import MenuHeaderBack from "../components/MenuHeaderBack";
 import { apiService } from "../utils/api";
 
+// Utility function to get card type abbreviation
+function getCardTypeAbbreviation(cardType: string): string {
+  debugger
+  const abbreviations: { [key: string]: string } = {
+    'visa': 'V',
+    'mastercard': 'MC',
+    'amex': 'AX',
+    'discover': 'D',
+    'credit': '💳', // fallback for generic credit
+    'debit': '💳',  // fallback for generic debit
+    'unknown': '•', // for unknown types
+    'card': '•'     // for generic card types
+  };
+
+  return abbreviations[cardType.toLowerCase()] || '•';
+}
+
 export default function CardSelectionPage() {
   const { state, addPayment, markOrdersAsPaid } = useTable();
   const { navigateWithTable } = useTableNavigation();
@@ -126,8 +143,15 @@ export default function CardSelectionPage() {
   };
 
   const handlePayment = async () => {
-    if (!name.trim()) {
+    // Para usuarios invitados, mantener validación de nombre
+    if (isGuest && !name.trim()) {
       alert("Please enter your name");
+      return;
+    }
+
+    // Para usuarios registrados, validar selección de tarjeta
+    if (!isGuest && !selectedPaymentMethodId) {
+      alert("Por favor selecciona una tarjeta de pago");
       return;
     }
     try {
@@ -150,22 +174,44 @@ export default function CardSelectionPage() {
         return;
       }
 
-      // Use the first/default payment method
+      // Determinar qué método de pago usar
       const paymentMethods = paymentMethodsResult.data.paymentMethods;
-      const defaultPaymentMethod = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
+      let paymentMethodToUse;
 
-      // Process payment directly with saved payment method
-      const paymentResult = await apiService.processPayment({
-        paymentMethodId: defaultPaymentMethod.id,
+      console.log('🔍 Debug payment method selection:');
+      console.log('- isGuest:', isGuest);
+      console.log('- selectedPaymentMethodId:', selectedPaymentMethodId);
+      console.log('- available paymentMethods:', paymentMethods.map(pm => ({id: pm.id, isDefault: pm.isDefault, cardType: pm.cardType})));
+
+      if (!isGuest && selectedPaymentMethodId) {
+        // Usuario registrado: usar tarjeta seleccionada
+        paymentMethodToUse = paymentMethods.find(pm => pm.id === selectedPaymentMethodId);
+        console.log('- paymentMethodToUse (selected):', paymentMethodToUse);
+        if (!paymentMethodToUse) {
+          throw new Error('Tarjeta seleccionada no encontrada');
+        }
+      } else {
+        // Usuario invitado o fallback: usar tarjeta predeterminada/primera
+        paymentMethodToUse = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
+        console.log('- paymentMethodToUse (default/first):', paymentMethodToUse);
+      }
+
+      // Process payment directly with selected/default payment method
+      const paymentData = {
+        paymentMethodId: paymentMethodToUse.id,
         amount: paymentAmount,
         currency: 'USD',
-        description: `Xquisito Restaurant Payment - Table ${state.tableNumber || 'N/A'} - Users: ${selectedUsers.join(', ')} - Tip: $${tipAmount.toFixed(2)}`,
+        description: `Xquisito Restaurant Payment - Table ${tableNumber || state.tableNumber || 'N/A'} - Users: ${selectedUsers.join(', ')} - Tip: $${tipAmount.toFixed(2)}`,
         orderId: `order-${Date.now()}-attempt-${paymentAttempts + 1}`,
-        tableNumber: state.tableNumber,
+        tableNumber: tableNumber || state.tableNumber,
         restaurantId: 'xquisito-main'
-      });
+      };
+
+      console.log('💳 Sending payment request:', paymentData);
+      const paymentResult = await apiService.processPayment(paymentData);
 
       if (!paymentResult.success) {
+        console.error('❌ Payment failed:', paymentResult.error);
         throw new Error(paymentResult.error?.message || 'Payment processing failed');
       }
 
@@ -366,9 +412,7 @@ export default function CardSelectionPage() {
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-5 bg-gradient-to-r from-blue-500 to-purple-500 rounded flex items-center justify-center">
                             <span className="text-white text-xs font-bold">
-                              {method.cardType === "credit" ? "C" :
-                               method.cardType === "mastercard" ? "MC" :
-                               method.cardType === "amex" ? "AX" : "•"}
+                              {getCardTypeAbbreviation(method.cardType)}
                             </span>
                           </div>
                           <div>
@@ -422,16 +466,20 @@ export default function CardSelectionPage() {
             {/* Pay Button */}
             <button
               onClick={handlePayment}
-              disabled={paymentLoading || !name.trim()}
+              disabled={paymentLoading || (isGuest && !name.trim()) || (!isGuest && !selectedPaymentMethodId)}
               className={`w-full text-white py-3 rounded-full cursor-pointer transition-colors ${
-                paymentLoading
+                paymentLoading || (isGuest && !name.trim()) || (!isGuest && !selectedPaymentMethodId)
                   ? "bg-stone-800 cursor-not-allowed"
                   : "bg-black hover:bg-stone-950"
               }`}
             >
-              {paymentLoading || !name.trim()
+              {paymentLoading
                 ? "Procesando pago..."
-                : `Pagar: $${paymentAmount.toFixed(2)}`}
+                : (isGuest && !name.trim())
+                  ? "Ingresa tu nombre"
+                  : (!isGuest && !selectedPaymentMethodId)
+                    ? "Selecciona una tarjeta"
+                    : `Pagar: $${paymentAmount.toFixed(2)}`}
             </button>
           </div>
         </div>

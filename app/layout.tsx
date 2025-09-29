@@ -33,8 +33,8 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider
-      signInForceRedirectUrl="/payment-options"
       signUpFallbackRedirectUrl="/dashboard"
+      signInFallbackRedirectUrl=""
     >
       <html lang="en">
         <head>

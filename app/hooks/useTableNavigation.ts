@@ -11,14 +11,19 @@ export function useTableNavigation() {
   // Función para navegar manteniendo el parámetro table
   const navigateWithTable = useCallback((path: string, replace: boolean = false) => {
     if (!tableNumber) {
-      console.warn('No table number found in URL');
+      console.warn('No table number found in URL, navigating without table context');
+      if (replace) {
+        router.replace(path);
+      } else {
+        router.push(path);
+      }
       return;
     }
 
     // Verificar si ya existe un query string en el path
-    const separator = path.includes('?') ? '&' : '?';    
+    const separator = path.includes('?') ? '&' : '?';
     const newUrl = `${path}${separator}table=${tableNumber}`;
-    
+
     if (replace) {
       router.replace(newUrl);
     } else {

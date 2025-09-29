@@ -1,15 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense, useEffect, useCallback } from "react";
 import * as Clerk from "@clerk/elements/common";
 import * as SignIn from "@clerk/elements/sign-in";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ScanFace, Mail, KeyRound } from "lucide-react";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
+import { useUser } from "@clerk/nextjs";
 
-export default function SignInPage() {
+function SignInContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { navigateWithTable } = useTableNavigation();
+  const { isSignedIn, isLoaded } = useUser();
+  const [hasRedirected, setHasRedirected] = useState(false);
+
+  const tableNumber = searchParams.get('table');
+
+  // Store table number for post-signin redirect
+  useEffect(() => {
+    if (tableNumber) {
+      sessionStorage.setItem('pendingTableRedirect', tableNumber);
+    }
+  }, [tableNumber]);
+
+  const handleSignInSuccess = useCallback(() => {
+    navigateWithTable("/payment-options");
+  }, [navigateWithTable]);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn && !hasRedirected) {
+      setHasRedirected(true);
+      // Prevent any automatic navigation by Clerk
+      const timer = setTimeout(() => {
+        handleSignInSuccess();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoaded, isSignedIn, hasRedirected, handleSignInSuccess]);
+
+  // Intercept if user gets redirected to root after sign-in
+  useEffect(() => {
+    if (isSignedIn && tableNumber && window.location.pathname === '/' && !hasRedirected) {
+      setHasRedirected(true);
+      handleSignInSuccess();
+    }
+  }, [isSignedIn, tableNumber, hasRedirected, handleSignInSuccess]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col justify-center items-center px-4">
@@ -22,7 +58,11 @@ export default function SignInPage() {
           />
         </div>
         <div className="w-full">
-          <SignIn.Root>
+          <SignIn.Root
+            routing="virtual"
+            path="/sign-in"
+            afterSignInUrl=""
+          >
             <SignIn.Step name="start">
               <div className="mb-6 text-center">
                 <h1 className="text-xl font-semibold text-white mb-2">
@@ -169,5 +209,13 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignInContent />
+    </Suspense>
   );
 }

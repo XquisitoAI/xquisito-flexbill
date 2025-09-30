@@ -6,27 +6,53 @@ import { useTableNavigation } from "../hooks/useTableNavigation";
 import { useGuest, useIsGuest } from "../context/GuestContext";
 import { usePayment } from "../context/PaymentContext";
 import { getRestaurantData } from "../utils/restaurantData";
-import { useState, useEffect } from "react";
+import { useState, useEffect, JSX } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useEcartPay } from "../hooks/useEcartPay";
 import MenuHeaderBack from "../components/MenuHeaderBack";
 import { apiService } from "../utils/api";
 
-// Utility function to get card type abbreviation
-function getCardTypeAbbreviation(cardType: string): string {
-  debugger
-  const abbreviations: { [key: string]: string } = {
-    'visa': 'V',
-    'mastercard': 'MC',
-    'amex': 'AX',
-    'discover': 'D',
-    'credit': '💳', // fallback for generic credit
-    'debit': '💳',  // fallback for generic debit
-    'unknown': '•', // for unknown types
-    'card': '•'     // for generic card types
-  };
+import {
+  Mastercard,
+  Visa,
+  Amex,
+  Discover,
+} from "react-payment-logos/dist/logo";
+import { Plus } from "lucide-react";
 
-  return abbreviations[cardType.toLowerCase()] || '•';
+// Utility function to get card type icon
+function getCardTypeIcon(cardType: string): JSX.Element {
+  const type = cardType.toLowerCase();
+
+  switch (type) {
+    case "visa":
+      return <Visa style={{ width: "56px", height: "35px" }} />;
+    case "mastercard":
+      return <Mastercard style={{ width: "56px", height: "35px" }} />;
+    case "amex":
+      return <Amex style={{ width: "56px", height: "35px" }} />;
+    case "discover":
+      return <Discover style={{ width: "56px", height: "35px" }} />;
+    default:
+      return (
+        <div
+          style={{
+            width: "56px",
+            height: "35px",
+            background: "linear-gradient(to right, #3b82f6, #a855f7)",
+            borderRadius: "4px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "white",
+            fontSize: "10px",
+            fontWeight: "bold",
+          }}
+        >
+          💳
+        </div>
+      );
+  }
 }
 
 export default function CardSelectionPage() {
@@ -44,7 +70,6 @@ export default function CardSelectionPage() {
   const baseAmount = parseFloat(searchParams.get("baseAmount") || "0"); // Monto base sin propina para BD
   const tipAmount = parseFloat(searchParams.get("tipAmount") || "0");
   const userName = searchParams.get("userName");
-  const usersParam = searchParams.get("users");
   const selectedItemsParam = searchParams.get("selectedItems");
 
   const {
@@ -57,8 +82,12 @@ export default function CardSelectionPage() {
   const [name, setName] = useState(userName || state.currentUserName || "");
   const [email, setEmail] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("mastercard");
-  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string | null>(null);
-  const [paymentMethodType, setPaymentMethodType] = useState<"saved" | "new">("new");
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<
+    string | null
+  >(null);
+  const [paymentMethodType, setPaymentMethodType] = useState<"saved" | "new">(
+    "new"
+  );
   const [paymentAttempts, setPaymentAttempts] = useState(0);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -71,40 +100,23 @@ export default function CardSelectionPage() {
   }, [isLoaded, user, setAsAuthenticated]);
 
   useEffect(() => {
-    // Cargar datos de sessionStorage si existen
-    const storedUserName = sessionStorage.getItem("userName");
-    const storedPaymentType = sessionStorage.getItem("paymentType");
-    const storedSelectedItems = sessionStorage.getItem("selectedItems");
-
-    if (storedUserName && !name) {
-      setName(storedUserName);
+    // Configurar nombre de usuario
+    if (userName && !name) {
+      setName(userName);
     }
 
     // Configurar usuarios seleccionados según el tipo de pago
-    if (usersParam) {
-      setSelectedUsers(
-        usersParam.split(",").filter((user) => user.trim() !== "")
-      );
-    } else if (userName) {
+    if (userName) {
       setSelectedUsers([userName]);
     }
 
     // Configurar items seleccionados para select-items
-    if (paymentType === "select-items") {
-      if (selectedItemsParam) {
-        setSelectedItems(
-          selectedItemsParam.split(",").filter((item) => item.trim() !== "")
-        );
-      } else if (storedSelectedItems) {
-        try {
-          const parsedItems = JSON.parse(storedSelectedItems);
-          setSelectedItems(parsedItems);
-        } catch (error) {
-          console.error("Error parsing stored selected items:", error);
-        }
-      }
+    if (paymentType === "select-items" && selectedItemsParam) {
+      setSelectedItems(
+        selectedItemsParam.split(",").filter((item) => item.trim() !== "")
+      );
     }
-  }, [usersParam, userName, name, paymentType, selectedItemsParam]);
+  }, [userName, name, paymentType, selectedItemsParam]);
 
   // Calcular totales basados en el nuevo sistema de platillos
   const dishOrders = Array.isArray(state.dishOrders) ? state.dishOrders : [];
@@ -126,7 +138,8 @@ export default function CardSelectionPage() {
   // Set default payment method when payment methods are loaded
   useEffect(() => {
     if (hasPaymentMethods && paymentMethods.length > 0) {
-      const defaultMethod = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
+      const defaultMethod =
+        paymentMethods.find((pm) => pm.isDefault) || paymentMethods[0];
       setSelectedPaymentMethodId(defaultMethod.id);
       setPaymentMethodType("saved");
     } else {
@@ -170,12 +183,26 @@ export default function CardSelectionPage() {
             console.error(`Error paying selected dish ${dishId}:`, error);
           }
         }
+      } else if (paymentType === "equal-shares") {
+        // Para división equitativa, usar paySplitAmount para rastrear qué usuario pagó
+        try {
+          if (user && user.id) {
+            await apiService.paySplitAmount(state.tableNumber, user.id);
+          } else if (isGuest && name.trim()) {
+            await apiService.paySplitAmount(
+              state.tableNumber,
+              null,
+              name.trim()
+            );
+          }
+        } catch (error) {
+          console.error("Error paying split amount:", error);
+        }
       } else if (
         paymentType === "full-bill" ||
-        paymentType === "equal-shares" ||
         paymentType === "choose-amount"
       ) {
-        // Para cuenta completa, división equitativa o monto personalizado, usar el monto exacto
+        // Para cuenta completa o monto personalizado, usar el monto exacto
         try {
           await apiService.payTableAmount(state.tableNumber, baseAmount);
         } catch (error) {
@@ -231,8 +258,8 @@ export default function CardSelectionPage() {
       return;
     }
 
-    // Para usuarios registrados, validar selección de tarjeta
-    if (!isGuest && !selectedPaymentMethodId) {
+    // Validar selección de tarjeta si hay métodos de pago disponibles
+    if (hasPaymentMethods && !selectedPaymentMethodId) {
       alert("Por favor selecciona una tarjeta de pago");
       return;
     }
@@ -268,7 +295,6 @@ export default function CardSelectionPage() {
           tipAmount: tipAmount.toString(),
           type: paymentType,
           ...(userName && { userName }),
-          ...(usersParam && { users: usersParam }),
         });
 
         navigateWithTable(`/add-card?${queryParams.toString()}`);
@@ -279,41 +305,56 @@ export default function CardSelectionPage() {
       const paymentMethods = paymentMethodsResult.data.paymentMethods;
       let paymentMethodToUse;
 
-      console.log('🔍 Debug payment method selection:');
-      console.log('- isGuest:', isGuest);
-      console.log('- selectedPaymentMethodId:', selectedPaymentMethodId);
-      console.log('- available paymentMethods:', paymentMethods.map(pm => ({id: pm.id, isDefault: pm.isDefault, cardType: pm.cardType})));
+      console.log("🔍 Debug payment method selection:");
+      console.log("- isGuest:", isGuest);
+      console.log("- selectedPaymentMethodId:", selectedPaymentMethodId);
+      console.log(
+        "- available paymentMethods:",
+        paymentMethods.map((pm) => ({
+          id: pm.id,
+          isDefault: pm.isDefault,
+          cardType: pm.cardType,
+        }))
+      );
 
       if (!isGuest && selectedPaymentMethodId) {
         // Usuario registrado: usar tarjeta seleccionada
-        paymentMethodToUse = paymentMethods.find(pm => pm.id === selectedPaymentMethodId);
-        console.log('- paymentMethodToUse (selected):', paymentMethodToUse);
+        paymentMethodToUse = paymentMethods.find(
+          (pm) => pm.id === selectedPaymentMethodId
+        );
+        console.log("- paymentMethodToUse (selected):", paymentMethodToUse);
         if (!paymentMethodToUse) {
-          throw new Error('Tarjeta seleccionada no encontrada');
+          throw new Error("Tarjeta seleccionada no encontrada");
         }
       } else {
         // Usuario invitado o fallback: usar tarjeta predeterminada/primera
-        paymentMethodToUse = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
-        console.log('- paymentMethodToUse (default/first):', paymentMethodToUse);
+        paymentMethodToUse =
+          paymentMethods.find((pm) => pm.isDefault) || paymentMethods[0];
+        console.log(
+          "- paymentMethodToUse (default/first):",
+          paymentMethodToUse
+        );
       }
 
       // Process payment directly with selected/default payment method
       const paymentData = {
         paymentMethodId: paymentMethodToUse.id,
         amount: totalAmountWithTip,
-        currency: 'USD',
-        description: `Xquisito Restaurant Payment - Table ${tableNumber || state.tableNumber || 'N/A'} - Users: ${selectedUsers.join(', ')} - Tip: $${tipAmount.toFixed(2)}`,
+        currency: "USD",
+        description: `Xquisito Restaurant Payment - Table ${tableNumber || state.tableNumber || "N/A"}${userName ? ` - ${userName}` : ""} - Tip: $${tipAmount.toFixed(2)}`,
         orderId: `order-${Date.now()}-attempt-${paymentAttempts + 1}`,
         tableNumber: tableNumber || state.tableNumber,
-        restaurantId: 'xquisito-main'
+        restaurantId: "xquisito-main",
       };
 
-      console.log('💳 Sending payment request:', paymentData);
+      console.log("💳 Sending payment request:", paymentData);
       const paymentResult = await apiService.processPayment(paymentData);
 
       if (!paymentResult.success) {
-        console.error('❌ Payment failed:', paymentResult.error);
-        throw new Error(paymentResult.error?.message || 'Payment processing failed');
+        console.error("❌ Payment failed:", paymentResult.error);
+        throw new Error(
+          paymentResult.error?.message || "Payment processing failed"
+        );
       }
 
       const payment = paymentResult.data?.payment;
@@ -396,7 +437,6 @@ export default function CardSelectionPage() {
       tipAmount: tipAmount.toString(),
       type: paymentType,
       ...(userName && { userName }),
-      ...(usersParam && { users: usersParam }),
     });
 
     navigateWithTable(`/add-card?${queryParams.toString()}`);
@@ -431,24 +471,25 @@ export default function CardSelectionPage() {
           <div className="bg-white rounded-t-4xl relative z-10 flex flex-col px-6 flex-1 py-8">
             {/* Payment Summary */}
             <div className="space-y-2 mb-6">
+              {/* 
               <div className="mb-4">
                 <span className="text-black text-xl font-semibold">
                   Mesa {state.tableNumber}
                 </span>
-              </div>
+              </div>*/}
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total mesa</span>
-                <span className="text-gray-600">
-                  ${tableTotalPrice.toFixed(2)}
+                <span className="text-black font-medium">Total mesa</span>
+                <span className="text-black font-medium">
+                  ${tableTotalPrice.toFixed(2)} MXN
                 </span>
               </div>
 
               {unpaidAmount < tableTotalPrice && (
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Pendiente</span>
-                  <span className="text-gray-600">
-                    ${unpaidAmount.toFixed(2)}
+                  <span className="text-black font-medium">Pendiente</span>
+                  <span className="text-black font-medium">
+                    ${unpaidAmount.toFixed(2)} MXN
                   </span>
                 </div>
               )}
@@ -456,32 +497,32 @@ export default function CardSelectionPage() {
               <div className="flex justify-between items-center">
                 <span className="text-black font-medium">Tu parte</span>
                 <span className="text-black font-medium">
-                  ${baseAmount.toFixed(2)}
+                  ${baseAmount.toFixed(2)} MXN
                 </span>
               </div>
 
               {tipAmount > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-black">Propina</span>
-                  <span className="text-black">${tipAmount.toFixed(2)}</span>
+                  <span className="text-black font-medium">Propina</span>
+                  <span className="text-black font-medium">
+                    ${tipAmount.toFixed(2)} MXN
+                  </span>
                 </div>
               )}
 
               <div className="flex justify-between items-center border-t pt-2">
-                <span className="text-lg font-bold text-black">
-                  Total a pagar
-                </span>
-                <span className="text-lg font-bold text-black">
-                  ${totalAmountWithTip.toFixed(2)}
+                <span className="font-bold text-black">Total a pagar</span>
+                <span className="font-bold text-black">
+                  ${totalAmountWithTip.toFixed(2)} MXN
                 </span>
               </div>
             </div>
             {/* Customer Information - Only show for guest users */}
             {isGuest && (
-              <div className="mb-6 text-center">
+              <div className="mb-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-black mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Nombre completo
                     </label>
                     <input
@@ -489,12 +530,12 @@ export default function CardSelectionPage() {
                       value={name}
                       onChange={handleNameChange}
                       placeholder="Tu nombre completo"
-                      className="w-full text-center text-black border-b border-black focus:outline-none focus:ring-none"
+                      className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-black mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Email (opcional)
                     </label>
                     <input
@@ -502,21 +543,24 @@ export default function CardSelectionPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="tu@email.com"
-                      className="w-full text-center text-black border-b border-black focus:outline-none focus:ring-none"
+                      className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
                     />
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Payment Method Selection */}
-            {user && hasPaymentMethods && (
-              <div className="mb-6">
+            {/* Payment Method Selection - Show for both registered users and guests with saved cards */}
+            {((user && hasPaymentMethods) ||
+              (isGuest && hasPaymentMethods)) && (
+              <div>
+                {/*
                 <h3 className="text-sm font-medium text-black mb-4">
                   Selecciona tu método de pago
-                </h3>
+                </h3>*/}
 
                 {/* Payment Method Type Toggle */}
+                {/*
                 <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
                   <button
                     onClick={() => setPaymentMethodType("saved")}
@@ -528,7 +572,7 @@ export default function CardSelectionPage() {
                   >
                     Tarjetas guardadas
                   </button>
-                  {/* <button
+                   <button
                     onClick={() => setPaymentMethodType("new")}
                     className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                       paymentMethodType === "new"
@@ -537,47 +581,44 @@ export default function CardSelectionPage() {
                     }`}
                   >
                     Nueva tarjeta
-                  </button> */}
+                  </button> 
                 </div>
+                */}
 
                 {/* Saved Cards List */}
                 {paymentMethodType === "saved" && (
-                  <div className="space-y-2 mb-4">
+                  <div className="space-y-2.5 mb-2.5">
                     {paymentMethods.map((method) => (
                       <div
                         key={method.id}
                         onClick={() => setSelectedPaymentMethodId(method.id)}
-                        className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                        className={`flex items-center py-1.5 px-5 pl-10 border rounded-full cursor-pointer transition-colors ${
                           selectedPaymentMethodId === method.id
                             ? "border-teal-500 bg-teal-50"
-                            : "border-gray-200 hover:border-gray-300"
+                            : "border-black/50  bg-[#f9f9f9]"
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-5 bg-gradient-to-r from-blue-500 to-purple-500 rounded flex items-center justify-center">
-                            <span className="text-white text-xs font-bold">
-                              {getCardTypeAbbreviation(method.cardType)}
-                            </span>
-                          </div>
+                        <div className="flex items-center justify-center gap-3 mx-auto">
+                          <div>{getCardTypeIcon(method.cardType)}</div>
                           <div>
-                            <p className="text-sm font-medium text-gray-800 capitalize">
-                              {method.cardType}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              •••• {method.lastFourDigits}
+                            <p className="text-black">
+                              **** **** **** {method.lastFourDigits}
                             </p>
                           </div>
+                          {/*
                           {method.isDefault && (
-                            <span className="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded-full">
-                              Predeterminada
+                            <span className="text-xs bg-teal-100 text-teal-800 px-1 py-1 rounded-full">
+                              ⭐
                             </span>
-                          )}
+                          )}*/}
                         </div>
-                        <div className={`w-4 h-4 rounded-full border-2 ${
-                          selectedPaymentMethodId === method.id
-                            ? "border-teal-500 bg-teal-500"
-                            : "border-gray-300"
-                        }`}>
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 ml-auto ${
+                            selectedPaymentMethodId === method.id
+                              ? "border-teal-500 bg-teal-500"
+                              : "border-gray-300"
+                          }`}
+                        >
                           {selectedPaymentMethodId === method.id && (
                             <div className="w-full h-full rounded-full bg-white scale-50"></div>
                           )}
@@ -590,12 +631,13 @@ export default function CardSelectionPage() {
             )}
 
             {/* Payment Method Section */}
-            <div className="mb-4">
+            <div className="mb-8">
               <button
                 onClick={handleAddCard}
-                className="w-full text-white py-3 rounded-full cursor-pointer transition-colors bg-black hover:bg-stone-950"
+                className="border border-black/50 flex justify-center items-center gap-1 w-full text-black py-3 rounded-full cursor-pointer transition-colors bg-[#f9f9f9] hover:bg-gray-100"
               >
-                + Agregar método de pago
+                <Plus className="size-5" />
+                Agregar método de pago
               </button>
             </div>
 
@@ -610,20 +652,26 @@ export default function CardSelectionPage() {
             {/* Pay Button */}
             <button
               onClick={handlePayment}
-              disabled={paymentLoading || (isGuest && !name.trim()) || (!isGuest && !selectedPaymentMethodId)}
+              disabled={
+                paymentLoading ||
+                (isGuest && !name.trim()) ||
+                (hasPaymentMethods && !selectedPaymentMethodId)
+              }
               className={`w-full text-white py-3 rounded-full cursor-pointer transition-colors ${
-                paymentLoading || (isGuest && !name.trim()) || (!isGuest && !selectedPaymentMethodId)
+                paymentLoading ||
+                (isGuest && !name.trim()) ||
+                (hasPaymentMethods && !selectedPaymentMethodId)
                   ? "bg-stone-800 cursor-not-allowed"
                   : "bg-black hover:bg-stone-950"
               }`}
             >
               {paymentLoading
                 ? "Procesando pago..."
-                : (isGuest && !name.trim())
+                : isGuest && !name.trim()
                   ? "Ingresa tu nombre"
-                  : (!isGuest && !selectedPaymentMethodId)
+                  : hasPaymentMethods && !selectedPaymentMethodId
                     ? "Selecciona una tarjeta"
-                    : `Pagar: $${totalAmountWithTip.toFixed(2)}`}
+                    : "Pagar"}
             </button>
           </div>
         </div>

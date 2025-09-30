@@ -77,6 +77,7 @@ export interface DishOrder {
   user_id?: string;
   guest_name: string;
   table_order_id: string;
+  images: string[];
 }
 
 export interface TableSummary {
@@ -342,7 +343,9 @@ export const legacyTableApi = {
 
   // Deprecated: use apiService.createDishOrder() instead
   createUserOrder: (tableNumber: number, orderData: any) =>
-    console.warn("createUserOrder is deprecated. Use submitOrder from TableContext instead."),
+    console.warn(
+      "createUserOrder is deprecated. Use submitOrder from TableContext instead."
+    ),
 
   // Add other legacy methods as needed for backward compatibility
 };

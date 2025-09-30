@@ -8,7 +8,6 @@ import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { useGuest, useIsGuest } from "../context/GuestContext";
 import { usePayment } from "../context/PaymentContext";
-import MenuHeader from "../components/MenuHeader";
 import { getRestaurantData } from "../utils/restaurantData";
 import { useState } from "react";
 import { apiService } from "../utils/api";
@@ -122,14 +121,14 @@ export default function AddCardPage() {
       // Configure API service based on user type
       if (user) {
         // For registered users, set auth token
-        console.log('💳 Adding card for registered user:', user.id);
+        console.log("💳 Adding card for registered user:", user.id);
         const token = await getToken();
         if (token) {
           apiService.setAuthToken(token);
         }
       } else if (isGuest && guestId && tableNumber) {
         // For guests only (when no registered user)
-        console.log('💳 Adding card for guest:', guestId);
+        console.log("💳 Adding card for guest:", guestId);
         apiService.setGuestInfo(guestId, tableNumber.toString());
       }
 
@@ -154,7 +153,7 @@ export default function AddCardPage() {
         alert("Card added successfully!");
 
         // Check if we came from saved-cards page
-        const fromSavedCards = document.referrer.includes('/saved-cards');
+        const fromSavedCards = document.referrer.includes("/saved-cards");
 
         if (fromSavedCards) {
           navigateWithTable("/saved-cards");
@@ -231,14 +230,14 @@ export default function AddCardPage() {
     const value = e.target.value;
     let allowedCharsRegex: RegExp;
     switch (country) {
-      case 'Mexico':
-      case 'USA':
+      case "Mexico":
+      case "USA":
         allowedCharsRegex = /^[0-9-]*$/; // Solo números y guión para USA (formato ZIP+4)
         break;
-      case 'Canada':
+      case "Canada":
         allowedCharsRegex = /^[A-Za-z0-9\s]*$/; // Letras, números y espacios
         break;
-      case 'UK':
+      case "UK":
         allowedCharsRegex = /^[A-Za-z0-9\s]*$/; // Letras, números y espacios
         break;
       default:
@@ -246,17 +245,19 @@ export default function AddCardPage() {
     }
 
     if (allowedCharsRegex.test(value)) {
-      setPostalCode(value.toUpperCase()); 
-      setPostalCodeError('');
+      setPostalCode(value.toUpperCase());
+      setPostalCodeError("");
 
       if (value.trim() && !validatePostalCode(value, country)) {
         const formats = {
-          'Mexico': '5 digits (e.g., 83120)',
-          'USA': '5 digits or 5+4 format (e.g., 12345 or 12345-6789)',
-          'Canada': 'Format: A1A 1A1',
-          'UK': 'UK format (e.g., SW1A 1AA)'
+          Mexico: "5 digits (e.g., 83120)",
+          USA: "5 digits or 5+4 format (e.g., 12345 or 12345-6789)",
+          Canada: "Format: A1A 1A1",
+          UK: "UK format (e.g., SW1A 1AA)",
         };
-        setPostalCodeError(`Invalid format. Expected: ${formats[country as keyof typeof formats]}`);
+        setPostalCodeError(
+          `Invalid format. Expected: ${formats[country as keyof typeof formats]}`
+        );
       }
     }
   };
@@ -276,7 +277,7 @@ export default function AddCardPage() {
 
       <div className="px-4 w-full flex-1 flex flex-col">
         <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
-          <div className="py-6 px-8 flex flex-col justify-center">
+          <div className="pt-6 pb-12 px-8 flex flex-col justify-center">
             <h2 className="font-bold text-white text-3xl leading-7 mt-2 mb-2">
               Agrega tu tarjeta para continuar
             </h2>

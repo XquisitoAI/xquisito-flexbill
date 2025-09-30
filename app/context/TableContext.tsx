@@ -15,6 +15,7 @@ import {
   ActiveUser,
   SplitPayment,
 } from "../services/tableApi";
+import { useUser } from "@clerk/nextjs";
 
 // ===============================================
 // PREVIOUS IMPLEMENTATION (COMMENTED OUT)
@@ -396,6 +397,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
 // Nuevo Provider del contexto de mesa
 export function TableProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(tableReducer, initialState);
+  const { user, isLoaded } = useUser();
 
   // Cargar todos los datos cuando se establece el número de mesa
   useEffect(() => {
@@ -441,7 +443,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
     }
 
-    debugger
+    //debugger
   };
 
   // Cargar órdenes de platillos
@@ -484,17 +486,29 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const loadSplitPayments = async () => {
     if (!state.tableNumber) return;
 
+    console.log(
+      "🔄 TableContext: Loading split payments for table:",
+      state.tableNumber
+    );
+
     try {
       const response = await apiService.getSplitPaymentStatus(
         state.tableNumber
       );
 
+      console.log("📡 TableContext: Split payments API response:", response);
+
       if (response.success && response.data) {
-        dispatch({ type: "SET_SPLIT_PAYMENTS", payload: response.data });
+        const splitPayments = response.data.split_payments || [];
+        dispatch({ type: "SET_SPLIT_PAYMENTS", payload: splitPayments });
         dispatch({
           type: "SET_SPLIT_BILL_ACTIVE",
-          payload: response.data.length > 0,
+          payload: splitPayments.length > 0,
         });
+        console.log(
+          "✅ TableContext: Split payments updated in state:",
+          splitPayments
+        );
       }
     } catch (error) {
       console.error("Error loading split payments:", error);
@@ -508,20 +522,33 @@ export function TableProvider({ children }: { children: ReactNode }) {
 
     try {
       // Verificar si hay un split status activo
-      const splitResponse = await apiService.getSplitPaymentStatus(state.tableNumber);
+      const splitResponse = await apiService.getSplitPaymentStatus(
+        state.tableNumber
+      );
 
       if (splitResponse.success && splitResponse.data?.data) {
         // Hay split activo, obtener active users actualizados
-        const activeUsersResponse = await apiService.getActiveUsers(state.tableNumber);
+        const activeUsersResponse = await apiService.getActiveUsers(
+          state.tableNumber
+        );
 
         if (activeUsersResponse.success && activeUsersResponse.data?.data) {
           const activeUsers = activeUsersResponse.data.data;
-          const activeUserNames = activeUsers.map((user: any) => user.guest_name).filter(Boolean);
+          const activeUserNames = activeUsers
+            .map((user: any) => user.guest_name)
+            .filter(Boolean);
 
           if (activeUserNames.length > 0) {
             // Recalcular split bill con los active users
-            await initializeSplitBill(activeUserNames.length, undefined, activeUserNames);
-            console.log(`🔄 Split bill recalculated with ${activeUserNames.length} active users:`, activeUserNames);
+            await initializeSplitBill(
+              activeUserNames.length,
+              undefined,
+              activeUserNames
+            );
+            console.log(
+              `🔄 Split bill recalculated with ${activeUserNames.length} active users:`,
+              activeUserNames
+            );
 
             // Recargar tableSummary después del recálculo
             await loadTableSummary();
@@ -529,15 +556,26 @@ export function TableProvider({ children }: { children: ReactNode }) {
         }
       } else {
         // No hay split activo, intentar inicializar si hay múltiples active users
-        const activeUsersResponse = await apiService.getActiveUsers(state.tableNumber);
+        const activeUsersResponse = await apiService.getActiveUsers(
+          state.tableNumber
+        );
 
         if (activeUsersResponse.success && activeUsersResponse.data?.data) {
           const activeUsers = activeUsersResponse.data.data;
-          const activeUserNames = activeUsers.map((user: any) => user.guest_name).filter(Boolean);
+          const activeUserNames = activeUsers
+            .map((user: any) => user.guest_name)
+            .filter(Boolean);
 
           if (activeUserNames.length > 1) {
-            await initializeSplitBill(activeUserNames.length, undefined, activeUserNames);
-            console.log(`✅ Split bill auto-initialized with ${activeUserNames.length} active users:`, activeUserNames);
+            await initializeSplitBill(
+              activeUserNames.length,
+              undefined,
+              activeUserNames
+            );
+            console.log(
+              `✅ Split bill auto-initialized with ${activeUserNames.length} active users:`,
+              activeUserNames
+            );
 
             // Recargar tableSummary después de la inicialización
             await loadTableSummary();
@@ -563,23 +601,43 @@ export function TableProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
-      // En el nuevo sistema, creamos órdenes de platillos individuales
-      for (const item of state.currentUserItems) {
-        for (let i = 0; i < item.quantity; i++) {
-          const response = await apiService.createDishOrder(
-            state.tableNumber,
-            null, // userId para huéspedes
-            finalUserName, // guestName
-            item.name, // item
-            1, // quantity (siempre 1 por platillo individual)
-            item.price // price
-          );
+      // Determinar si el usuario está autenticado
+      const isAuthenticated = isLoaded && user;
+      const userId = isAuthenticated ? user.id : null;
 
-          if (!response.success) {
-            throw new Error(
-              response.error?.message || "Failed to create dish order"
-            );
-          }
+      // Solo usar guestId si NO está autenticado
+      const guestId =
+        !isAuthenticated && typeof window !== "undefined"
+          ? localStorage.getItem("xquisito-guest-id")
+          : null;
+
+      // Usar nombre real de Clerk si está autenticado, sino el proporcionado
+      const displayName = isAuthenticated
+        ? user.fullName || user.firstName || finalUserName
+        : finalUserName;
+
+      // Guardar nombre para vinculación posterior (solo si no está autenticado)
+      if (!isAuthenticated && typeof window !== "undefined") {
+        localStorage.setItem("xquisito-guest-name", finalUserName);
+      }
+
+      // Crear órdenes de platillos con la cantidad correcta
+      for (const item of state.currentUserItems) {
+        const response = await apiService.createDishOrder(
+          state.tableNumber,
+          userId, // userId de Clerk si está autenticado, null si es invitado
+          displayName, // Nombre real o guest name
+          item.name, // item
+          item.quantity, // quantity real del carrito
+          item.price, // price
+          guestId, // guestId solo si es invitado
+          item.images
+        );
+
+        if (!response.success) {
+          throw new Error(
+            response.error?.message || "Failed to create dish order"
+          );
         }
       }
 
@@ -711,8 +769,13 @@ export function TableProvider({ children }: { children: ReactNode }) {
       );
 
       if (response.success) {
-        // Recargar datos de la mesa
+        console.log(
+          "💰 TableContext: Split payment successful, reloading data..."
+        );
+        // Recargar datos de la mesa incluyendo split payments
         await loadTableData();
+        await loadSplitPayments();
+        console.log("✅ TableContext: Data reloaded after split payment");
       } else {
         dispatch({
           type: "SET_ERROR",

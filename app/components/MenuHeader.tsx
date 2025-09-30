@@ -4,7 +4,7 @@ import { Restaurant } from "../interfaces/restaurante";
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Receipt } from "lucide-react";
+import { ShoppingCart, ReceiptText } from "lucide-react";
 
 interface MenuHeaderProps {
   restaurant: Restaurant;
@@ -43,7 +43,7 @@ export default function MenuHeader({
               onClick={handleOrderClick}
               className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
             >
-              <Receipt className="text-primary size-5" />
+              <ReceiptText className="text-primary size-5" />
             </div>
             {Array.isArray(state.dishOrders) && state.dishOrders.length > 0 && (
               <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">

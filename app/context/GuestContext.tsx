@@ -9,9 +9,11 @@ interface GuestContextType {
   isGuest: boolean;
   guestId: string | null;
   tableNumber: string | null;
+  guestName: string | null;
   setAsGuest: (tableNumber?: string) => void;
   setAsAuthenticated: (userId: string) => void;
   clearGuestSession: () => void;
+  setGuestName: (name: string) => void;
 }
 
 const GuestContext = createContext<GuestContextType | undefined>(undefined);
@@ -24,8 +26,40 @@ export function GuestProvider({ children }: GuestProviderProps) {
   const [isGuest, setIsGuest] = useState<boolean>(false);
   const [guestId, setGuestId] = useState<string | null>(null);
   const [tableNumber, setTableNumber] = useState<string | null>(null);
+  const [guestName, setGuestName] = useState<string | null>(null);
+  const [hasLinkedOrders, setHasLinkedOrders] = useState<boolean>(false);
   const searchParams = useSearchParams();
   const { user, isLoaded } = useUser();
+
+  // Link guest orders when user authenticates
+  useEffect(() => {
+    if (!isLoaded || !user || hasLinkedOrders) return;
+
+    const storedGuestId = localStorage.getItem('xquisito-guest-id');
+    const storedTableNumber = localStorage.getItem('xquisito-table-number');
+
+    if (storedGuestId && user.id) {
+      console.log('🔗 Linking guest orders to authenticated user:', {
+        guestId: storedGuestId,
+        userId: user.id,
+        tableNumber: storedTableNumber
+      });
+
+      apiService
+        .linkGuestOrdersToUser(storedGuestId, user.id, storedTableNumber || undefined)
+        .then((response) => {
+          if (response.success) {
+            console.log('✅ Guest orders linked successfully:', response.data);
+            setHasLinkedOrders(true);
+          } else {
+            console.error('❌ Failed to link guest orders:', response.error);
+          }
+        })
+        .catch((error) => {
+          console.error('❌ Error linking guest orders:', error);
+        });
+    }
+  }, [isLoaded, user, hasLinkedOrders]);
 
   // Smart initialization: Auto-detect guest vs registered user context
   useEffect(() => {
@@ -70,10 +104,12 @@ export function GuestProvider({ children }: GuestProviderProps) {
 
       // Priority 2: Restore existing guest session (only if no table param)
       if (storedGuestId && storedTableNumber) {
+        const storedGuestName = localStorage.getItem('xquisito-guest-name');
         setIsGuest(true);
         setGuestId(storedGuestId);
         setTableNumber(storedTableNumber);
-        console.log('🔄 Restored guest session:', { guestId: storedGuestId, tableNumber: storedTableNumber });
+        setGuestName(storedGuestName);
+        console.log('🔄 Restored guest session:', { guestId: storedGuestId, tableNumber: storedTableNumber, guestName: storedGuestName });
         return;
       }
 
@@ -115,7 +151,15 @@ export function GuestProvider({ children }: GuestProviderProps) {
     setIsGuest(false);
     setGuestId(null);
     setTableNumber(null);
+    setGuestName(null);
+    localStorage.removeItem('xquisito-guest-name');
     console.log('🗑️ Guest session cleared');
+  };
+
+  const setGuestNameHandler = (name: string) => {
+    setGuestName(name);
+    localStorage.setItem('xquisito-guest-name', name);
+    console.log('👤 Guest name set:', name);
   };
 
   // Helper function to generate guest ID
@@ -137,9 +181,11 @@ export function GuestProvider({ children }: GuestProviderProps) {
     isGuest,
     guestId,
     tableNumber,
+    guestName,
     setAsGuest,
     setAsAuthenticated,
     clearGuestSession,
+    setGuestName: setGuestNameHandler,
   };
 
   return (

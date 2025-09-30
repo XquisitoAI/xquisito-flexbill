@@ -17,8 +17,8 @@ import {
   ListTodo,
   ReceiptText,
   Users,
-  Loader,
 } from "lucide-react";
+import Loader from "../components/Loader";
 
 export default function PaymentOptionsPage() {
   const { user } = useUser();
@@ -52,14 +52,20 @@ export default function PaymentOptionsPage() {
   const loadSplitStatus = async () => {
     if (!state.tableNumber) return;
 
+    console.log("🔄 Loading split status for table:", state.tableNumber);
+
     try {
       const response = await apiService.getSplitPaymentStatus(
         state.tableNumber.toString()
       );
+      console.log("📡 Split status API response:", response);
+
       if (response.success) {
         setSplitStatus(response.data.data);
+        console.log("✅ Split status updated:", response.data.data);
       } else {
         setSplitStatus(null);
+        console.log("❌ Split status API failed:", response);
       }
     } catch (error) {
       console.error("Error loading split status:", error);
@@ -79,6 +85,18 @@ export default function PaymentOptionsPage() {
 
     loadPaymentData();
   }, [state.tableNumber]);
+
+  // Recargar split status cuando cambien los split payments en el contexto
+  useEffect(() => {
+    if (state.tableNumber && state.splitPayments) {
+      console.log(
+        "🔔 Split payments changed in context, reloading split status..."
+      );
+      console.log("- Table number:", state.tableNumber);
+      console.log("- Split payments length:", state.splitPayments.length);
+      loadSplitStatus();
+    }
+  }, [state.splitPayments]);
 
   // Calcular totales usando tableSummary si está disponible
   const dishOrders = Array.isArray(state.dishOrders) ? state.dishOrders : [];
@@ -110,24 +128,60 @@ export default function PaymentOptionsPage() {
   // Obtener usuarios únicos considerando split status si está activo
   const uniqueUsers = (() => {
     // Si hay split status activo, usar esa información
-    if (splitStatus && splitStatus.split_payments) {
+    if (splitStatus && Array.isArray(splitStatus.split_payments)) {
+      const allUsers = splitStatus.split_payments.map((payment: any) => ({
+        name: payment.guest_name || payment.user_id,
+        status: payment.status,
+      }));
+      console.log("- All users with status:", allUsers);
+
       const pendingUsers = splitStatus.split_payments
         .filter((payment: any) => payment.status === "pending")
         .map((payment: any) => payment.guest_name || payment.user_id)
         .filter(Boolean);
-      return pendingUsers;
+
+      console.log("🔍 Split status active:");
+      console.log("- Full splitStatus:", splitStatus);
+      console.log("- Split payments:", splitStatus.split_payments);
+      splitStatus.split_payments.forEach((payment: any, index: number) => {
+        console.log(`  Payment ${index + 1}:`, {
+          guest_name: payment.guest_name,
+          user_id: payment.user_id,
+          status: payment.status,
+          amount: payment.amount,
+          full_payment: payment,
+        });
+      });
+      console.log("- Pending users:", pendingUsers);
+
+      return [...new Set(pendingUsers)]; // Asegurar unicidad
     }
 
     // Fallback: usar usuarios con platillos no pagados
-    return Array.from(
+    const usersFromDishes = Array.from(
       new Set(unpaidDishes.map((dish) => dish.guest_name).filter(Boolean))
     );
+
+    console.log("🔍 No split status, using dishes:");
+    console.log("- Unpaid dishes:", unpaidDishes.length);
+    console.log("- Users from dishes:", usersFromDishes);
+
+    return usersFromDishes;
   })();
 
   // Para mostrar la opción de split, usar siempre los usuarios con platillos no pagados
   // si no hay split activo, o los pendientes si ya hay split activo
   const usersForSplitOption = Array.from(
     new Set(unpaidDishes.map((dish) => dish.guest_name).filter(Boolean))
+  );
+
+  console.log("👥 Final user counts:");
+  console.log("- uniqueUsers:", uniqueUsers, "length:", uniqueUsers.length);
+  console.log(
+    "- usersForSplitOption:",
+    usersForSplitOption,
+    "length:",
+    usersForSplitOption.length
   );
 
   // Platillos del usuario actual
@@ -161,7 +215,6 @@ export default function PaymentOptionsPage() {
     const queryParams = new URLSearchParams({
       amount: unpaidAmount.toString(),
       type: "full-bill",
-      users: uniqueUsers.join(","),
     });
 
     navigateWithTable(`/tip-selection?${queryParams.toString()}`);
@@ -194,7 +247,6 @@ export default function PaymentOptionsPage() {
       amount: splitAmount.toString(),
       type: "equal-shares",
       userName: state.currentUserName || "",
-      numberOfPeople: numberOfPeople.toString(),
     });
 
     navigateWithTable(`/tip-selection?${queryParams.toString()}`);
@@ -209,7 +261,6 @@ export default function PaymentOptionsPage() {
     const queryParams = new URLSearchParams({
       type: "choose-amount",
       userName: state.currentUserName || "",
-      maxAmount: unpaidAmount.toString(),
     });
 
     navigateWithTable(`/tip-selection?${queryParams.toString()}`);
@@ -231,11 +282,7 @@ export default function PaymentOptionsPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col items-center justify-center">
-        <Loader className="size-12 text-white animate-spin" />
-      </div>
-    );
+    return <Loader />;
   }
 
   // Show loading while syncing new user
@@ -283,7 +330,7 @@ export default function PaymentOptionsPage() {
                     </div>
                     <div className="flex-1 text-left">
                       <h3 className="text-black font-semibold">
-                        1. Pagar cuenta completa
+                        Pagar cuenta completa
                       </h3>
                       <p className="text-sm text-gray-600">
                         ${unpaidAmount.toFixed(2)} pendientes
@@ -308,7 +355,7 @@ export default function PaymentOptionsPage() {
                     </div>
                     <div className="flex-1 text-left">
                       <h3 className="text-black font-semibold">
-                        2. Seleccionar alimentos
+                        Seleccionar alimentos
                       </h3>
                     </div>
                     <div className="text-black">
@@ -330,7 +377,7 @@ export default function PaymentOptionsPage() {
                     </div>
                     <div className="flex-1 text-left">
                       <h3 className="text-black font-semibold">
-                        3. Dividir cuenta
+                        Dividir cuenta
                       </h3>
                       <p className="text-sm text-gray-600">
                         {uniqueUsers.length === 1
@@ -359,9 +406,7 @@ export default function PaymentOptionsPage() {
                       />
                     </div>
                     <div className="flex-1 text-left">
-                      <h3 className="text-black font-semibold">
-                        4. Elegir monto
-                      </h3>
+                      <h3 className="text-black font-semibold">Elegir monto</h3>
                     </div>
                     <div className="text-black">
                       <ChevronRight className="size-5" />

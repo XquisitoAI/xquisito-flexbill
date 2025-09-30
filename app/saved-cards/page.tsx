@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, JSX } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useTable } from "../context/TableContext";
@@ -17,6 +17,13 @@ import {
   AlertTriangle,
   LoaderIcon,
 } from "lucide-react";
+import Loader from "../components/Loader";
+import {
+  Mastercard,
+  Visa,
+  Amex,
+  Discover,
+} from "react-payment-logos/dist/logo";
 
 export default function SavedCardsPage() {
   const { user, isLoaded } = useUser();
@@ -65,32 +72,43 @@ export default function SavedCardsPage() {
     }
   };
 
-  const getCardIcon = (cardType: string) => {
-    switch (cardType) {
+  function getCardIcon(cardType: string): JSX.Element {
+    const type = cardType.toLowerCase();
+
+    switch (type) {
       case "visa":
-        return "💳";
+        return <Visa style={{ width: "56px", height: "35px" }} />;
       case "mastercard":
-        return "🔴";
+        return <Mastercard style={{ width: "56px", height: "35px" }} />;
       case "amex":
-        return "🔵";
+        return <Amex style={{ width: "56px", height: "35px" }} />;
+      case "discover":
+        return <Discover style={{ width: "56px", height: "35px" }} />;
       default:
-        return "💳";
+        return (
+          <div
+            style={{
+              width: "56px",
+              height: "35px",
+              background: "linear-gradient(to right, #3b82f6, #a855f7)",
+              borderRadius: "4px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white",
+              fontSize: "10px",
+              fontWeight: "bold",
+            }}
+          >
+            💳
+          </div>
+        );
     }
-  };
+  }
 
   // Loading state
   if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex items-center justify-center">
-        <div className="animate-pulse">
-          <img
-            src="/logo-short-green.webp"
-            alt="Xquisito Logo"
-            className="size-24 justify-self-center"
-          />
-        </div>
-      </div>
-    );
+    return <Loader />;
   }
 
   // Not authenticated
@@ -122,160 +140,162 @@ export default function SavedCardsPage() {
         tableNumber={state.tableNumber}
       />
 
-      <div className="px-4 w-full flex-1 flex flex-col">
-        <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
-          <div className="py-6 px-8 flex flex-col justify-center">
-            <h2 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
-              Mis tarjetas guardadas
-            </h2>
+      <div className="px-4 w-full fixed bottom-0 left-0 right-0">
+        <div className="flex-1 flex flex-col relative">
+          <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
+            <div className="py-6 px-8 flex flex-col justify-center">
+              <h2 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
+                Mis tarjetas guardadas
+              </h2>
+            </div>
           </div>
-        </div>
 
-        <div className="flex-1 h-full flex flex-col">
-          <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col px-6 py-6">
-            {/* Add New Card Button */}
-            <button
-              onClick={handleAddNewCard}
-              className="w-full bg-teal-50 border-2 border-dashed border-teal-300 rounded-lg p-4 mb-6 hover:bg-teal-100 transition-colors"
-            >
-              <div className="flex items-center justify-center gap-3">
-                <Plus className="size-6 text-teal-600" />
-                <span className="text-teal-700 font-medium">
-                  Agregar nueva tarjeta
-                </span>
-              </div>
-            </button>
-
-            {/* Loading State */}
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <LoaderIcon className="size-8 animate-spin text-teal-600" />
-              </div>
-            ) : (
-              <>
-                {/* Payment Methods List */}
-                {hasPaymentMethods ? (
-                  <div className="space-y-4">
-                    {paymentMethods.map((method) => (
-                      <div
-                        key={method.id}
-                        className={`relative border rounded-lg p-4 ${
-                          method.isDefault
-                            ? "border-teal-300 bg-teal-50"
-                            : "border-gray-200 bg-white"
-                        }`}
-                      >
-                        {/* Default Badge */}
-                        {method.isDefault && (
-                          <div className="absolute -top-2 left-4 bg-teal-600 text-white text-xs px-2 py-1 rounded-full">
-                            Por defecto
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="size-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                              <span className="text-2xl">
-                                {getCardIcon(method.cardType)}
-                              </span>
+          <div className="flex-1 h-full flex flex-col">
+            <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col px-6 pt-8 pb-6">
+              {/* Loading State */}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <LoaderIcon className="size-8 animate-spin text-teal-600" />
+                </div>
+              ) : (
+                <>
+                  {/* Payment Methods List */}
+                  {hasPaymentMethods ? (
+                    <div className="space-y-2">
+                      {paymentMethods.map((method) => (
+                        <div
+                          key={method.id}
+                          className={`relative border rounded-full py-1.5 px-5 ${
+                            method.isDefault
+                              ? "border-teal-300 bg-teal-50"
+                              : "border-black/50 bg-[#f9f9f9]"
+                          }`}
+                        >
+                          {/* Default Badge */}
+                          {method.isDefault && (
+                            <div className="absolute -top-2 left-4 bg-teal-600 text-white text-xs px-2 py-1 rounded-full">
+                              Por defecto
                             </div>
+                          )}
 
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-900 capitalize">
-                                  {method.cardType}
-                                </span>
-                                <span className="text-gray-600">
-                                  •••• {method.lastFourDigits}
+                          <div className="flex items-center">
+                            <div className="flex items-center gap-2 mx-auto">
+                              <div>
+                                <span className="text-2xl">
+                                  {getCardIcon(method.cardType)}
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-500">
-                                {method.cardholderName}
-                              </p>
-                              <p className="text-sm text-gray-500">
-                                Expira {method.expiryMonth?.toString().padStart(2, '0')}/{method.expiryYear?.toString().slice(-2)}
-                              </p>
-                            </div>
-                          </div>
 
-                          <div className="flex items-center gap-2">
-                            {/* Set Default Button */}
-                            {!method.isDefault && (
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-black">
+                                    **** **** **** {method.lastFourDigits}
+                                  </span>
+                                  <p className="text-xs text-gray-500">
+                                    {method.expiryMonth
+                                      ?.toString()
+                                      .padStart(2, "0")}
+                                    /{method.expiryYear?.toString().slice(-2)}
+                                  </p>
+                                </div>
+                                {/*
+                                <p className="text-sm text-gray-500">
+                                  {method.cardholderName}
+                                </p>*/}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center">
+                              {/* Set Default Button */}
+                              {!method.isDefault && (
+                                <button
+                                  onClick={() => handleSetDefault(method.id)}
+                                  disabled={settingDefaultId === method.id}
+                                  className="text-gray-400 hover:text-teal-600 transition-colors disabled:opacity-50 cursor-pointer"
+                                  title="Establecer como predeterminada"
+                                >
+                                  {settingDefaultId === method.id ? (
+                                    <LoaderIcon className="size-5 animate-spin" />
+                                  ) : (
+                                    <StarOff className="size-5" />
+                                  )}
+                                </button>
+                              )}
+
+                              {method.isDefault && (
+                                <div
+                                  className=" text-teal-600"
+                                  title="Tarjeta predeterminada"
+                                >
+                                  <Star className="size-5 fill-current" />
+                                </div>
+                              )}
+
+                              {/* Delete Button */}
                               <button
-                                onClick={() => handleSetDefault(method.id)}
-                                disabled={settingDefaultId === method.id}
-                                className="p-2 text-gray-400 hover:text-teal-600 transition-colors disabled:opacity-50"
-                                title="Establecer como predeterminada"
+                                onClick={() => handleDeleteCard(method.id)}
+                                disabled={deletingCardId === method.id}
+                                className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50 cursor-pointer"
+                                title="Eliminar tarjeta"
                               >
-                                {settingDefaultId === method.id ? (
+                                {deletingCardId === method.id ? (
                                   <LoaderIcon className="size-5 animate-spin" />
                                 ) : (
-                                  <StarOff className="size-5" />
+                                  <Trash2 className="size-5" />
                                 )}
                               </button>
-                            )}
-
-                            {method.isDefault && (
-                              <div className="p-2 text-teal-600" title="Tarjeta predeterminada">
-                                <Star className="size-5 fill-current" />
-                              </div>
-                            )}
-
-                            {/* Delete Button */}
-                            <button
-                              onClick={() => handleDeleteCard(method.id)}
-                              disabled={deletingCardId === method.id}
-                              className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
-                              title="Eliminar tarjeta"
-                            >
-                              {deletingCardId === method.id ? (
-                                <LoaderIcon className="size-5 animate-spin" />
-                              ) : (
-                                <Trash2 className="size-5" />
-                              )}
-                            </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  /* Empty State */
-                  <div className="text-center py-12">
-                    <div className="size-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <CreditCard className="size-10 text-gray-400" />
+                      ))}
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No tienes tarjetas guardadas
-                    </h3>
-                    <p className="text-gray-500 mb-6">
-                      Agrega una tarjeta para pagar más rápido en tus próximos
-                      pedidos
-                    </p>
-                    <button
-                      onClick={handleAddNewCard}
-                      className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                    >
-                      Agregar mi primera tarjeta
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+                  ) : (
+                    /* Empty State */
+                    <div className="text-center py-12">
+                      <div className="size-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CreditCard className="size-10 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No tienes tarjetas guardadas
+                      </h3>
+                      <p className="text-gray-500 mb-6">
+                        Agrega una tarjeta para pagar más rápido en tus próximos
+                        pedidos
+                      </p>
+                      <button
+                        onClick={handleAddNewCard}
+                        className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                      >
+                        Agregar mi primera tarjeta
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
 
-            {/* Security Notice */}
-            <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="size-5 text-blue-600 mt-0.5" />
-                <div>
-                  <p className="text-blue-800 font-medium text-sm">
-                    Seguridad garantizada
-                  </p>
-                  <p className="text-blue-600 text-xs mt-1">
-                    Tus datos de tarjeta están protegidos con encriptación de
-                    nivel bancario. Solo almacenamos tokens seguros, nunca
-                    información sensible.
-                  </p>
+              {/* Add New Card Button */}
+              <button
+                onClick={handleAddNewCard}
+                className="mt-2 border border-black/50 flex justify-center items-center gap-1 w-full text-black py-3 rounded-full cursor-pointer transition-colors bg-[#f9f9f9] hover:bg-gray-100"
+              >
+                <Plus className="size-5" />
+                Agregar nueva tarjeta
+              </button>
+
+              {/* Security Notice */}
+              <div className="mt-5 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="size-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <p className="text-blue-800 font-medium text-sm">
+                      Seguridad garantizada
+                    </p>
+                    <p className="text-blue-600 text-xs mt-1">
+                      Tus datos de tarjeta están protegidos con encriptación de
+                      nivel bancario. Solo almacenamos tokens seguros, nunca
+                      información sensible.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

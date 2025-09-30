@@ -18,9 +18,6 @@ export default function TipSelectionPage() {
   const paymentType = searchParams.get("type") || "full-bill";
   const amount = searchParams.get("amount");
   const userName = searchParams.get("userName");
-  const users = searchParams.get("users");
-  const numberOfPeople = searchParams.get("numberOfPeople");
-  const maxAmount = searchParams.get("maxAmount");
 
   const [tipPercentage, setTipPercentage] = useState(0);
   const [customTip, setCustomTip] = useState("");
@@ -54,7 +51,7 @@ export default function TipSelectionPage() {
     }
   }, [state.tableNumber]);
 
-  // Cargar datos guardados si existen
+  // Inicializar customPaymentAmount para choose-amount
   useEffect(() => {
     if (paymentType === "choose-amount" && amount) {
       setCustomPaymentAmount(amount);
@@ -124,9 +121,7 @@ export default function TipSelectionPage() {
       case "user-items":
         return currentUserUnpaidAmount;
       case "equal-shares":
-        const participantCount = numberOfPeople
-          ? parseInt(numberOfPeople)
-          : uniqueUsers.length;
+        const participantCount = uniqueUsers.length;
         const currentRemaining =
           state.tableSummary?.data?.data?.remaining_amount || unpaidAmount;
         // Si no hay personas pendientes o el monto es 0, devolver 0
@@ -149,9 +144,7 @@ export default function TipSelectionPage() {
   const baseAmount = getPaymentAmount();
   const currentRemainingAmount =
     state.tableSummary?.data?.data?.remaining_amount || unpaidAmount;
-  const maxAllowedAmount = maxAmount
-    ? parseFloat(maxAmount)
-    : currentRemainingAmount;
+  const maxAllowedAmount = currentRemainingAmount;
 
   const calculateTipAmount = () => {
     if (customTip && parseFloat(customTip) > 0) {
@@ -182,30 +175,12 @@ export default function TipSelectionPage() {
   };
 
   const handleContinueToCardSelection = () => {
-    // Guardar información del pago en sessionStorage
-    sessionStorage.setItem("tipPercentage", tipPercentage.toString());
-    sessionStorage.setItem("customTip", customTip);
-    sessionStorage.setItem("tipAmount", tipAmount.toString());
-    sessionStorage.setItem("baseAmount", baseAmount.toString());
-    sessionStorage.setItem("paymentAmount", paymentAmount.toString());
-    sessionStorage.setItem("paymentType", paymentType);
-    sessionStorage.setItem("userName", userName || "");
-
-    if (paymentType === "choose-amount") {
-      sessionStorage.setItem("customPaymentAmount", customPaymentAmount);
-    }
-
-    if (paymentType === "select-items") {
-      sessionStorage.setItem("selectedItems", JSON.stringify(selectedItems));
-    }
-
     const queryParams = new URLSearchParams({
       type: paymentType,
       amount: paymentAmount.toString(), // Total con propina para eCardPay
       baseAmount: baseAmount.toString(), // Monto base sin propina para BD
       tipAmount: tipAmount.toString(), // Propina por separado
       ...(userName && { userName }),
-      ...(users && { users }),
       ...(paymentType === "select-items" && {
         selectedItems: selectedItems.join(","),
       }),
@@ -227,7 +202,7 @@ export default function TipSelectionPage() {
           items: `${currentUserUnpaidDishes.length} platillo${currentUserUnpaidDishes.length !== 1 ? "s" : ""}`,
         };
       case "equal-shares":
-        const divisionPeople = numberOfPeople || uniqueUsers.length;
+        const divisionPeople = uniqueUsers.length;
         if (divisionPeople <= 0) {
           return {
             description: "División completada",
@@ -365,14 +340,14 @@ export default function TipSelectionPage() {
                             </div>
                             <div className="size-16 bg-gray-300 rounded-sm flex items-center justify-center hover:scale-105 transition-transform duration-200">
                               <img
-                                src={"/logo-short-green.webp"}
+                                src={dish.images[0] || "/logo-short-green.webp"}
                                 alt="Logo Xquisito"
-                                className="size-18 object-contain rounded-sm"
+                                className="w-full h-full object-cover rounded-xl"
                               />
                             </div>
                             <div className="flex-1 min-w-0">
                               <h3 className="text-sm text-[#8e8e8e]">
-                                {dish.guest_name}
+                                {dish.guest_name.toUpperCase()}
                               </h3>
                               <h4 className="text-base font-medium text-black">
                                 {dish.item}

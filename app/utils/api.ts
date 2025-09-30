@@ -71,18 +71,18 @@ class ApiService {
       const tokenToUse = authToken || this.authToken;
       if (tokenToUse) {
         // For registered users, use auth token and skip guest headers
-        defaultOptions.headers['Authorization'] = `Bearer ${tokenToUse}`;
+        defaultOptions.headers["Authorization"] = `Bearer ${tokenToUse}`;
       } else {
         // For guests only, add guest identification headers
         const guestId = this.getGuestId();
         if (guestId) {
-          defaultOptions.headers['x-guest-id'] = guestId;
+          defaultOptions.headers["x-guest-id"] = guestId;
         }
 
         // Add table number if available
         const tableNumber = this.getTableNumber();
         if (tableNumber) {
-          defaultOptions.headers['x-table-number'] = tableNumber;
+          defaultOptions.headers["x-table-number"] = tableNumber;
         }
       }
 
@@ -265,7 +265,9 @@ class ApiService {
     guestName: string,
     item: string,
     quantity: number,
-    price: number
+    price: number,
+    guestId?: string | null,
+    images: string[] = []
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(`/tables/${tableNumber}/dishes`, {
       method: "POST",
@@ -275,6 +277,8 @@ class ApiService {
         item,
         quantity,
         price,
+        guestId,
+        images,
       }),
     });
   }
@@ -363,6 +367,48 @@ class ApiService {
    */
   async getSplitPaymentStatus(tableNumber: string): Promise<ApiResponse<any>> {
     return this.makeRequest(`/tables/${tableNumber}/split-status`);
+  }
+
+  /**
+   * Link guest orders to authenticated user
+   */
+  async linkGuestOrdersToUser(
+    guestId: string,
+    userId: string,
+    tableNumber?: string
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(`/orders/link-user`, {
+      method: "PUT",
+      body: JSON.stringify({
+        guestId,
+        userId,
+        tableNumber,
+      }),
+    });
+  }
+
+  /**
+   * Get multiple users info (images, names, etc) from Clerk
+   */
+  async getUsersInfo(userIds: string[]): Promise<
+    ApiResponse<
+      Record<
+        string,
+        {
+          imageUrl: string | null;
+          firstName: string | null;
+          lastName: string | null;
+          fullName: string | null;
+        }
+      >
+    >
+  > {
+    return this.makeRequest(`/users/info`, {
+      method: "POST",
+      body: JSON.stringify({
+        userIds,
+      }),
+    });
   }
 }
 

@@ -11,19 +11,6 @@ import { saveUrlParams } from "../utils/urlParams";
 import MenuHeaderBack from "./MenuHeaderBack";
 import { ChevronRight, X, Loader2, Eye, EyeClosed } from "lucide-react";
 
-// Tipos para el estado de los items
-type OrderItemStatus = "En preparación" | "En camino" | "Entregado";
-
-// Función para asignar estado aleatorio (simulando el proceso real)
-const getRandomStatus = (): OrderItemStatus => {
-  const statuses: OrderItemStatus[] = [
-    "En preparación",
-    "En camino",
-    "Entregado",
-  ];
-  return statuses[Math.floor(Math.random() * statuses.length)];
-};
-
 export default function OrderStatus() {
   const { state, loadTableData } = useTable();
   const { goBack, navigateWithTable } = useTableNavigation();
@@ -281,9 +268,12 @@ export default function OrderStatus() {
                                 <div className="flex-shrink-0 mt-1">
                                   <div className="size-16 bg-gray-300 rounded-sm flex items-center justify-center hover:scale-105 transition-transform duration-200">
                                     <img
-                                      src={"/logo-short-green.webp"}
-                                      alt="Logo Xquisito"
-                                      className="size-18 object-contain rounded-sm"
+                                      src={
+                                        dish.images?.[0] ??
+                                        "/logo-short-green.webp"
+                                      }
+                                      alt="Dish Image"
+                                      className="w-full h-full object-cover rounded-sm"
                                     />
                                   </div>
                                 </div>
@@ -412,7 +402,10 @@ export default function OrderStatus() {
                                   <div className="flex-shrink-0 mt-1">
                                     <div className="size-16 bg-gray-300 rounded-sm flex items-center justify-center hover:scale-105 transition-transform duration-200">
                                       <img
-                                        src={"/logo-short-green.webp"}
+                                        src={
+                                          dish.images?.[0] ??
+                                          "/logo-short-green.webp"
+                                        }
                                         alt="Logo Xquisito"
                                         className="size-18 object-contain rounded-sm"
                                       />
@@ -483,7 +476,7 @@ export default function OrderStatus() {
                       ) : tableRemainingAmount <= 0 ? (
                         "¡Cuenta pagada completamente!"
                       ) : (
-                        `Pagar $${tableRemainingAmount.toFixed(2)}`
+                        "Pagar"
                       )}
                     </button>
                   </div>

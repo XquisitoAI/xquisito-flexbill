@@ -317,7 +317,11 @@ export default function PaymentSuccessPage() {
               </button>
 
               <button
-                onClick={() => router.push("/sign-up")}
+                onClick={() => {
+                  // Mark that user is coming from payment-success context
+                  sessionStorage.setItem('signupFromPaymentSuccess', 'true');
+                  router.push("/sign-up");
+                }}
                 className="w-full text-black border border-black py-3 rounded-full cursor-pointer transition-colors bg-white hover:bg-stone-100"
               >
                 Crear una cuenta

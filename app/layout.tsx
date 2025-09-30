@@ -33,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider
-      signUpFallbackRedirectUrl="/dashboard"
+      signUpFallbackRedirectUrl=""
       signInFallbackRedirectUrl=""
     >
       <html lang="en">

@@ -1,23 +1,45 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import * as Clerk from "@clerk/elements/common";
 import * as SignUp from "@clerk/elements/sign-up";
 import { useUser, useSignUp } from "@clerk/nextjs";
 import { useUserData } from "../../context/UserDataContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ScanFace, Mail, KeyRound, User } from "lucide-react";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 
 export default function SignUpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
+  const [hasRedirected, setHasRedirected] = useState(false);
 
-  const { user } = useUser();
+  const { user, isSignedIn, isLoaded: userLoaded } = useUser();
   const { signUp, isLoaded } = useSignUp();
   const { updateSignUpData } = useUserData();
   const { navigateWithTable } = useTableNavigation();
+
+  const tableNumber = searchParams.get('table');
+
+  // Store table number for post-signup redirect
+  useEffect(() => {
+    if (tableNumber) {
+      console.log('🔍 SignUp: Storing payment flow context:', tableNumber);
+      sessionStorage.setItem('pendingTableRedirect', tableNumber);
+      sessionStorage.setItem('signupFromPaymentFlow', 'true');
+    } else {
+      console.log('🔍 SignUp: No table number found in URL');
+    }
+  }, [tableNumber]);
+
+  const handleSignUpSuccess = useCallback(() => {
+    navigateWithTable("/payment-options");
+  }, [navigateWithTable]);
+
+  // Note: Redirect handling is now managed in the root page (/)
+  // to properly distinguish between payment flow vs payment-success contexts
 
   const handleContinueSubmit = async () => {
     // This function is handled by the dashboard sync now
@@ -34,7 +56,11 @@ export default function SignUpPage() {
           />
         </div>
         <div className="w-full">
-          <SignUp.Root>
+          <SignUp.Root
+            routing="virtual"
+            path="/sign-up"
+            afterSignUpUrl=""
+          >
             <SignUp.Step name="start">
               <div className="mb-6 text-center">
                 <h1 className="text-xl font-semibold text-white mb-2">

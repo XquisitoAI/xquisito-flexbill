@@ -13,13 +13,34 @@ export default function Home() {
   useEffect(() => {
     if (!isLoaded) return;
 
-    // Check if user just signed in and has table context
+    // Check if user just signed in/up and has context
     const storedTable = sessionStorage.getItem('pendingTableRedirect');
+    const isFromPaymentFlow = sessionStorage.getItem('signupFromPaymentFlow');
+    const isFromPaymentSuccess = sessionStorage.getItem('signupFromPaymentSuccess');
 
-    if (isSignedIn && storedTable) {
-      // User just signed in, redirect to payment-options with table
+    console.log('🔍 Root page debugging:', {
+      isLoaded,
+      isSignedIn,
+      storedTable,
+      isFromPaymentFlow,
+      isFromPaymentSuccess,
+      currentPath: window.location.pathname
+    });
+
+    if (isSignedIn && storedTable && isFromPaymentFlow) {
+      // User signed up during payment flow, redirect to payment-options with table
+      console.log('✅ Redirecting to payment-options with table:', storedTable);
       sessionStorage.removeItem('pendingTableRedirect');
+      sessionStorage.removeItem('signupFromPaymentFlow');
       router.replace(`/payment-options?table=${storedTable}`);
+      return;
+    }
+
+    if (isSignedIn && isFromPaymentSuccess) {
+      // User signed up from payment-success, redirect to dashboard
+      console.log('✅ Redirecting to dashboard from payment-success');
+      sessionStorage.removeItem('signupFromPaymentSuccess');
+      router.replace('/dashboard');
       return;
     }
 

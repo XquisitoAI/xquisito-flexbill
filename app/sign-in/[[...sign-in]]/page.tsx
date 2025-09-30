@@ -172,7 +172,13 @@ function SignInContent() {
 
               <div
                 className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-medium cursor-pointer transition-colors mt-6"
-                onClick={() => router.push("/sign-up")}
+                onClick={() => {
+                  if (tableNumber) {
+                    router.push(`/sign-up?table=${tableNumber}`);
+                  } else {
+                    router.push("/sign-up");
+                  }
+                }}
               >
                 Crear cuenta
               </div>

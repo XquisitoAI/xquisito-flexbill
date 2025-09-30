@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
+import { useUserData } from "../context/UserDataContext";
+import { useUserSync } from "../hooks/useUserSync";
 import { getRestaurantData } from "../utils/restaurantData";
 import { getSavedUrlParams, clearSavedUrlParams } from "../utils/urlParams";
 import MenuHeaderBack from "../components/MenuHeaderBack";
@@ -18,12 +21,17 @@ import {
 } from "lucide-react";
 
 export default function PaymentOptionsPage() {
+  const { user } = useUser();
   const { state, loadTableData } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const router = useRouter();
   const restaurantData = getRestaurantData();
   const [isLoading, setIsLoading] = useState(true);
   const [splitStatus, setSplitStatus] = useState<any>(null);
+
+  // Auto-sync user to backend if authenticated
+  const { signUpData } = useUserData();
+  const { saveUserToBackend, isSyncing, syncStatus, isUserSynced } = useUserSync(signUpData);
 
   useEffect(() => {
     const savedParams = getSavedUrlParams();
@@ -32,6 +40,14 @@ export default function PaymentOptionsPage() {
       clearSavedUrlParams();
     }
   }, [router]);
+
+  // Auto-sync authenticated users to backend
+  useEffect(() => {
+    if (user && !isUserSynced && !isSyncing && syncStatus !== 'success') {
+      console.log('🔄 Payment Options: Auto-syncing new user to backend');
+      saveUserToBackend();
+    }
+  }, [user, isUserSynced, isSyncing, syncStatus, saveUserToBackend]);
 
   const loadSplitStatus = async () => {
     if (!state.tableNumber) return;
@@ -218,6 +234,16 @@ export default function PaymentOptionsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col items-center justify-center">
         <Loader className="size-12 text-white animate-spin" />
+      </div>
+    );
+  }
+
+  // Show loading while syncing new user
+  if (user && isSyncing) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col items-center justify-center">
+        <Loader className="size-12 text-white animate-spin" />
+        <p className="text-white mt-4">Configurando tu cuenta...</p>
       </div>
     );
   }

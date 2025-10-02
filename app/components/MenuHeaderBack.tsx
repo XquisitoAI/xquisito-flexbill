@@ -229,7 +229,7 @@ export default function MenuHeaderBack({
             {remainingCount > 0 && (
               <div
                 onClick={() => setIsParticipantsModalOpen(true)}
-                className="size-10 bg-white rounded-full flex items-center justify-center text-black text-base font-semibold border border-[#8e8e8e] shadow-sm cursor-pointer"
+                className="size-10 bg-white rounded-full flex items-center justify-center text-black text-base font-medium border border-[#8e8e8e] shadow-sm cursor-pointer"
               >
                 +{remainingCount}
               </div>
@@ -247,7 +247,7 @@ export default function MenuHeaderBack({
                 <div
                   key={participant.guest_name}
                   onClick={() => setIsParticipantsModalOpen(true)}
-                  className={`size-10 rounded-full flex items-center justify-center text-white text-base font-semibold border border-white shadow-sm cursor-pointer overflow-hidden ${!hasImage ? getAvatarColor(displayName) : ""}`}
+                  className={`size-10 rounded-full flex items-center justify-center text-white text-base font-medium border border-white shadow-sm cursor-pointer overflow-hidden ${!hasImage ? getAvatarColor(displayName) : ""}`}
                   style={{
                     marginLeft: remainingCount > 0 || index > 0 ? "-12px" : "0",
                   }}

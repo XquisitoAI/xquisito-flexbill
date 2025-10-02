@@ -76,12 +76,12 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
           </div>
 
           {/* Filters */}
-          <div className="flex gap-2 mt-3 mb-6 w-full">
+          <div className="flex gap-2 mt-3 mb-6 w-full overflow-x-auto scrollbar-hide">
             {categorias.map((cat) => (
               <div
                 key={cat}
                 onClick={() => setFilter(cat)}
-                className={`px-3 rounded-full cursor-pointer 
+                className={`px-3 rounded-full cursor-pointer whitespace-nowrap flex-shrink-0
                 ${
                   filter === cat
                     ? "bg-black text-white hover:bg-slate-800"

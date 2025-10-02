@@ -1,13 +1,13 @@
 "use client";
 
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { findDishById } from "../../utils/menuData";
 import { restaurantData } from "../../utils/restaurantData";
 import { useTable } from "../../context/TableContext";
 import { useTableNavigation } from "../../hooks/useTableNavigation";
-import MenuHeaderBack from "@/app/components/MenuHeaderBack";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, ChevronDown } from "lucide-react";
+import MenuHeaderDish from "@/app/components/MenuHeaderDish";
 
 export default function DishDetailPage() {
   const params = useParams();
@@ -16,6 +16,47 @@ export default function DishDetailPage() {
   const dishId = parseInt(params.id as string);
   const { state, dispatch } = useTable();
   const { tableNumber, goBack } = useTableNavigation();
+  const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({
+    ingredientes: false,
+    extras: false,
+  });
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+
+  const toggleSection = (section: string) => {
+    setOpenSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!dishData) return;
+
+    const minSwipeDistance = 50;
+    const distance = touchStart - touchEnd;
+
+    if (Math.abs(distance) < minSwipeDistance) return;
+
+    if (distance > 0) {
+      // Swipe left - siguiente imagen
+      setCurrentImageIndex((prev) =>
+        prev < dishData.dish.images.length - 1 ? prev + 1 : prev
+      );
+    } else {
+      // Swipe right - imagen anterior
+      setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : prev));
+    }
+  };
 
   useEffect(() => {
     if (!tableNumber) {
@@ -54,20 +95,24 @@ export default function DishDetailPage() {
         payload: { id: dishData.dish.id, quantity: cartItem.quantity - 1 },
       });
     } else if (cartItem && cartItem.quantity === 1) {
-      dispatch({ type: "REMOVE_ITEM_FROM_CURRENT_USER", payload: dishData.dish.id });
+      dispatch({
+        type: "REMOVE_ITEM_FROM_CURRENT_USER",
+        payload: dishData.dish.id,
+      });
     }
   };
 
   const currentQuantity = dishData
-    ? state.currentUserItems.find((cartItem) => cartItem.id === dishData.dish.id)
-        ?.quantity || 0
+    ? state.currentUserItems.find(
+        (cartItem) => cartItem.id === dishData.dish.id
+      )?.quantity || 0
     : 0;
 
   if (!tableNumber || isNaN(parseInt(tableNumber))) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">
+          <h1 className="text-2xl font-medium text-gray-800 mb-4">
             Mesa Inválida
           </h1>
           <p className="text-gray-600">Por favor escanee el código QR</p>
@@ -80,7 +125,7 @@ export default function DishDetailPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">
+          <h1 className="text-2xl font-medium text-gray-800 mb-4">
             Platillo no encontrado
           </h1>
           <button
@@ -98,63 +143,130 @@ export default function DishDetailPage() {
 
   return (
     <div className="min-h-screen bg-white relative">
-      <img
-        src={dish.images[0]}
-        alt=""
-        className="absolute top-0 left-0 w-full h-96 object-cover z-0"
-      />
+      {/* Slider de imágenes */}
+      <div className="absolute top-0 left-0 w-full h-96 z-0">
+        <div
+          className="relative w-full h-full overflow-hidden"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {dish.images.map((image, index) => (
+            <img
+              key={index}
+              src={image}
+              alt=""
+              className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-500 ${
+                index === currentImageIndex ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          ))}
+        </div>
 
-      <MenuHeaderBack restaurant={restaurantData} tableNumber={tableNumber} />
+        {/* Indicadores */}
+        <div className="absolute bottom-12 left-0 right-0 flex justify-center gap-2 z-10">
+          {dish.images.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentImageIndex(index)}
+              className={`h-2.5 rounded-full transition-all duration-300 border border-white cursor-pointer ${
+                index === currentImageIndex
+                  ? "w-2.5 bg-white"
+                  : "w-2.5 bg-white/10"
+              }`}
+              aria-label={`Ver imagen ${index + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <MenuHeaderDish restaurant={restaurantData} />
 
       <main className="mt-72 relative z-10">
         {/* Contenido principal */}
         <div className="bg-white rounded-t-4xl flex flex-col px-6">
           {/* Información del platillo */}
-          <div className="mt-6">
+          <div className="mt-8">
+            <div className="flex justify-between items-center text-black mb-6">
+              <div className="flex items-center gap-1.5">
+                <button className="text-black">
+                  <svg
+                    className="size-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                </button>
+                4.5
+              </div>
+              <a href="" className="underline text-black">
+                Comparte tu reseña
+              </a>
+            </div>
             <div className="flex justify-between items-start mb-4">
-              <h2 className="text-3xl font-semibold text-black">{dish.name}</h2>
-              <span className="text-3xl font-semibold text-black">
-                ${dish.price.toFixed(2)}
-              </span>
+              <h2 className="text-3xl font-medium text-black">{dish.name}</h2>
             </div>
 
             <div className="flex gap-1 mt-1 mb-3">
               {dish.features.map((feature, index) => (
                 <div
                   key={index}
-                  className="text-sm text-black font-semibold border border-[#bfbfbf]/50 rounded-3xl px-3 py-1 shadow-sm"
+                  className="text-sm text-black font-medium border border-[#bfbfbf]/50 rounded-3xl px-3 py-1 shadow-sm"
                 >
                   {feature}
                 </div>
               ))}
             </div>
 
-            <p className="text-black text-base leading-relaxed mb-6">
+            <p className="text-black text-base leading-relaxed mb-8">
               {dish.description}
             </p>
 
             {/* Secciones adicionales */}
             <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div className="divide-y divide-[#8e8e8e]">
-                <h3 className="font-bold text-black pb-2 mb-2 text-xl">
-                  Ingredientes
-                </h3>
-                <p className="text-black">
-                  Información de ingredientes próximamente...
-                </p>
+              <div>
+                <div
+                  className="flex justify-between items-center pb-2 border-b border-[#8e8e8e] cursor-pointer"
+                  onClick={() => toggleSection("ingredientes")}
+                >
+                  <h3 className="font-medium text-black text-xl">
+                    Ingredientes
+                  </h3>
+                  <div className="size-7 bg-[#f9f9f9] rounded-full flex items-center justify-center border border-[#8e8e8e]/50">
+                    <ChevronDown
+                      className={`size-5 text-black transition-transform duration-250 ${openSections.ingredientes ? "rotate-180" : ""}`}
+                    />
+                  </div>
+                </div>
+                {openSections.ingredientes && (
+                  <p className="text-black pt-2">
+                    Información de ingredientes próximamente...
+                  </p>
+                )}
               </div>
 
-              <div className="divide-y divide-[#8e8e8e]">
-                <h3 className="font-bold text-black pb-2 mb-2 text-xl">
-                  Extras
-                </h3>
-                <p className="text-black">Extras próximamente...</p>
+              <div>
+                <div
+                  className="flex justify-between items-center pb-2 border-b border-[#8e8e8e] cursor-pointer"
+                  onClick={() => toggleSection("extras")}
+                >
+                  <h3 className="font-medium text-black text-xl">Extras</h3>
+                  <div className="size-7 bg-[#f9f9f9] rounded-full flex items-center justify-center border border-[#8e8e8e]/50">
+                    <ChevronDown
+                      className={`size-5 text-black transition-transform duration-250 ${openSections.extras ? "rotate-180" : ""}`}
+                    />
+                  </div>
+                </div>
+                {openSections.extras && (
+                  <p className="text-black pt-2">Extras próximamente...</p>
+                )}
               </div>
             </div>
 
             {/* Comentarios Textarea */}
             <div className="text-black">
-              <span className="font-bold text-xl">
+              <span className="font-medium text-xl">
                 ¿Algo que debamos saber?
               </span>
               <textarea
@@ -174,9 +286,9 @@ export default function DishDetailPage() {
                 Agregar al carrito
               </button>
 
-              <div className="flex gap-2.5 px-6 py-3 h-fit bg-[#f9f9f9] rounded-full border border-[#8e8e8e]/50 font-thin items-center justify-center">
+              <div className="flex gap-2.5 px-6 py-3 h-fit bg-[#f9f9f9] rounded-full border border-[#8e8e8e]/50 items-center justify-center">
                 <Minus
-                  className={`size-4 ${currentQuantity > 0 ? "cursor-pointer text-black" : "cursor-no-drop text-black/50"}`}
+                  className={`size-4 ${currentQuantity > 0 ? "cursor-pointer text-black" : "cursor-no-drop text-black"}`}
                   onClick={
                     currentQuantity > 0 ? handleRemoveFromCart : undefined
                   }

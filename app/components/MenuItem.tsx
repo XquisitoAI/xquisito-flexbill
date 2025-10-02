@@ -3,7 +3,9 @@
 import { MenuItemData } from "../interfaces/menuItemData";
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
+import { useFlyToCart } from "../hooks/useFlyToCart";
 import { Plus, Minus } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
 
 interface MenuItemProps {
   item: MenuItemData;
@@ -12,6 +14,10 @@ interface MenuItemProps {
 export default function MenuItem({ item }: MenuItemProps) {
   const { state, dispatch } = useTable();
   const { navigateWithTable } = useTableNavigation();
+  const { flyToCart } = useFlyToCart();
+  const plusButtonRef = useRef<HTMLDivElement>(null);
+  const [localQuantity, setLocalQuantity] = useState(0);
+  const [isPulsing, setIsPulsing] = useState(false);
 
   const handleImageClick = () => {
     navigateWithTable(`/dish/${item.id}`);
@@ -19,11 +25,37 @@ export default function MenuItem({ item }: MenuItemProps) {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    dispatch({ type: "ADD_ITEM_TO_CURRENT_USER", payload: item });
+
+    // Update local quantity al instante
+    setLocalQuantity((prev) => prev + 1);
+
+    // Trigger pulse animation
+    setIsPulsing(true);
+
+    // Primero animacion, luego se agrega al carrito
+    if (plusButtonRef.current) {
+      flyToCart(plusButtonRef.current, () => {
+        dispatch({ type: "ADD_ITEM_TO_CURRENT_USER", payload: item });
+      });
+    } else {
+      dispatch({ type: "ADD_ITEM_TO_CURRENT_USER", payload: item });
+    }
   };
+
+  // Reset pulse animation
+  useEffect(() => {
+    if (isPulsing) {
+      const timer = setTimeout(() => setIsPulsing(false), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isPulsing]);
 
   const handleRemoveFromCart = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Update local quantity
+    setLocalQuantity((prev) => Math.max(0, prev - 1));
+
     const cartItem = state.currentUserItems.find(
       (cartItem) => cartItem.id === item.id
     );
@@ -40,6 +72,9 @@ export default function MenuItem({ item }: MenuItemProps) {
   const currentQuantity =
     state.currentUserItems.find((cartItem) => cartItem.id === item.id)
       ?.quantity || 0;
+
+  // Sync local quantity with state
+  const displayQuantity = Math.max(localQuantity, currentQuantity);
 
   return (
     <div
@@ -69,39 +104,43 @@ export default function MenuItem({ item }: MenuItemProps) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex justify-between">
-            <h3 className="text-lg font-semibold text-black leading-tight">
+            <h3 className="text-lg font-medium text-black leading-tight">
               {item.name}
             </h3>
             <div
-              className="flex gap-1.5 px-3 py-0.5 h-fit bg-[#f9f9f9] rounded-full border border-[#8e8e8e]/50 font-thin items-center justify-center"
+              className={`flex gap-1.5 px-3 py-0.5 h-fit rounded-full border items-center justify-center border-[#8e8e8e]/50 text-black transition-all ${isPulsing ? "bg-[#eab3f4]/50" : "bg-[#f9f9f9]"}`}
               onClick={(e) => e.stopPropagation()}
             >
               <Minus
-                className={`size-4 ${currentQuantity > 0 ? "cursor-pointer text-black" : "cursor-no-drop text-black/50"}`}
-                onClick={currentQuantity > 0 ? handleRemoveFromCart : undefined}
+                className={`size-4 ${displayQuantity > 0 ? "cursor-pointer" : "cursor-no-drop"}`}
+                onClick={displayQuantity > 0 ? handleRemoveFromCart : undefined}
               />
-              <p className="text-black">{currentQuantity}</p>
-              <Plus
-                className="size-4 cursor-pointer text-black"
-                onClick={handleAddToCart}
-              />
+              <p className="font-normal">{displayQuantity}</p>
+              <div ref={plusButtonRef}>
+                <Plus
+                  className="size-4 cursor-pointer"
+                  onClick={handleAddToCart}
+                />
+              </div>
             </div>
           </div>
           <div className="flex gap-1 mt-1 mb-3">
             {item.features.map((feature, index) => (
               <div
                 key={index}
-                className="text-sm text-black font-semibold border border-[#bfbfbf]/50 rounded-3xl px-3 py-1 shadow-sm"
+                className="text-sm text-black font-medium border border-[#bfbfbf]/50 rounded-3xl px-3 py-1 shadow-sm"
               >
                 {feature}
               </div>
             ))}
           </div>
-          <p className="text-black/70 text-base line-clamp-2 leading-4">
+          <p className="text-base line-clamp-3 leading-4 bg-gradient-to-b from-black to-black/30 bg-clip-text text-transparent">
             {item.description}
           </p>
           <div className="flex items-center justify-between mt-2">
-            <span className="text-lg text-black">${item.price.toFixed(2)}</span>
+            <span className="text-base text-black">
+              ${item.price.toFixed(2)} MXN
+            </span>
           </div>
         </div>
       </div>

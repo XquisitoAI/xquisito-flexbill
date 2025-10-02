@@ -34,8 +34,12 @@ export default function PaymentPage() {
   const [name, setName] = useState(state.currentUserName);
   const [email, setEmail] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("mastercard");
-  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string | null>(null);
-  const [paymentMethodType, setPaymentMethodType] = useState<"saved" | "new">("new");
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<
+    string | null
+  >(null);
+  const [paymentMethodType, setPaymentMethodType] = useState<"saved" | "new">(
+    "new"
+  );
 
   const [selectedItems, setSelectedItems] = useState<{
     [key: string]: { quantity: number; price: number };
@@ -54,7 +58,8 @@ export default function PaymentPage() {
   // Set default payment method when payment methods are loaded
   useEffect(() => {
     if (hasPaymentMethods && paymentMethods.length > 0) {
-      const defaultMethod = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
+      const defaultMethod =
+        paymentMethods.find((pm) => pm.isDefault) || paymentMethods[0];
       setSelectedPaymentMethodId(defaultMethod.id);
       setPaymentMethodType("saved");
     } else {
@@ -198,12 +203,15 @@ export default function PaymentPage() {
         apiService.setGuestInfo(guestId, tableNumber.toString());
       }
 
-      const userEmail = email.trim() || user?.emailAddresses[0]?.emailAddress || "guest@xquisito.com";
+      const userEmail =
+        email.trim() ||
+        user?.emailAddresses[0]?.emailAddress ||
+        "guest@xquisito.com";
 
       const result = await apiService.processPayment({
         paymentMethodId: selectedPaymentMethodId,
         amount: paymentAmount,
-        currency: "USD",
+        currency: "MXN",
         description: getPaymentDescription(),
         orderId: `order_${Date.now()}`,
         tableNumber: state.tableNumber,
@@ -212,7 +220,10 @@ export default function PaymentPage() {
       });
 
       if (result.success && result.data?.payment) {
-        console.log("✅ Payment with saved card successful:", result.data.payment.id);
+        console.log(
+          "✅ Payment with saved card successful:",
+          result.data.payment.id
+        );
 
         // Store payment details
         if (typeof window !== "undefined") {
@@ -264,7 +275,10 @@ export default function PaymentPage() {
       }
 
       // Use provided user data or fallback to defaults
-      const userEmail = email.trim() || user?.emailAddresses[0]?.emailAddress || "guest@xquisito.com";
+      const userEmail =
+        email.trim() ||
+        user?.emailAddresses[0]?.emailAddress ||
+        "guest@xquisito.com";
       const [firstName, ...lastNameParts] = name.trim().split(" ");
       const lastName = lastNameParts.join(" ") || "User";
 
@@ -276,7 +290,7 @@ export default function PaymentPage() {
           first_name: firstName,
           last_name: lastName,
           phone: "5551234567", // Default phone
-          currency: "USD",
+          currency: "MXN",
           items: [
             {
               name: `Xquisito Restaurant - ${getPaymentDescription()}`,
@@ -349,8 +363,8 @@ export default function PaymentPage() {
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;    
-    const textOnlyRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]*$/;    
+    const value = e.target.value;
+    const textOnlyRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]*$/;
 
     if (textOnlyRegex.test(value)) {
       setName(value);
@@ -596,9 +610,13 @@ export default function PaymentPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-5 bg-gradient-to-r from-blue-500 to-purple-500 rounded flex items-center justify-center">
                           <span className="text-white text-xs font-bold">
-                            {method.cardType === "credit" ? "C" :
-                             method.cardType === "mastercard" ? "MC" :
-                             method.cardType === "amex" ? "AX" : "•"}
+                            {method.cardType === "credit"
+                              ? "C"
+                              : method.cardType === "mastercard"
+                                ? "MC"
+                                : method.cardType === "amex"
+                                  ? "AX"
+                                  : "•"}
                           </span>
                         </div>
                         <div>
@@ -615,11 +633,13 @@ export default function PaymentPage() {
                           </span>
                         )}
                       </div>
-                      <div className={`w-4 h-4 rounded-full border-2 ${
-                        selectedPaymentMethodId === method.id
-                          ? "border-teal-500 bg-teal-500"
-                          : "border-gray-300"
-                      }`}>
+                      <div
+                        className={`w-4 h-4 rounded-full border-2 ${
+                          selectedPaymentMethodId === method.id
+                            ? "border-teal-500 bg-teal-500"
+                            : "border-gray-300"
+                        }`}
+                      >
                         {selectedPaymentMethodId === method.id && (
                           <div className="w-full h-full rounded-full bg-white scale-50"></div>
                         )}
@@ -633,7 +653,8 @@ export default function PaymentPage() {
               {paymentMethodType === "new" && (
                 <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
                   <p className="text-gray-600 mb-3">
-                    Se abrirá EcartPay para procesar tu pago con una nueva tarjeta
+                    Se abrirá EcartPay para procesar tu pago con una nueva
+                    tarjeta
                   </p>
                   <button
                     onClick={handleAddCard}
@@ -667,7 +688,7 @@ export default function PaymentPage() {
             }`}
           >
             Split Bill
-            {(isGuest && !hasPaymentMethods) && (
+            {isGuest && !hasPaymentMethods && (
               <span className="block text-xs mt-1 text-gray-500">
                 Add a card first
               </span>

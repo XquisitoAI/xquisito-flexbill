@@ -6,7 +6,7 @@ import { useTableNavigation } from "../hooks/useTableNavigation";
 import { getRestaurantData } from "../utils/restaurantData";
 import { useState, useEffect } from "react";
 import MenuHeaderBack from "../components/MenuHeaderBack";
-import { Check } from "lucide-react";
+import { Check, CircleAlert, X } from "lucide-react";
 import { apiService } from "../utils/api";
 
 export default function TipSelectionPage() {
@@ -24,6 +24,7 @@ export default function TipSelectionPage() {
   const [customPaymentAmount, setCustomPaymentAmount] = useState("");
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [splitStatus, setSplitStatus] = useState<any>(null);
+  const [showTotalModal, setShowTotalModal] = useState(false);
 
   const loadSplitStatus = async () => {
     if (!state.tableNumber) return;
@@ -154,7 +155,8 @@ export default function TipSelectionPage() {
   };
 
   const tipAmount = calculateTipAmount();
-  const paymentAmount = baseAmount + tipAmount;
+  const commissionAmount = baseAmount * 0.02; // 2% de comisión
+  const paymentAmount = baseAmount + tipAmount + commissionAmount;
 
   const handleTipPercentage = (percentage: number) => {
     setTipPercentage(percentage);
@@ -177,9 +179,10 @@ export default function TipSelectionPage() {
   const handleContinueToCardSelection = () => {
     const queryParams = new URLSearchParams({
       type: paymentType,
-      amount: paymentAmount.toString(), // Total con propina para eCardPay
-      baseAmount: baseAmount.toString(), // Monto base sin propina para BD
+      amount: paymentAmount.toString(), // Total con propina y comisión para eCardPay
+      baseAmount: baseAmount.toString(), // Monto base sin propina ni comisión para BD
       tipAmount: tipAmount.toString(), // Propina por separado
+      commissionAmount: commissionAmount.toString(), // Comisión por separado
       ...(userName && { userName }),
       ...(paymentType === "select-items" && {
         selectedItems: selectedItems.join(","),
@@ -244,10 +247,10 @@ export default function TipSelectionPage() {
         <div className="flex-1 flex flex-col relative">
           <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
             <div className="py-6 px-8 flex flex-col justify-center">
-              <h1 className="text-[#e0e0e0] text-xl">
+              <h1 className="text-[#e0e0e0] text-xl font-medium">
                 Mesa {state.tableNumber}
               </h1>
-              <h1 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
+              <h1 className="font-medium text-white text-3xl leading-7 mt-2 mb-6">
                 Revisa tu cuenta
               </h1>
             </div>
@@ -349,14 +352,14 @@ export default function TipSelectionPage() {
                               <h3 className="text-sm text-[#8e8e8e]">
                                 {dish.guest_name.toUpperCase()}
                               </h3>
-                              <h4 className="text-base font-medium text-black">
+                              <h4 className="text-base text-black">
                                 {dish.item}
                               </h4>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium text-black">
-                              ${dish.total_price.toFixed(2)}
+                            <p className="text-black">
+                              ${dish.total_price.toFixed(2)} MXN
                             </p>
                           </div>
                         </div>
@@ -380,11 +383,11 @@ export default function TipSelectionPage() {
           <div className="space-y-2">
             {/* Total de la Mesa */}
             <div className="flex justify-between items-center">
-              <span className="text-lg font-bold text-black">
+              <span className="text-lg font-medium text-black">
                 Total de la Mesa
               </span>
-              <span className="font-bold text-black">
-                ${tableTotalPrice.toFixed(2)}
+              <span className="font-medium text-black">
+                ${tableTotalPrice.toFixed(2)} MXN
               </span>
             </div>
 
@@ -393,32 +396,42 @@ export default function TipSelectionPage() {
               <div className="flex justify-between items-center">
                 <span className="text-green-600 font-medium">Pagado:</span>
                 <span className="text-green-600 font-medium">
-                  ${paidAmount.toFixed(2)}
+                  ${paidAmount.toFixed(2)} MXN
                 </span>
               </div>
             )}
 
             {/* Restante por pagar */}
             <div className="flex justify-between items-center">
-              <span className="text-orange-600 font-medium">
+              <span className="text-[#eab3f4] font-medium">
                 Restante por pagar:
               </span>
-              <span className="text-orange-600 font-medium">
-                ${unpaidAmount.toFixed(2)}
+              <span className="text-[#eab3f4] font-medium">
+                ${unpaidAmount.toFixed(2)} MXN
               </span>
             </div>
 
             {/* Tu parte */}
-            <div className="flex justify-between items-center border-t pt-2 mt-2">
-              <span className="text-black font-bold">Tu parte:</span>
-              <span className="text-black font-bold">
-                ${baseAmount.toFixed(2)}
+            <div className="flex justify-between items-center">
+              <span className="text-black font-medium">Tu parte:</span>
+              <span className="text-black font-medium">
+                ${baseAmount.toFixed(2)} MXN
+              </span>
+            </div>
+          </div>
+
+          {/* Comisión */}
+          <div className="border-t border-gray-200 pt-4">
+            <div className="flex justify-between items-center">
+              <span className="text-black font-medium">Comisión</span>
+              <span className="text-black font-medium">
+                ${commissionAmount.toFixed(2)} MXN
               </span>
             </div>
           </div>
 
           {/* Selección de propina */}
-          <div className="border-t border-gray-200 pt-4">
+          <div className="">
             <div className="flex items-center gap-4 mb-3">
               <span className="text-black font-medium">Propina</span>
               {/* Tip Percentage Buttons */}
@@ -427,9 +440,9 @@ export default function TipSelectionPage() {
                   <button
                     key={percentage}
                     onClick={() => handleTipPercentage(percentage)}
-                    className={`py-1 rounded-full border border-[#8e8e8e]/40 text-black font-medium transition-colors ${
+                    className={`py-1 rounded-full border border-[#8e8e8e]/40 text-black transition-colors cursor-pointer ${
                       tipPercentage === percentage
-                        ? "bg-[#ededed]"
+                        ? "bg-[#eab3f4] text-white"
                         : "bg-[#f9f9f9] hover:border-gray-400"
                     }`}
                   >
@@ -457,10 +470,9 @@ export default function TipSelectionPage() {
             </div>
 
             {tipAmount > 0 && (
-              <div className="flex justify-between items-center mt-2 text-sm">
-                <span className="text-gray-600">Propina</span>
-                <span className="text-teal-600 font-medium">
-                  +${tipAmount.toFixed(2)}
+              <div className="flex justify-end items-center mt-2 text-sm">
+                <span className="text-[#eab3f4] font-medium">
+                  +${tipAmount.toFixed(2)} MXN
                 </span>
               </div>
             )}
@@ -469,11 +481,18 @@ export default function TipSelectionPage() {
           {/* Total final */}
           <div className="border-t border-gray-200 pt-4">
             <div className="flex justify-between items-center">
-              <span className="font-bold text-black text-lg">
-                Total a pagar
-              </span>
-              <span className="font-bold text-black text-lg">
-                ${paymentAmount.toFixed(2)}
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-black font-medium text-lg">
+                  Total a pagar
+                </span>
+                <CircleAlert
+                  className="size-4 cursor-pointer text-gray-500"
+                  strokeWidth={2.3}
+                  onClick={() => setShowTotalModal(true)}
+                />
+              </div>
+              <span className="font-medium text-black text-lg">
+                ${paymentAmount.toFixed(2)} MXN
               </span>
             </div>
           </div>
@@ -498,7 +517,7 @@ export default function TipSelectionPage() {
               <button
                 onClick={handleContinueToCardSelection}
                 disabled={isDisabled}
-                className={`w-full text-white py-3 rounded-full font-medium cursor-pointer transition-colors ${
+                className={`w-full text-white py-3 rounded-full cursor-pointer transition-colors ${
                   isDisabled
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-black hover:bg-stone-950"
@@ -513,12 +532,83 @@ export default function TipSelectionPage() {
                     : paymentType === "select-items" &&
                         selectedItems.length === 0
                       ? "Selecciona al menos un artículo"
-                      : `Pagar $${paymentAmount.toFixed(2)}`}
+                      : "Pagar"}
               </button>
             );
           })()}
         </div>
       </div>
+
+      {/* Modal de resumen del total */}
+      {showTotalModal && (
+        <div
+          className="fixed inset-0 flex items-end justify-center"
+          style={{ zIndex: 99999 }}
+        >
+          {/* Fondo */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowTotalModal(false)}
+          ></div>
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-t-4xl w-full mx-4">
+            {/* Titulo */}
+            <div className="px-6 pt-4">
+              <div className="flex items-center justify-between pb-4 border-b border-[#8e8e8e]">
+                <h3 className="text-lg font-semibold text-black">
+                  Resumen del total
+                </h3>
+                <button
+                  onClick={() => setShowTotalModal(false)}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+                >
+                  <X className="size-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="px-6 py-4">
+              <p className="text-black mb-4">
+                El total se obtiene de la suma de:
+              </p>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-black font-medium">Tu parte</span>
+                  <span className="text-black font-medium">
+                    ${baseAmount.toFixed(2)} MXN
+                  </span>
+                </div>
+                {tipAmount > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-black font-medium">+ Propina</span>
+                    <span className="text-black font-medium">
+                      ${tipAmount.toFixed(2)} MXN
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-black font-medium">
+                    + Comisión (2%)
+                  </span>
+                  <span className="text-black font-medium">
+                    ${commissionAmount.toFixed(2)} MXN
+                  </span>
+                </div>
+                <div className="border-t border-[#8e8e8e] pt-3 flex justify-between items-center">
+                  <span className="text-black font-semibold text-lg">
+                    Total
+                  </span>
+                  <span className="text-black font-semibold text-lg">
+                    ${paymentAmount.toFixed(2)} MXN
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

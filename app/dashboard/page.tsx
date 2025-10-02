@@ -18,6 +18,7 @@ import {
   X,
   Wallet,
 } from "lucide-react";
+import MenuHeaderBack from "../components/MenuHeaderBack";
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
@@ -82,7 +83,7 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">
+          <h1 className="text-2xl font-medium text-white mb-4">
             Acceso denegado
           </h1>
           <p className="text-white mb-6">
@@ -101,7 +102,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43]">
-      <MenuHeader restaurant={restaurantData} tableNumber={state.tableNumber} />
+      <MenuHeaderBack
+        restaurant={restaurantData}
+        tableNumber={state.tableNumber}
+      />
 
       <div className="mt-6 bg-white rounded-t-4xl p-6">
         {/* Welcome Header */}
@@ -142,7 +146,7 @@ export default function DashboardPage() {
                 <TriangleAlert className="size-4" />
               </div>
               <div>
-                <p className="text-yellow-800 font-medium text-sm">
+                <p className="text-yellow-800 text-sm">
                   {isSyncing
                     ? "Sincronizando datos de tu perfil..."
                     : "Sincronización de datos pendiente"}
@@ -171,7 +175,7 @@ export default function DashboardPage() {
               <div className="size-6 bg-green-500 rounded-full flex items-center justify-center">
                 <Check className="size-4" />
               </div>
-              <p className="text-green-800 font-medium text-sm">
+              <p className="text-green-800 text-sm">
                 Profile data synchronized successfully!
               </p>
             </div>
@@ -185,7 +189,7 @@ export default function DashboardPage() {
                 <X className="size-4" />
               </div>
               <div>
-                <p className="text-red-800 font-medium text-sm">
+                <p className="text-red-800 text-sm">
                   Error al sincronizar los datos del perfil
                 </p>
                 {/*<p className="text-red-600 text-xs">
@@ -207,7 +211,7 @@ export default function DashboardPage() {
         <div className="grid md:grid-cols-2 gap-x-6 mb-6">
           <div className="divide-y divide-[#8e8e8e]">
             <div className="flex items-center justify-between mb-4 pb-2">
-              <h2 className="font-bold text-black text-xl">
+              <h2 className="font-medium text-black text-xl">
                 Información del perfil
               </h2>
               <div className="flex items-center gap-1">
@@ -221,33 +225,25 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-medium text-gray-500">
-                  Nombre completo
-                </label>
+                <label className="text-xs text-gray-500">Nombre completo</label>
                 <p className="text-black/80 text-sm bg-gray-100 px-3 py-1 rounded-xl">
                   {user.fullName || "Desconocido"}
                 </p>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500">
-                  Email
-                </label>
+                <label className="text-xs text-gray-500">Email</label>
                 <p className="text-black/80 text-sm bg-gray-100 px-3 py-1 rounded-xl">
                   {user.emailAddresses[0]?.emailAddress || "Desconocido"}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">
-                  Telefono
-                </label>
+                <label className="text-sm text-gray-500">Telefono</label>
                 <p className="text-black/80 text-sm bg-gray-100 px-3 py-1 rounded-xl">
                   {user.phoneNumbers[0]?.phoneNumber || "Desconocido"}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">
-                  Miembro desde
-                </label>
+                <label className="text-sm text-gray-500">Miembro desde</label>
                 <p className="text-black/80 text-sm bg-gray-100 px-3 py-1 rounded-xl">
                   {user.createdAt
                     ? new Date(user.createdAt).toLocaleDateString()
@@ -258,20 +254,18 @@ export default function DashboardPage() {
           </div>
 
           <div className="divide-y divide-[#8e8e8e] mt-6">
-            <h2 className="font-bold text-black pb-2 mb-2 text-xl">
+            <h2 className="font-medium text-black pb-2 mb-2 text-xl">
               Detalles de la cuenta
             </h2>
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium text-gray-500">
-                  ID de usuario
-                </label>
+                <label className="text-sm text-gray-500">ID de usuario</label>
                 <p className="text-black/80 bg-gray-100 px-3 py-1 rounded-xl text-sm font-mono">
                   {user.id}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">
+                <label className="text-sm text-gray-500">
                   Nombre de usuario
                 </label>
                 <p className="text-black/80 text-sm bg-gray-100 px-3 py-1 rounded-xl">
@@ -279,12 +273,12 @@ export default function DashboardPage() {
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">
+                <label className="text-sm text-gray-500">
                   Email verificado
                 </label>
                 <p className="text-black/80">
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs ${
                       user.emailAddresses[0]?.verification?.status ===
                       "verified"
                         ? "bg-green-100 text-green-800"
@@ -298,7 +292,7 @@ export default function DashboardPage() {
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">
+                <label className="text-sm text-gray-500">
                   Último inicio de sesión
                 </label>
                 <p className="text-black/80 text-sm bg-gray-100 px-3 py-1 rounded-xl">
@@ -313,7 +307,7 @@ export default function DashboardPage() {
 
         {/* Action Buttons */}
         <div className="divide-y divide-[#8e8e8e]">
-          <h2 className="font-bold text-black pb-2 mb-2 text-xl">
+          <h2 className="font-medium text-black pb-2 mb-2 text-xl">
             ¿Qué te gustaría hacer?
           </h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
@@ -325,7 +319,7 @@ export default function DashboardPage() {
                 <CreditCard className="size-5 text-teal-700" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-black">Continuar con el pago</p>
+                <p className="text-black">Continuar con el pago</p>
                 <p className="text-sm text-gray-600">Paga tu pedido</p>
               </div>
             </button>
@@ -338,7 +332,7 @@ export default function DashboardPage() {
                 <SquareMenu className="size-5 text-gray-700" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-black">Ver menú</p>
+                <p className="text-black">Ver menú</p>
                 <p className="text-sm text-gray-600">
                   Explora nuestros platillos
                 </p>
@@ -353,7 +347,7 @@ export default function DashboardPage() {
                 <ShoppingCart className="size-5 text-gray-700" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-black">Ver carrito</p>
+                <p className="text-black">Ver carrito</p>
                 <p className="text-sm text-gray-600">Revisa tu pedido</p>
               </div>
             </button>
@@ -366,8 +360,10 @@ export default function DashboardPage() {
                 <Wallet className="size-5 text-purple-700" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-black">Mis tarjetas</p>
-                <p className="text-sm text-gray-600">Gestionar métodos de pago</p>
+                <p className="text-black">Mis tarjetas</p>
+                <p className="text-sm text-gray-600">
+                  Gestionar métodos de pago
+                </p>
               </div>
             </button>
           </div>

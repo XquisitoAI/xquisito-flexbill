@@ -15,12 +15,12 @@ function SignInContent() {
   const { isSignedIn, isLoaded } = useUser();
   const [hasRedirected, setHasRedirected] = useState(false);
 
-  const tableNumber = searchParams.get('table');
+  const tableNumber = searchParams.get("table");
 
   // Store table number for post-signin redirect
   useEffect(() => {
     if (tableNumber) {
-      sessionStorage.setItem('pendingTableRedirect', tableNumber);
+      sessionStorage.setItem("pendingTableRedirect", tableNumber);
     }
   }, [tableNumber]);
 
@@ -41,7 +41,12 @@ function SignInContent() {
 
   // Intercept if user gets redirected to root after sign-in
   useEffect(() => {
-    if (isSignedIn && tableNumber && window.location.pathname === '/' && !hasRedirected) {
+    if (
+      isSignedIn &&
+      tableNumber &&
+      window.location.pathname === "/" &&
+      !hasRedirected
+    ) {
       setHasRedirected(true);
       handleSignInSuccess();
     }
@@ -58,14 +63,10 @@ function SignInContent() {
           />
         </div>
         <div className="w-full">
-          <SignIn.Root
-            routing="virtual"
-            path="/sign-in"
-            afterSignInUrl=""
-          >
+          <SignIn.Root routing="virtual" path="/sign-in" afterSignInUrl="">
             <SignIn.Step name="start">
               <div className="mb-6 text-center">
-                <h1 className="text-xl font-semibold text-white mb-2">
+                <h1 className="text-xl font-medium text-white mb-2">
                   Accede a tu cuenta de Xquisito
                 </h1>
               </div>
@@ -171,7 +172,7 @@ function SignInContent() {
               </div>
 
               <div
-                className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-medium cursor-pointer transition-colors mt-6"
+                className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-normal cursor-pointer transition-colors mt-6"
                 onClick={() => {
                   if (tableNumber) {
                     router.push(`/sign-up?table=${tableNumber}`);
@@ -187,7 +188,7 @@ function SignInContent() {
             <SignIn.Step name="verifications">
               <SignIn.Strategy name="reset_password_email_code">
                 <div className="mb-6 text-center">
-                  <h1 className="text-2xl font-bold text-white mb-2">
+                  <h1 className="text-2xl font-medium text-white mb-2">
                     Revisa tu email
                   </h1>
                   <p className="text-gray-200">
@@ -205,7 +206,7 @@ function SignInContent() {
 
                 <SignIn.Action
                   submit
-                  className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-medium cursor-pointer transition-colors mt-6"
+                  className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-normal cursor-pointer transition-colors mt-6"
                 >
                   Verificar código
                 </SignIn.Action>

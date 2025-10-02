@@ -66,9 +66,12 @@ export default function CardSelectionPage() {
   const { user, isLoaded } = useUser();
 
   const paymentType = searchParams.get("type") || "full-bill";
-  const totalAmountWithTip = parseFloat(searchParams.get("amount") || "0"); // Total con propina para eCardPay
-  const baseAmount = parseFloat(searchParams.get("baseAmount") || "0"); // Monto base sin propina para BD
+  const totalAmountWithTip = parseFloat(searchParams.get("amount") || "0"); // Total con propina y comisión para eCardPay
+  const baseAmount = parseFloat(searchParams.get("baseAmount") || "0"); // Monto base sin propina ni comisión para BD
   const tipAmount = parseFloat(searchParams.get("tipAmount") || "0");
+  const commissionAmount = parseFloat(
+    searchParams.get("commissionAmount") || "0"
+  );
   const userName = searchParams.get("userName");
   const selectedItemsParam = searchParams.get("selectedItems");
 
@@ -79,7 +82,10 @@ export default function CardSelectionPage() {
     waitForSDK,
   } = useEcartPay();
 
-  const [name, setName] = useState(userName || state.currentUserName || "");
+  // Determinar el nombre a usar: prioridad a userName de URL, luego state.currentUserName, luego nombre de usuario autenticado
+  const effectiveName = userName || state.currentUserName || (user?.fullName || user?.firstName) || "";
+
+  const [name, setName] = useState(effectiveName);
   const [email, setEmail] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("mastercard");
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<
@@ -100,9 +106,11 @@ export default function CardSelectionPage() {
   }, [isLoaded, user, setAsAuthenticated]);
 
   useEffect(() => {
-    // Configurar nombre de usuario
-    if (userName && !name) {
-      setName(userName);
+    // Actualizar nombre cuando cambie effectiveName
+    const newName = userName || state.currentUserName || (user?.fullName || user?.firstName) || "";
+    if (newName && newName !== name) {
+      setName(newName);
+      console.log("🔧 Updated name:", newName, "from userName:", userName, "state.currentUserName:", state.currentUserName);
     }
 
     // Configurar usuarios seleccionados según el tipo de pago
@@ -116,7 +124,7 @@ export default function CardSelectionPage() {
         selectedItemsParam.split(",").filter((item) => item.trim() !== "")
       );
     }
-  }, [userName, name, paymentType, selectedItemsParam]);
+  }, [userName, state.currentUserName, user, paymentType, selectedItemsParam]);
 
   // Calcular totales basados en el nuevo sistema de platillos
   const dishOrders = Array.isArray(state.dishOrders) ? state.dishOrders : [];
@@ -252,12 +260,6 @@ export default function CardSelectionPage() {
   };
 
   const handlePayment = async () => {
-    // Para usuarios invitados, mantener validación de nombre
-    if (isGuest && !name.trim()) {
-      alert("Please enter your name");
-      return;
-    }
-
     // Validar selección de tarjeta si hay métodos de pago disponibles
     if (hasPaymentMethods && !selectedPaymentMethodId) {
       alert("Por favor selecciona una tarjeta de pago");
@@ -290,9 +292,10 @@ export default function CardSelectionPage() {
         setIsProcessing(false);
 
         const queryParams = new URLSearchParams({
-          amount: totalAmountWithTip.toString(), // Total con propina para eCardPay
+          amount: totalAmountWithTip.toString(), // Total con propina y comisión para eCardPay
           baseAmount: baseAmount.toString(), // Monto base para BD
           tipAmount: tipAmount.toString(),
+          commissionAmount: commissionAmount.toString(),
           type: paymentType,
           ...(userName && { userName }),
         });
@@ -340,8 +343,8 @@ export default function CardSelectionPage() {
       const paymentData = {
         paymentMethodId: paymentMethodToUse.id,
         amount: totalAmountWithTip,
-        currency: "USD",
-        description: `Xquisito Restaurant Payment - Table ${tableNumber || state.tableNumber || "N/A"}${userName ? ` - ${userName}` : ""} - Tip: $${tipAmount.toFixed(2)}`,
+        currency: "MXN",
+        description: `Xquisito Restaurant Payment - Table ${tableNumber || state.tableNumber || "N/A"}${userName ? ` - ${userName}` : ""} - Tip: $${tipAmount.toFixed(2)} - Commission: $${commissionAmount.toFixed(2)}`,
         orderId: `order-${Date.now()}-attempt-${paymentAttempts + 1}`,
         tableNumber: tableNumber || state.tableNumber,
         restaurantId: "xquisito-main",
@@ -378,13 +381,14 @@ export default function CardSelectionPage() {
         if (typeof window !== "undefined") {
           const paymentData = {
             orderId: order?.id || payment?.id,
-            amount: baseAmount, // Monto base para BD (SIN propina)
+            amount: baseAmount, // Monto base para BD (SIN propina ni comisión)
             paymentType,
             userName: userName || name,
             tableNumber: state.tableNumber,
             baseAmount,
             tipAmount,
-            eCartPayAmount: totalAmountWithTip, // Total pagado en eCardPay (CON propina)
+            commissionAmount,
+            eCartPayAmount: totalAmountWithTip, // Total pagado en eCardPay (CON propina y comisión)
           };
 
           console.log("💾 Storing payment data in localStorage:", paymentData);
@@ -432,9 +436,10 @@ export default function CardSelectionPage() {
 
   const handleAddCard = () => {
     const queryParams = new URLSearchParams({
-      amount: totalAmountWithTip.toString(), // Total con propina para eCardPay
+      amount: totalAmountWithTip.toString(), // Total con propina y comisión para eCardPay
       baseAmount: baseAmount.toString(), // Monto base para BD
       tipAmount: tipAmount.toString(),
+      commissionAmount: commissionAmount.toString(),
       type: paymentType,
       ...(userName && { userName }),
     });
@@ -462,7 +467,7 @@ export default function CardSelectionPage() {
         <div className="flex-1 flex flex-col relative">
           <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
             <div className="py-6 px-8 flex flex-col justify-center">
-              <h1 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
+              <h1 className="font-medium text-white text-3xl leading-7 mt-2 mb-6">
                 Selecciona tu método de pago
               </h1>
             </div>
@@ -510,45 +515,22 @@ export default function CardSelectionPage() {
                 </div>
               )}
 
+              {commissionAmount > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-black font-medium">Comisión</span>
+                  <span className="text-black font-medium">
+                    ${commissionAmount.toFixed(2)} MXN
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between items-center border-t pt-2">
-                <span className="font-bold text-black">Total a pagar</span>
-                <span className="font-bold text-black">
+                <span className="font-medium text-black">Total a pagar</span>
+                <span className="font-medium text-black">
                   ${totalAmountWithTip.toFixed(2)} MXN
                 </span>
               </div>
             </div>
-            {/* Customer Information - Only show for guest users */}
-            {isGuest && (
-              <div className="mb-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombre completo
-                    </label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={handleNameChange}
-                      placeholder="Tu nombre completo"
-                      className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email (opcional)
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="tu@email.com"
-                      className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Payment Method Selection - Show for both registered users and guests with saved cards */}
             {((user && hasPaymentMethods) ||
@@ -654,12 +636,10 @@ export default function CardSelectionPage() {
               onClick={handlePayment}
               disabled={
                 paymentLoading ||
-                (isGuest && !name.trim()) ||
                 (hasPaymentMethods && !selectedPaymentMethodId)
               }
               className={`w-full text-white py-3 rounded-full cursor-pointer transition-colors ${
                 paymentLoading ||
-                (isGuest && !name.trim()) ||
                 (hasPaymentMethods && !selectedPaymentMethodId)
                   ? "bg-stone-800 cursor-not-allowed"
                   : "bg-black hover:bg-stone-950"
@@ -667,11 +647,9 @@ export default function CardSelectionPage() {
             >
               {paymentLoading
                 ? "Procesando pago..."
-                : isGuest && !name.trim()
-                  ? "Ingresa tu nombre"
-                  : hasPaymentMethods && !selectedPaymentMethodId
-                    ? "Selecciona una tarjeta"
-                    : "Pagar"}
+                : hasPaymentMethods && !selectedPaymentMethodId
+                  ? "Selecciona una tarjeta"
+                  : "Pagar"}
             </button>
           </div>
         </div>

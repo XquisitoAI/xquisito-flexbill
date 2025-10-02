@@ -67,7 +67,7 @@ export default function UserPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">
+          <h1 className="text-2xl font-meduim text-gray-800 mb-4">
             Mesa Inválida
           </h1>
           <p className="text-gray-600">Por favor escanee el código QR</p>
@@ -86,7 +86,7 @@ export default function UserPage() {
       <div className="px-4 w-full flex-1 flex flex-col">
         <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
           <div className="py-6 px-8 flex flex-col justify-center">
-            <h2 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
+            <h2 className="font-medium text-white text-3xl leading-7 mt-2 mb-6">
               Ingresa tu nombre para continuar
             </h2>
           </div>
@@ -96,7 +96,7 @@ export default function UserPage() {
           <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col px-6">
             <div className="flex-1 flex flex-col items-center w-full h-full">
               <div className="pt-48 mb-6">
-                <h2 className="text-lg font-semibold text-black">Tu nombre</h2>
+                <h2 className="text-lg font-medium text-black">Tu nombre</h2>
               </div>
 
               <div className="w-full">
@@ -105,7 +105,7 @@ export default function UserPage() {
                   placeholder="Nombre"
                   value={userName}
                   onChange={handleNameChange}
-                  className="w-full px-4 py-3 border-0 border-b border-black text-black text-2xl text-center font-bold focus:outline-none focus:border-teal-500"
+                  className="w-full px-4 py-3 border-0 border-b border-black text-black text-2xl text-center font-medium focus:outline-none focus:border-teal-500"
                 />
               </div>
 

@@ -31,7 +31,8 @@ export default function PaymentOptionsPage() {
 
   // Auto-sync user to backend if authenticated
   const { signUpData } = useUserData();
-  const { saveUserToBackend, isSyncing, syncStatus, isUserSynced } = useUserSync(signUpData);
+  const { saveUserToBackend, isSyncing, syncStatus, isUserSynced } =
+    useUserSync(signUpData);
 
   useEffect(() => {
     const savedParams = getSavedUrlParams();
@@ -43,8 +44,8 @@ export default function PaymentOptionsPage() {
 
   // Auto-sync authenticated users to backend
   useEffect(() => {
-    if (user && !isUserSynced && !isSyncing && syncStatus !== 'success') {
-      console.log('🔄 Payment Options: Auto-syncing new user to backend');
+    if (user && !isUserSynced && !isSyncing && syncStatus !== "success") {
+      console.log("🔄 Payment Options: Auto-syncing new user to backend");
       saveUserToBackend();
     }
   }, [user, isUserSynced, isSyncing, syncStatus, saveUserToBackend]);
@@ -305,7 +306,7 @@ export default function PaymentOptionsPage() {
       <div className="px-4 w-full fixed bottom-0 left-0 right-0">
         <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
           <div className="py-6 px-8 flex flex-col justify-center">
-            <h1 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
+            <h1 className="font-medium text-white text-3xl leading-7 mt-2 mb-6">
               Elige cómo quieres pagar la cuenta
             </h1>
           </div>
@@ -329,9 +330,7 @@ export default function PaymentOptionsPage() {
                       />
                     </div>
                     <div className="flex-1 text-left">
-                      <h3 className="text-black font-semibold">
-                        Pagar cuenta completa
-                      </h3>
+                      <h3 className="text-black">Pagar cuenta completa</h3>
                       <p className="text-sm text-gray-600">
                         ${unpaidAmount.toFixed(2)} pendientes
                       </p>
@@ -351,12 +350,15 @@ export default function PaymentOptionsPage() {
                 >
                   <div className="flex items-center gap-4 py-4">
                     <div className="size-16 rounded-sm border border-black flex items-center justify-center">
-                      <ListTodo className="text-black size-9" strokeWidth={1} />
+                      <img
+                        src="/icons/select-items-logo.svg"
+                        alt=""
+                        className="rounded-sm"
+                      />
+                      {/*<ListTodo className="text-black size-9" strokeWidth={1} />*/}
                     </div>
                     <div className="flex-1 text-left">
-                      <h3 className="text-black font-semibold">
-                        Seleccionar alimentos
-                      </h3>
+                      <h3 className="text-black">Seleccionar alimentos</h3>
                     </div>
                     <div className="text-black">
                       <ChevronRight className="size-5" />
@@ -366,19 +368,22 @@ export default function PaymentOptionsPage() {
               )}
 
               {/* Opción 3: Dividir cuenta */}
-              {unpaidAmount > 0 && usersForSplitOption.length >= 2 && (
+              {unpaidAmount > 0 && (
                 <button
                   onClick={handleEqualShares}
                   className="w-full bg-white cursor-pointer border-b border-[#8e8e8e]"
                 >
                   <div className="flex items-center gap-4 py-4">
                     <div className="size-16 rounded-sm border border-black flex items-center justify-center">
-                      <Users className="text-black size-9" strokeWidth={1} />
+                      <img
+                        src="/icons/split-bill-logo.png"
+                        alt=""
+                        className="size-9"
+                      />
+                      {/*<Users className="text-black size-9" strokeWidth={1} />*/}
                     </div>
                     <div className="flex-1 text-left">
-                      <h3 className="text-black font-semibold">
-                        Dividir cuenta
-                      </h3>
+                      <h3 className="text-black">Dividir cuenta</h3>
                       <p className="text-sm text-gray-600">
                         {uniqueUsers.length === 1
                           ? `$${unpaidAmount.toFixed(2)} (restante completo para ti)`
@@ -406,7 +411,7 @@ export default function PaymentOptionsPage() {
                       />
                     </div>
                     <div className="flex-1 text-left">
-                      <h3 className="text-black font-semibold">Elegir monto</h3>
+                      <h3 className="text-black">Elegir monto</h3>
                     </div>
                     <div className="text-black">
                       <ChevronRight className="size-5" />
@@ -420,7 +425,7 @@ export default function PaymentOptionsPage() {
             {unpaidAmount <= 0 && (
               <div className="my-8 text-center">
                 <div className="p-6 bg-green-50 rounded-lg">
-                  <h3 className="text-lg font-semibold text-green-800 mb-2">
+                  <h3 className="text-lg font-medium text-green-800 mb-2">
                     ¡Cuenta pagada completamente!
                   </h3>
                   <p className="text-green-600">
@@ -435,10 +440,10 @@ export default function PaymentOptionsPage() {
           <div className="bg-white px-8 pb-6">
             <div className="border-t border-[#8e8e8e] pt-6 space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-lg font-bold text-black">
+                <span className="text-lg font-medium text-black">
                   Total mesa {state.tableNumber}
                 </span>
-                <span className="text-lg font-bold text-black">
+                <span className="text-lg font-medium text-black">
                   ${tableTotalPrice.toFixed(2)}
                 </span>
               </div>
@@ -451,8 +456,8 @@ export default function PaymentOptionsPage() {
                 </div>
               )}
               <div className="flex justify-between items-center">
-                <span className="text-orange-600 font-medium">Restante:</span>
-                <span className="text-orange-600 font-medium">
+                <span className="text-[#eab3f4] font-medium">Restante:</span>
+                <span className="text-[#eab3f4] font-medium">
                   ${unpaidAmount.toFixed(2)}
                 </span>
               </div>

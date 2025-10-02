@@ -1,12 +1,13 @@
 "use client";
 
+import { Minus, Plus } from "lucide-react";
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { getRestaurantData } from "../utils/restaurantData";
 import MenuHeaderBack from "./MenuHeaderBack";
 
 export default function CartView() {
-  const { state } = useTable();
+  const { state, dispatch } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const restaurantData = getRestaurantData();
 
@@ -26,30 +27,30 @@ export default function CartView() {
         <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
           {state.currentUserItems.length === 0 ? (
             <div className="py-6 px-8 flex flex-col justify-center">
-              <h1 className="text-[#e0e0e0] text-xl">
+              <h1 className="text-[#e0e0e0] text-xl font-medium">
                 Mesa {state.tableNumber}
               </h1>
-              <h2 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
+              <h2 className="font-medium text-white text-3xl leading-7 mt-2 mb-6">
                 El carrito está vacío, agrega items y disfruta
               </h2>
             </div>
           ) : (
             <div className="py-6 px-8 flex flex-col justify-center">
-              <h1 className="text-[#e0e0e0] text-xl">
+              <h1 className="text-[#e0e0e0] text-xl font-medium">
                 Mesa {state.tableNumber}
               </h1>
-              <h2 className="font-bold text-white text-3xl leading-7 mt-2 mb-6">
+              <h2 className="font-medium text-white text-3xl leading-7 mt-2 mb-6">
                 Todo listo, revisa tu pedido y confirma
               </h2>
             </div>
           )}
         </div>
 
-        <div className="flex-1 h-full flex flex-col">
+        <div className="flex-1 h-full flex flex-col overflow-hidden">
           {/* Cart Items */}
-          <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col px-6">
+          <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col px-6 overflow-hidden">
             {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto flex flex-col">
+            <div className="flex-1 overflow-y-auto flex flex-col pb-4">
               <div className="pt-6">
                 <h2 className="bg-[#f9f9f9] border border-[#8e8e8e] rounded-full px-3 py-1 text-base font-medium text-black justify-self-center">
                   Mi carrito
@@ -65,13 +66,13 @@ export default function CartView() {
                 </div>
               ) : (
                 <div>
-                  <div className="text-black font-semibold text-sm flex gap-5 justify-end translate-y-4">
+                  <div className="text-black font-medium text-sm flex gap-10 justify-end translate-y-4">
                     <span>Cant.</span>
                     <span>Precio</span>
                   </div>
-                  <div className="divide-y divide-[#8e8e8e]">
+                  <div className="divide-y divide-[#8e8e8e]/50">
                     {state.currentUserItems.map((item) => (
-                      <div key={item.id} className="py-4">
+                      <div key={item.id} className="py-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="flex-shrink-0">
@@ -80,7 +81,7 @@ export default function CartView() {
                                   <img
                                     src={item.images[0]}
                                     alt="Dish preview"
-                                    className="w-full h-full object-cover rounded-xl"
+                                    className="w-full h-full object-cover rounded-sm"
                                   />
                                 ) : (
                                   <img
@@ -92,16 +93,42 @@ export default function CartView() {
                               </div>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="text-sm font-medium text-black truncate">
+                              <h3 className="text-base text-black">
                                 {item.name}
                               </h3>
                             </div>
                           </div>
-                          <div className="text-right flex items-center justify-center gap-8">
-                            <p className="text-base text-black">
-                              {item.quantity}
-                            </p>
-                            <p className="text-base font-medium text-black">
+                          <div className="text-right flex items-center justify-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <Minus
+                                onClick={() =>
+                                  dispatch({
+                                    type: "UPDATE_QUANTITY_CURRENT_USER",
+                                    payload: {
+                                      id: item.id,
+                                      quantity: item.quantity - 1,
+                                    },
+                                  })
+                                }
+                                className="size-4 flex items-center justify-center text-black cursor-pointer"
+                              />
+                              <p className="text-base text-black text-center">
+                                {item.quantity}
+                              </p>
+                              <Plus
+                                onClick={() =>
+                                  dispatch({
+                                    type: "UPDATE_QUANTITY_CURRENT_USER",
+                                    payload: {
+                                      id: item.id,
+                                      quantity: item.quantity + 1,
+                                    },
+                                  })
+                                }
+                                className="size-4 flex items-center justify-center text-black cursor-pointer"
+                              />
+                            </div>
+                            <p className="text-base text-black w-14">
                               ${(item.price * item.quantity).toFixed(2)}
                             </p>
                           </div>
@@ -115,14 +142,14 @@ export default function CartView() {
 
             {/* Fixed bottom section */}
             {state.currentUserItems.length > 0 && (
-              <div className="bg-white border-t border-[#8e8e8e]">
-                <div className="w-full flex justify-between text-black text-base font-semibold mb-6 pt-6">
+              <div className="bg-white border-t border-[#8e8e8e]/50">
+                <div className="w-full flex justify-between text-black text-base font-medium mb-6 pt-6">
                   <span>Total</span>
                   <p>${state.currentUserTotalPrice.toFixed(2)} MXN</p>
                 </div>
 
                 <div className="text-black">
-                  <span className="font-bold text-xl">
+                  <span className="font-medium text-xl">
                     ¿Algo que debamos saber?
                   </span>
                   <textarea
@@ -136,7 +163,7 @@ export default function CartView() {
                 <div className="py-4 w-full">
                   <button
                     onClick={handleOrder}
-                    className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full cursor-pointer transition-colors"
+                    className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full cursor-pointer transition-colors font-normal"
                   >
                     Ordenar
                   </button>

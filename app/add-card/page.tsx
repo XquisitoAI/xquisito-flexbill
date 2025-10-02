@@ -278,7 +278,7 @@ export default function AddCardPage() {
       <div className="px-4 w-full flex-1 flex flex-col">
         <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
           <div className="pt-6 pb-12 px-8 flex flex-col justify-center">
-            <h2 className="font-bold text-white text-3xl leading-7 mt-2 mb-2">
+            <h2 className="font-medium text-white text-3xl leading-7 mt-2 mb-2">
               Agrega tu tarjeta para continuar
             </h2>
             <p className="text-white/80 text-sm">
@@ -332,7 +332,7 @@ export default function AddCardPage() {
             {/* Add Card Form */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm text-gray-700 mb-2">
                   Nombre Completo
                 </label>
                 <input
@@ -340,12 +340,12 @@ export default function AddCardPage() {
                   value={fullName}
                   onChange={handleFullNameChange}
                   placeholder="John Doe"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-3 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm text-gray-700 mb-2">
                   Correo Electronico
                 </label>
                 <input
@@ -353,12 +353,12 @@ export default function AddCardPage() {
                   value={email}
                   onChange={handleEmailChange}
                   placeholder="john@example.com"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-3 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm text-gray-700 mb-2">
                   Número de tarjeta
                 </label>
                 <input
@@ -367,13 +367,13 @@ export default function AddCardPage() {
                   onChange={handleCardNumberChange}
                   placeholder="**** 2098"
                   maxLength={19}
-                  className="w-full px-3 py-3 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-600"
+                  className="w-full px-3 py-3 text-black bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
 
               {/* Exp Date Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm text-gray-700 mb-2">
                   Fecha de expiración
                 </label>
                 <input
@@ -382,35 +382,31 @@ export default function AddCardPage() {
                   onChange={handleExpDateChange}
                   placeholder="02/24"
                   maxLength={5}
-                  className="w-full px-3 py-3 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-600"
+                  className="w-full px-3 py-3 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent text-black"
                 />
               </div>
 
               {/* CVV Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  CVV
-                </label>
+                <label className="block text-sm text-gray-700 mb-2">CVV</label>
                 <input
                   type="text"
                   value={cvv}
                   onChange={handleCvvChange}
                   placeholder="123"
                   maxLength={4}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-3 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
 
               {/* Country Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Pais
-                </label>
+                <label className="block text-sm text-gray-700 mb-2">Pais</label>
                 <div className="relative">
                   <select
                     value={country}
                     onChange={handleCountryChange}
-                    className="w-full px-3 py-3 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-600 appearance-none"
+                    className="w-full px-3 py-3 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent text-black appearance-none"
                   >
                     <option value="Mexico">🇲🇽 Mexico</option>
                     <option value="USA">🇺🇸 United States</option>
@@ -437,7 +433,7 @@ export default function AddCardPage() {
 
               {/* Postal Code Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm text-gray-700 mb-2">
                   Código Postal
                 </label>
                 <input
@@ -453,7 +449,7 @@ export default function AddCardPage() {
                           ? "A1A 1A1"
                           : "SW1A 1AA"
                   }
-                  className={`w-full px-3 py-3 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-600 ${postalCodeError ? "border-red-300" : "border-gray-200"}`}
+                  className={`w-full px-3 py-3 text-black bg-gray-100 border rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent ${postalCodeError ? "border-red-300" : "border-gray-200"}`}
                 />
                 {postalCodeError && (
                   <p className="mt-1 text-sm text-red-600">{postalCodeError}</p>
@@ -465,7 +461,7 @@ export default function AddCardPage() {
             <button
               onClick={handleSave}
               disabled={isLoading}
-              className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-medium cursor-pointer transition-colors mt-8 disabled:bg-stone-600 disabled:cursor-not-allowed"
+              className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full cursor-pointer transition-colors mt-8 disabled:bg-stone-600 disabled:cursor-not-allowed"
             >
               {isLoading ? "Guardando..." : "Guardar"}
             </button>

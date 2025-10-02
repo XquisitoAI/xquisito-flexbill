@@ -21,16 +21,16 @@ export default function SignUpPage() {
   const { updateSignUpData } = useUserData();
   const { navigateWithTable } = useTableNavigation();
 
-  const tableNumber = searchParams.get('table');
+  const tableNumber = searchParams.get("table");
 
   // Store table number for post-signup redirect
   useEffect(() => {
     if (tableNumber) {
-      console.log('🔍 SignUp: Storing payment flow context:', tableNumber);
-      sessionStorage.setItem('pendingTableRedirect', tableNumber);
-      sessionStorage.setItem('signupFromPaymentFlow', 'true');
+      console.log("🔍 SignUp: Storing payment flow context:", tableNumber);
+      sessionStorage.setItem("pendingTableRedirect", tableNumber);
+      sessionStorage.setItem("signupFromPaymentFlow", "true");
     } else {
-      console.log('🔍 SignUp: No table number found in URL');
+      console.log("🔍 SignUp: No table number found in URL");
     }
   }, [tableNumber]);
 
@@ -56,14 +56,10 @@ export default function SignUpPage() {
           />
         </div>
         <div className="w-full">
-          <SignUp.Root
-            routing="virtual"
-            path="/sign-up"
-            afterSignUpUrl=""
-          >
+          <SignUp.Root routing="virtual" path="/sign-up" afterSignUpUrl="">
             <SignUp.Step name="start">
               <div className="mb-6 text-center">
-                <h1 className="text-xl font-semibold text-white mb-2">
+                <h1 className="text-xl font-medium text-white mb-2">
                   Crea una cuenta de Xquisito
                 </h1>
               </div>
@@ -255,7 +251,7 @@ export default function SignUpPage() {
               </div>
 
               <div
-                className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-medium cursor-pointer transition-colors mt-6"
+                className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-normal cursor-pointer transition-colors mt-6"
                 onClick={() => router.push("/sign-in")}
               >
                 Iniciar sesión
@@ -264,7 +260,7 @@ export default function SignUpPage() {
 
             <SignUp.Step name="continue">
               <div className="mb-6 text-center">
-                <h1 className="text-2xl font-bold text-white mb-2">
+                <h1 className="text-2xl font-medium text-white mb-2">
                   Completa tu perfil
                 </h1>
                 <p className="text-gray-600">Cuéntanos mas sobre ti</p>
@@ -311,7 +307,7 @@ export default function SignUpPage() {
 
               <SignUp.Action
                 submit
-                className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-medium cursor-pointer transition-colors mt-6"
+                className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-normal cursor-pointer transition-colors mt-6"
                 onSubmit={handleContinueSubmit}
               >
                 Continue
@@ -321,7 +317,7 @@ export default function SignUpPage() {
             <SignUp.Step name="verifications">
               <SignUp.Strategy name="phone_code">
                 <div className="mb-6 text-center">
-                  <h1 className="text-2xl font-bold text-white mb-2">
+                  <h1 className="text-2xl font-medium text-white mb-2">
                     Revisa tus mensajes
                   </h1>
                   <p className="text-gray-200">
@@ -339,7 +335,7 @@ export default function SignUpPage() {
 
                 <SignUp.Action
                   submit
-                  className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-medium cursor-pointer transition-colors mt-6"
+                  className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-normal cursor-pointer transition-colors mt-6"
                 >
                   Verificar teléfono
                 </SignUp.Action>
@@ -347,7 +343,7 @@ export default function SignUpPage() {
 
               <SignUp.Strategy name="email_code">
                 <div className="mb-6 text-center">
-                  <h1 className="text-2xl font-bold text-white mb-2">
+                  <h1 className="text-2xl font-medium text-white mb-2">
                     Revisa tu email
                   </h1>
                   <p className="text-gray-200">
@@ -365,7 +361,7 @@ export default function SignUpPage() {
 
                 <SignUp.Action
                   submit
-                  className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-medium cursor-pointer transition-colors mt-6"
+                  className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-normal cursor-pointer transition-colors mt-6"
                 >
                   Verificar Email
                 </SignUp.Action>

@@ -26,6 +26,8 @@ export default function PaymentSuccessPage() {
   // Try to get stored payment details
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
   const [ordersMarkedAsPaid, setOrdersMarkedAsPaid] = useState(false);
+  const [rating, setRating] = useState(0); // Rating de 0 a 10 (0.5 incrementos)
+  const [hoveredRating, setHoveredRating] = useState(0);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -211,7 +213,7 @@ export default function PaymentSuccessPage() {
         <div className="flex-1 flex flex-col">
           <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
             <div className="py-6 px-8 flex flex-col justify-center items-center mb-6 mt-2 gap-2">
-              <h1 className="font-bold text-white text-3xl leading-7">
+              <h1 className="font-medium text-white text-3xl leading-7">
                 ¡Gracias por tu pedido!
               </h1>
               <p className="text-white">
@@ -286,24 +288,65 @@ export default function PaymentSuccessPage() {
 
             {/* Rating Prompt */}
             <div className="text-center mb-8">
-              <p className="text-xl font-semibold text-black mb-2">
+              <p className="text-xl font-medium text-black mb-2">
                 Califica tu pedido y gana recompensas exclusivas
               </p>
               <div className="flex justify-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    className="text-gray-300 hover:text-yellow-400 transition-colors cursor-pointer"
-                  >
-                    <svg
-                      className="size-8"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
+                {[1, 2, 3, 4, 5].map((starIndex) => {
+                  const starValue = starIndex * 2; // Convertir a escala de 10
+                  const currentRating = hoveredRating || rating;
+                  const isFullyFilled = currentRating >= starValue;
+                  const isHalfFilled =
+                    currentRating >= starValue - 1 && currentRating < starValue;
+
+                  return (
+                    <div
+                      key={starIndex}
+                      className="relative cursor-pointer"
+                      onMouseLeave={() => setHoveredRating(0)}
                     >
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                    </svg>
-                  </button>
-                ))}
+                      <div
+                        className="absolute inset-0 w-1/2 z-10"
+                        onMouseEnter={() => setHoveredRating(starValue - 1)}
+                        onClick={() => setRating(starValue - 1)}
+                      />
+                      <div
+                        className="absolute inset-0 left-1/2 w-1/2 z-10"
+                        onMouseEnter={() => setHoveredRating(starValue)}
+                        onClick={() => setRating(starValue)}
+                      />
+
+                      {/* Estrella vacia */}
+                      <svg
+                        className="size-8 text-white"
+                        fill="currentColor"
+                        stroke="black"
+                        strokeWidth="1"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+
+                      {/* Estrella llena */}
+                      {(isFullyFilled || isHalfFilled) && (
+                        <svg
+                          className="size-8 text-black absolute top-0 left-0 pointer-events-none"
+                          fill="currentColor"
+                          stroke="black"
+                          strokeWidth="1"
+                          viewBox="0 0 24 24"
+                          style={{
+                            clipPath: isHalfFilled
+                              ? "inset(0 50% 0 0)"
+                              : "none",
+                          }}
+                        >
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -319,7 +362,7 @@ export default function PaymentSuccessPage() {
               <button
                 onClick={() => {
                   // Mark that user is coming from payment-success context
-                  sessionStorage.setItem('signupFromPaymentSuccess', 'true');
+                  sessionStorage.setItem("signupFromPaymentSuccess", "true");
                   router.push("/sign-up");
                 }}
                 className="w-full text-black border border-black py-3 rounded-full cursor-pointer transition-colors bg-white hover:bg-stone-100"

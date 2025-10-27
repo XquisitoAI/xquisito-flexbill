@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
 import "./globals.css";
 import { CartProvider } from "./context/CartContext";
 import { TableProvider } from "./context/TableContext";
@@ -125,7 +126,12 @@ export default function RootLayout({
       signInFallbackRedirectUrl="/"
     >
       <html lang="es">
-        <head></head>
+        <head>
+          <Script
+            src="https://dyscanweb.dyneti.com/static/front_end/dist/client.js"
+            strategy="beforeInteractive"
+          />
+        </head>
         <body
           className={`${helveticaNeue.variable} antialiased`}
           style={{ fontFamily: "var(--font-helvetica-neue)" }}

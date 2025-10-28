@@ -74,11 +74,21 @@ export interface ViewOptions {
 }
 
 export interface ScanData {
-  cardNumber: string;
-  expiryMonth: string;
-  expiryYear: string;
+  cardNumber?: string;
+  expiryMonth?: string;
+  expiryYear?: string;
   cardholderName?: string;
   transactionId?: string;
+  scanId?: string;
+  payloadId?: string;
+  status?: string;
+  state?: string;
+  scanResult?: {
+    firstSix?: string;
+    lastFour?: string;
+    expirationDate?: string;
+    cardholderName?: string;
+  };
   [key: string]: any;
 }
 

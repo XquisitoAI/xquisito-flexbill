@@ -86,29 +86,46 @@ export default function CardScanner({
           containerRef.current,
           {
             onReady: () => {
-              console.log("Scanner ready");
+              console.log("✅ Scanner ready - La cámara está lista");
               setError(null);
             },
             onSuccess: (data) => {
-              console.log("Scan success:", data);
+              console.log("✅ Scan success - Datos recibidos:", data);
+              console.log("Detalles:", {
+                cardNumber: data.cardNumber,
+                expiryMonth: data.expiryMonth,
+                expiryYear: data.expiryYear,
+                cardholderName: data.cardholderName,
+                raw: data,
+              });
               handleScanSuccess(data);
             },
             onError: (error) => {
-              console.error("Scan error:", error);
+              console.error("❌ Scan error:", error);
+              console.error("Error completo:", {
+                message: error.message,
+                code: error.code,
+                full: error,
+              });
               setError(error.message || "Error durante el escaneo");
             },
             onCancel: () => {
-              console.log("Scan cancelled by user");
+              console.log("⚠️ Scan cancelled by user");
               handleClose();
             },
           }
         );
 
         // Manejar el resultado cuando el flujo se complete
+        console.log("📊 Resultado final de attachToElement:", result);
         if (result.completed && result.data) {
+          console.log("✅ Flujo completado con datos");
           handleScanSuccess(result.data);
         } else {
-          console.log("Escaneo cancelado o incompleto");
+          console.log("⚠️ Escaneo cancelado o incompleto:", {
+            completed: result.completed,
+            hasData: !!result.data,
+          });
         }
       } catch (err) {
         console.error("Error inicializando Dyneti SDK:", err);
@@ -142,14 +159,57 @@ export default function CardScanner({
 
   const handleScanSuccess = (data: ScanData) => {
     try {
-      // Extraer información de la tarjeta del estado
-      const cardNumber = data.cardNumber || "";
-      const expiryMonth = data.expiryMonth || "";
-      const expiryYear = data.expiryYear || "";
-      const cardholderName = data.cardholderName || "";
+      console.log("🔄 Procesando datos del escaneo:", data);
 
-      // Formatear fecha de expiración
-      const expiryDate = `${expiryMonth}/${expiryYear}`;
+      // Extraer información de la tarjeta del estado
+      // DyScan devuelve los datos en scanResult con firstSix y lastFour
+      let cardNumber = data.cardNumber || "";
+      let expiryDate = "";
+      let cardholderName = data.cardholderName || "";
+
+      // Si los datos vienen en scanResult (formato de DyScan)
+      if (data.scanResult) {
+        const { firstSix, lastFour, expirationDate, cardholderName: name } = data.scanResult;
+
+        // Construir número de tarjeta con firstSix y lastFour
+        // Nota: El número completo no está disponible por seguridad
+        // Usamos XXXXXX para los dígitos del medio
+        if (firstSix && lastFour) {
+          cardNumber = `${firstSix}XXXXXX${lastFour}`;
+        }
+
+        // La fecha viene en formato MM/YY
+        expiryDate = expirationDate || "";
+
+        // Nombre del titular si está disponible
+        if (name) {
+          cardholderName = name;
+        }
+      } else {
+        // Formato alternativo (si viene directamente)
+        const expiryMonth = data.expiryMonth || "";
+        const expiryYear = data.expiryYear || "";
+        expiryDate = `${expiryMonth}/${expiryYear}`;
+      }
+
+      console.log("📝 Datos extraídos:", {
+        cardNumber,
+        expiryDate,
+        cardholderName,
+      });
+
+      // Validar que tengamos al menos el número de tarjeta
+      if (!cardNumber) {
+        console.error("⚠️ No se detectó número de tarjeta");
+        setError("No se pudo leer el número de tarjeta. Intenta de nuevo.");
+        return;
+      }
+
+      console.log("✅ Llamando a onScanSuccess con:", {
+        cardNumber,
+        expiryDate,
+        cardholderName,
+      });
 
       // Llamar al callback con los resultados
       onScanSuccess({
@@ -158,12 +218,10 @@ export default function CardScanner({
         cardholderName,
       });
 
-      console.log("Data", cardNumber, expiryMonth, expiryYear, cardholderName);
-
       // Cerrar el escáner
       onClose();
     } catch (err) {
-      console.error("Error procesando resultados del escaneo:", err);
+      console.error("❌ Error procesando resultados del escaneo:", err);
       setError("Error al procesar los datos de la tarjeta");
     }
   };

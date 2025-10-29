@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { apiService } from "../../utils/api";
 import MenuHeaderBack from "../../components/headers/MenuHeaderBack";
 import CardScanner from "../../components/CardScanner";
+import CardScannerBlinkCard from "../../components/CardScannerBlinkCard";
 import Loader from "../../components/UI/Loader";
 import { useUser, useAuth } from "@clerk/nextjs";
 import { Camera } from "lucide-react";
@@ -53,6 +54,10 @@ function AddCardContent() {
   const [expDate, setExpDate] = useState("");
   const [cvv, setCvv] = useState("");
   const [showScanner, setShowScanner] = useState(false);
+  const [showBlinkCardScanner, setShowBlinkCardScanner] = useState(false);
+  const [scannerType, setScannerType] = useState<"tesseract" | "blinkcard">(
+    "tesseract"
+  );
   const [isLoadingParams, setIsLoadingParams] = useState(true);
 
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -247,6 +252,16 @@ function AddCardContent() {
     setExpDate(result.expiryDate);
     setFullName(result.cardholderName);
     setShowScanner(false);
+    setShowBlinkCardScanner(false);
+  };
+
+  const handleOpenScanner = (type: "tesseract" | "blinkcard") => {
+    setScannerType(type);
+    if (type === "tesseract") {
+      setShowScanner(true);
+    } else {
+      setShowBlinkCardScanner(true);
+    }
   };
 
   // Auto-abrir scanner si viene el parámetro scan=true
@@ -270,6 +285,13 @@ function AddCardContent() {
         <CardScanner
           onScanSuccess={handleScanSuccess}
           onClose={() => setShowScanner(false)}
+        />
+      )}
+
+      {showBlinkCardScanner && (
+        <CardScannerBlinkCard
+          onScanSuccess={handleScanSuccess}
+          onClose={() => setShowBlinkCardScanner(false)}
         />
       )}
 
@@ -314,15 +336,17 @@ function AddCardContent() {
                   </div>
                 </div>
               )}
-              {/* Card Scanner */}
-              <button
-                type="button"
-                onClick={() => setShowScanner(true)}
-                className="bg-black hover:bg-stone-950 w-full text-white py-3 rounded-full font-normal cursor-pointer transition-colors disabled:bg-stone-900 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-6"
-              >
-                <Camera className="size-5" />
-                Escanear Tarjeta
-              </button>
+              {/* Card Scanner Option */}
+              <div className="mb-6">
+                <button
+                  type="button"
+                  onClick={() => handleOpenScanner("blinkcard")}
+                  className="w-full bg-black hover:bg-stone-950 text-white py-4 px-6 rounded-full font-medium cursor-pointer transition-colors flex items-center justify-center gap-3"
+                >
+                  <Camera className="size-6" />
+                  <span className="text-base">Escanear Tarjeta</span>
+                </button>
+              </div>
 
               {/* Add Card Form */}
               <div className="space-y-4">

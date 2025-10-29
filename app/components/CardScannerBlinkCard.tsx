@@ -69,47 +69,62 @@ export default function CardScannerBlinkCard({
 
       for (let i = 0; i < retries; i++) {
         try {
-          console.log(`📹 Intento ${i + 1}/${retries} de acceder a la cámara...`);
+          console.log(
+            `📹 Intento ${i + 1}/${retries} de acceder a la cámara...`
+          );
 
           testStream = await navigator.mediaDevices.getUserMedia({
             video: {
               facingMode: "environment",
               width: { ideal: 1920 },
-              height: { ideal: 1080 }
-            }
+              height: { ideal: 1080 },
+            },
           });
 
           console.log("✅ Permisos de cámara otorgados");
           // Stop test stream immediately and wait a bit
-          testStream.getTracks().forEach(track => track.stop());
-          await new Promise(resolve => setTimeout(resolve, 500));
+          testStream.getTracks().forEach((track) => track.stop());
+          await new Promise((resolve) => setTimeout(resolve, 500));
           break; // Success, exit loop
-
         } catch (permError: any) {
-          console.error(`❌ Error en intento ${i + 1}:`, permError.name, permError.message);
+          console.error(
+            `❌ Error en intento ${i + 1}:`,
+            permError.name,
+            permError.message
+          );
           lastError = permError;
 
           // If it's a permission error, don't retry
-          if (permError.name === "NotAllowedError" || permError.name === "NotFoundError") {
+          if (
+            permError.name === "NotAllowedError" ||
+            permError.name === "NotFoundError"
+          ) {
             break;
           }
 
           // For NotReadableError, wait before retry
           if (i < retries - 1) {
             console.log("⏳ Esperando 1 segundo antes de reintentar...");
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
         }
       }
 
       if (lastError) {
-        console.error("❌ Error de permisos de cámara después de todos los intentos:", lastError);
+        console.error(
+          "❌ Error de permisos de cámara después de todos los intentos:",
+          lastError
+        );
         if (lastError.name === "NotAllowedError") {
-          setError("Permiso de cámara denegado. Por favor, permite el acceso a la cámara en tu navegador.");
+          setError(
+            "Permiso de cámara denegado. Por favor, permite el acceso a la cámara en tu navegador."
+          );
         } else if (lastError.name === "NotFoundError") {
           setError("No se encontró ninguna cámara en tu dispositivo.");
         } else if (lastError.name === "NotReadableError") {
-          setError("La cámara está siendo usada por otra aplicación. Por favor, cierra otras aplicaciones que estén usando la cámara (como Zoom, Teams, o navegadores) e intenta de nuevo.");
+          setError(
+            "La cámara está siendo usada por otra aplicación. Por favor, cierra otras aplicaciones que estén usando la cámara (como Zoom, Teams, o navegadores) e intenta de nuevo."
+          );
         } else {
           setError(`Error al acceder a la cámara: ${lastError.message}`);
         }
@@ -370,7 +385,6 @@ export default function CardScannerBlinkCard({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-white text-lg font-medium">Escanear Tarjeta</h2>
-            <p className="text-white/70 text-xs">Powered by BlinkCard</p>
           </div>
           <button
             onClick={handleClose}
@@ -419,8 +433,7 @@ export default function CardScannerBlinkCard({
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20">
           <div className="text-center">
             <Loader className="size-8 text-white animate-spin mx-auto mb-3" />
-            <p className="text-white text-sm">Iniciando BlinkCard...</p>
-            <p className="text-white/60 text-xs mt-1">Cargando modelo de IA</p>
+            <p className="text-white text-sm">Iniciando...</p>
           </div>
         </div>
       )}

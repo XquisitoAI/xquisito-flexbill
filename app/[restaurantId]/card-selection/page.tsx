@@ -15,7 +15,7 @@ import { apiService } from "../../utils/api";
 import PaymentAnimation from "../../components/UI/PaymentAnimation";
 import Loader from "../../components/UI/Loader";
 
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, CircleAlert, X } from "lucide-react";
 import { getCardTypeIcon } from "../../utils/cardIcons";
 
 export default function CardSelectionPage() {
@@ -94,6 +94,7 @@ export default function CardSelectionPage() {
   const [showPaymentAnimation, setShowPaymentAnimation] = useState(false);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
+  const [showTotalModal, setShowTotalModal] = useState(false);
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -593,12 +594,18 @@ export default function CardSelectionPage() {
       />
 
       <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
-        <div className={isAnimatingOut ? "animate-fade-out" : ""}>
-          <MenuHeaderBack
-            restaurant={restaurantData}
-            tableNumber={state.tableNumber}
-          />
+        {/* Fixed Header */}
+        <div className="fixed top-0 left-0 right-0 z-50" style={{ zIndex: 999 }}>
+          <div className={isAnimatingOut ? "animate-fade-out" : ""}>
+            <MenuHeaderBack
+              restaurant={restaurantData}
+              tableNumber={state.tableNumber}
+            />
+          </div>
         </div>
+
+        {/* Spacer for fixed header */}
+        <div className="h-20"></div>
 
         <div
           className={`w-full flex-1 flex flex-col justify-end ${isAnimatingOut ? "animate-slide-down" : ""}`}
@@ -656,28 +663,17 @@ export default function CardSelectionPage() {
                     </div>
                   )}
 
-                  {commissionAmount > 0 && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-black font-medium">Comisión</span>
-                      <span className="text-black font-medium">
-                        ${commissionAmount.toFixed(2)} MXN
-                      </span>
-                    </div>
-                  )}
-
-                  {ivaAmount > 0 && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-black font-medium">IVA</span>
-                      <span className="text-black font-medium">
-                        ${ivaAmount.toFixed(2)} MXN
-                      </span>
-                    </div>
-                  )}
-
                   <div className="flex justify-between items-center border-t pt-2">
-                    <span className="font-medium text-black">
-                      Total a pagar
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-black">
+                        Total a pagar
+                      </span>
+                      <CircleAlert
+                        className="size-4 cursor-pointer text-gray-500"
+                        strokeWidth={2.3}
+                        onClick={() => setShowTotalModal(true)}
+                      />
+                    </div>
                     <span className="font-medium text-black">
                       ${totalAmountWithTip.toFixed(2)} MXN
                     </span>
@@ -839,6 +835,79 @@ export default function CardSelectionPage() {
             </div>
           </div>
         </div>
+
+        {/* Modal de resumen del total */}
+        {showTotalModal && (
+          <div
+            className="fixed inset-0 flex items-end justify-center"
+            style={{ zIndex: 99999 }}
+          >
+            {/* Fondo */}
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setShowTotalModal(false)}
+            ></div>
+
+            {/* Modal */}
+            <div className="relative bg-white rounded-t-4xl w-full mx-4">
+              {/* Titulo */}
+              <div className="px-6 pt-4">
+                <div className="flex items-center justify-between pb-4 border-b border-[#8e8e8e]">
+                  <h3 className="text-lg font-semibold text-black">
+                    Resumen del total
+                  </h3>
+                  <button
+                    onClick={() => setShowTotalModal(false)}
+                    className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+                  >
+                    <X className="size-5 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Contenido */}
+              <div className="px-6 py-4">
+                <p className="text-black mb-4">
+                  El total se obtiene de la suma de:
+                </p>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-black font-medium">
+                      + Tu parte
+                    </span>
+                    <span className="text-black font-medium">
+                      ${baseAmount.toFixed(2)} MXN
+                    </span>
+                  </div>
+                  {tipAmount > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-black font-medium">+ Propina</span>
+                      <span className="text-black font-medium">
+                        ${tipAmount.toFixed(2)} MXN
+                      </span>
+                    </div>
+                  )}
+                  {commissionAmount > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-black font-medium">+ Comisión</span>
+                      <span className="text-black font-medium">
+                        ${commissionAmount.toFixed(2)} MXN
+                      </span>
+                    </div>
+                  )}
+                  {ivaAmount > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-black font-medium">+ IVA (16%)</span>
+                      <span className="text-black font-medium">
+                        ${ivaAmount.toFixed(2)} MXN
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

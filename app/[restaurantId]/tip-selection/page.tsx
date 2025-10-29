@@ -296,10 +296,16 @@ export default function TipSelectionPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
-      <MenuHeaderBack
-        restaurant={restaurantData}
-        tableNumber={state.tableNumber}
-      />
+      {/* Fixed Header */}
+      <div className="fixed top-0 left-0 right-0 z-50" style={{ zIndex: 999 }}>
+        <MenuHeaderBack
+          restaurant={restaurantData}
+          tableNumber={state.tableNumber}
+        />
+      </div>
+
+      {/* Spacer for fixed header */}
+      <div className="h-20"></div>
 
       <div
         className={`w-full flex-1 flex flex-col justify-end ${

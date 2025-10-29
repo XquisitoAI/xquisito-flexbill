@@ -126,12 +126,7 @@ export default function RootLayout({
       signInFallbackRedirectUrl="/"
     >
       <html lang="es">
-        <head>
-          <Script
-            src="https://dyscanweb.dyneti.com/static/front_end/dist/client.js"
-            strategy="beforeInteractive"
-          />
-        </head>
+        <head></head>
         <body
           className={`${helveticaNeue.variable} antialiased`}
           style={{ fontFamily: "var(--font-helvetica-neue)" }}

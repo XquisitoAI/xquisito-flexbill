@@ -125,13 +125,8 @@ export default function PaymentSuccessPage() {
     }
   };
 
-  // Calculate total amount including tip, commission, and IVA
-  const amount = paymentDetails?.baseAmount
-    ? paymentDetails.baseAmount +
-      (paymentDetails.tipAmount || 0) +
-      (paymentDetails.commissionAmount || 0) +
-      (paymentDetails.ivaAmount || 0)
-    : paymentDetails?.amount || urlAmount;
+  // Calculate total amount charged to client
+  const amount = paymentDetails?.totalAmountCharged || paymentDetails?.amount || urlAmount;
 
   // Get dish orders from paymentDetails
   const dishOrders = paymentDetails?.dishOrders || [];
@@ -492,7 +487,7 @@ export default function PaymentSuccessPage() {
               <div className="space-y-3">
                 {paymentDetails?.baseAmount && (
                   <div className="flex justify-between items-center">
-                    <span className="text-black font-medium">+ Subtotal</span>
+                    <span className="text-black font-medium">+ Consumo</span>
                     <span className="text-black font-medium">
                       ${paymentDetails.baseAmount.toFixed(2)} MXN
                     </span>
@@ -508,20 +503,13 @@ export default function PaymentSuccessPage() {
                   </div>
                 )}
 
-                {paymentDetails?.commissionAmount > 0 && (
+                {((paymentDetails?.xquisitoCommissionClient || 0) + (paymentDetails?.ivaXquisitoClient || 0)) > 0 && (
                   <div className="flex justify-between items-center">
-                    <span className="text-black font-medium">+ Comisión</span>
                     <span className="text-black font-medium">
-                      ${paymentDetails.commissionAmount.toFixed(2)} MXN
+                      + Comisión de servicio
                     </span>
-                  </div>
-                )}
-
-                {paymentDetails?.ivaAmount > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-black font-medium">+ IVA (16%)</span>
                     <span className="text-black font-medium">
-                      ${paymentDetails.ivaAmount.toFixed(2)} MXN
+                      ${((paymentDetails?.xquisitoCommissionClient || 0) + (paymentDetails?.ivaXquisitoClient || 0)).toFixed(2)} MXN
                     </span>
                   </div>
                 )}

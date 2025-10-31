@@ -35,6 +35,7 @@ interface OrderHistoryItem {
   paymentMethodId?: number | null;
   paymentCardLastFour?: string | null;
   paymentCardType?: string | null;
+  paymentCardBrand?: string | null;
 }
 
 export default function HistoryTab() {
@@ -315,10 +316,10 @@ export default function HistoryTab() {
                         : "Pendiente"}
                     </span>
                   </div>
-                  {selectedOrderDetails.orders[0]?.paymentCardType && (
+                  {selectedOrderDetails.orders[0]?.paymentCardBrand && (
                     <div className="flex items-center gap-2 text-gray-700">
                       {getCardTypeIcon(
-                        selectedOrderDetails.orders[0].paymentCardType,
+                        selectedOrderDetails.orders[0].paymentCardBrand,
                         "small",
                         45,
                         28

@@ -10,6 +10,7 @@ import MenuHeaderBack from "../../components/headers/MenuHeaderBack";
 import { Check, CircleAlert, Loader2, X } from "lucide-react";
 import { apiService } from "../../utils/api";
 import Loader from "../../components/UI/Loader";
+import { calculateCommissions } from "../../utils/commissionCalculator";
 
 export default function TipSelectionPage() {
   const params = useParams();
@@ -205,10 +206,22 @@ export default function TipSelectionPage() {
   };
 
   const tipAmount = calculateTipAmount();
-  const subtotalEcartpay = baseAmount + tipAmount;
-  const ivaAmount = subtotalEcartpay * 0.16; // 16% de IVA sobre el subtotal
-  const commissionAmount = (subtotalEcartpay + ivaAmount) * 0.02; // 2% de comisión
-  const paymentAmount = subtotalEcartpay + ivaAmount + commissionAmount;
+
+  // Calcular comisiones dinámicas según el monto (rangos: <$100, $100-$150, >$150)
+  const commissions = calculateCommissions(baseAmount, tipAmount);
+
+  // Extraer valores calculados
+  const {
+    ivaTip,
+    xquisitoCommissionTotal,
+    xquisitoCommissionClient,
+    xquisitoCommissionRestaurant,
+    ivaXquisitoClient,
+    xquisitoClientCharge,
+    xquisitoRestaurantCharge,
+    totalAmountCharged: paymentAmount,
+    rates, // Tasas aplicadas según el rango
+  } = commissions;
 
   const handleTipPercentage = (percentage: number) => {
     setTipPercentage(percentage);
@@ -232,11 +245,15 @@ export default function TipSelectionPage() {
     setIsNavigating(true);
     const queryParams = new URLSearchParams({
       type: paymentType,
-      amount: paymentAmount.toString(), // Total con propina, comisión e IVA para eCardPay
-      baseAmount: baseAmount.toString(), // Monto base sin propina ni comisión para BD
-      tipAmount: tipAmount.toString(), // Propina por separado
-      commissionAmount: commissionAmount.toString(), // Comisión por separado
-      ivaAmount: ivaAmount.toString(), // IVA por separado (solo para eCardPay)
+      amount: paymentAmount.toString(), // Total cobrado al cliente
+      baseAmount: baseAmount.toString(), // Monto base (consumo)
+      tipAmount: tipAmount.toString(), // Propina
+      ivaTip: ivaTip.toString(), // IVA de propina (no pagado por cliente)
+      xquisitoCommissionClient: xquisitoCommissionClient.toString(), // Comisión Xquisito parte cliente
+      ivaXquisitoClient: ivaXquisitoClient.toString(), // IVA sobre comisión Xquisito cliente
+      xquisitoCommissionRestaurant: xquisitoCommissionRestaurant.toString(), // Comisión Xquisito parte restaurante
+      xquisitoRestaurantCharge: xquisitoRestaurantCharge.toString(), // Comisión restaurante + IVA
+      xquisitoCommissionTotal: xquisitoCommissionTotal.toString(), // Comisión Xquisito total
       ...(userName && { userName }),
       ...(paymentType === "select-items" && {
         selectedItems: selectedItems.join(","),
@@ -818,7 +835,7 @@ export default function TipSelectionPage() {
                   <span className="text-black font-medium">
                     +{" "}
                     {paymentType === "full-bill"
-                      ? "Total"
+                      ? "Consumo"
                       : paymentType === "select-items"
                         ? "Tus artículos"
                         : paymentType === "equal-shares"
@@ -840,15 +857,11 @@ export default function TipSelectionPage() {
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className="text-black font-medium">+ Comisión</span>
                   <span className="text-black font-medium">
-                    ${commissionAmount.toFixed(2)} MXN
+                    + Comisión de servicio
                   </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-black font-medium">+ IVA (16%)</span>
                   <span className="text-black font-medium">
-                    ${ivaAmount.toFixed(2)} MXN
+                    ${xquisitoClientCharge.toFixed(2)} MXN
                   </span>
                 </div>
               </div>

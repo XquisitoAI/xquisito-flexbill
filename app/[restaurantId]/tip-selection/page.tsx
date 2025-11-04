@@ -312,7 +312,7 @@ export default function TipSelectionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       {/* Fixed Header */}
       <div className="fixed top-0 left-0 right-0 z-50" style={{ zIndex: 999 }}>
         <MenuHeaderBack
@@ -634,7 +634,7 @@ export default function TipSelectionPage() {
                             className={`rounded-full cursor-pointer transition-colors h-10 flex items-center justify-center  ${
                               isDisabled || isNavigating
                                 ? "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed text-white px-10"
-                                : "bg-gradient-to-r from-[#34808C] to-[#173E44] text-white px-16"
+                                : "bg-gradient-to-r from-[#34808C] to-[#173E44] text-white px-16 animate-pulse-button"
                             }`}
                           >
                             {isNavigating ? (

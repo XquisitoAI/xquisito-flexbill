@@ -226,7 +226,7 @@ export default function CartView() {
                   </div>
                   <button
                     onClick={handleOrder}
-                    className="bg-gradient-to-r from-[#34808C] to-[#173E44] py-3 text-white px-20 rounded-full cursor-pointer transition-colors font-normal h-fit flex items-center justify-center"
+                    className="bg-gradient-to-r from-[#34808C] to-[#173E44] py-3 text-white px-20 rounded-full cursor-pointer transition-colors font-normal h-fit flex items-center justify-center animate-pulse-button"
                   >
                     Ordenar
                   </button>

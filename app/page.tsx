@@ -7,8 +7,8 @@ import { useUser } from "@clerk/nextjs";
 import Loader from "./components/UI/Loader";
 
 // Restaurant ID por defecto para testing
-const DEFAULT_RESTAURANT_ID = 3;
-const DEFAULT_TABLE = 12;
+const DEFAULT_RESTAURANT_ID = 5;
+const DEFAULT_TABLE = 20;
 
 function HomeContent() {
   const router = useRouter();

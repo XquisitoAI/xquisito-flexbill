@@ -48,7 +48,6 @@ function AddCardContent() {
   }, []);
 
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [expDate, setExpDate] = useState("");
   const [cvv, setCvv] = useState("");
@@ -64,18 +63,8 @@ function AddCardContent() {
     }
   };
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const emailCharsRegex = /^[a-zA-Z0-9@._-]*$/;
-
-    if (emailCharsRegex.test(value)) {
-      setEmail(value);
-    }
-  };
-
   const fillTestCard = () => {
     setFullName("Test User");
-    setEmail("test@example.com");
     setCardNumber("4242 4242 4242 4242");
     setExpDate("12/25");
     setCvv("123");
@@ -83,22 +72,9 @@ function AddCardContent() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
   const handleSave = async () => {
     if (!fullName.trim()) {
       alert("Please enter your full name");
-      return;
-    }
-    if (!email.trim()) {
-      alert("Please enter your email address");
-      return;
-    }
-    if (!validateEmail(email)) {
-      alert("Please enter a valid email address");
       return;
     }
     if (!cardNumber.trim()) {
@@ -145,9 +121,12 @@ function AddCardContent() {
         apiService.setGuestInfo(guestId, tableNumber.toString());
       }
 
+      // Use user's email from Clerk if authenticated, otherwise empty string (backend will generate guest email)
+      const userEmail = user?.emailAddresses?.[0]?.emailAddress || "";
+
       const result = await apiService.addPaymentMethod({
         fullName,
-        email,
+        email: userEmail,
         cardNumber,
         expDate,
         cvv,
@@ -382,19 +361,6 @@ function AddCardContent() {
                     placeholder="123"
                     maxLength={4}
                     className="w-full px-3 py-3 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-700 mb-2">
-                    Correo Electronico
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={handleEmailChange}
-                    placeholder="john@example.com"
-                    className="w-full px-3 py-3 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>
               </div>

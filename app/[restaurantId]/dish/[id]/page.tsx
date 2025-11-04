@@ -681,7 +681,7 @@ export default function DishDetailPage() {
 
             {/* Custom Fields Dinámicos */}
             {dishData.customFields && dishData.customFields.length > 0 && (
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <div className="grid gap-6 mb-6">
                 {dishData.customFields.map((field) => (
                   <div key={field.id}>
                     <div

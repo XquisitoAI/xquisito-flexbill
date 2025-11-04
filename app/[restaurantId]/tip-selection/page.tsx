@@ -346,12 +346,12 @@ export default function TipSelectionPage() {
         <div
           className={`${
             paymentType === "select-items"
-              ? "flex flex-col relative px-4"
+              ? "flex flex-col relative px-4 flex-1"
               : "fixed bottom-0 left-0 right-0 z-50 flex justify-center"
           }`}
         >
           <div
-            className={`flex flex-col relative ${paymentType !== "select-items" ? "mx-4 w-full" : ""}`}
+            className={`flex flex-col relative ${paymentType !== "select-items" ? "mx-4 w-full" : "flex-1"}`}
           >
             <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
               <div className="py-6 px-8 flex flex-col justify-center">
@@ -366,7 +366,7 @@ export default function TipSelectionPage() {
 
             <div
               className={`bg-white rounded-t-4xl relative z-10 flex flex-col px-8 pt-8 ${
-                paymentType === "select-items" ? "pb-[200px]" : ""
+                paymentType === "select-items" ? "pb-[200px] flex-1" : ""
               }`}
             >
               {/* Seleccionar monto a pagar para choose-amount */}

@@ -60,9 +60,8 @@ export default function CardsTab() {
   };
 
   return (
-    <div className="h-full flex flex-1 flex-col">
-      <div className="flex-1"></div>
-      <div className="flex flex-col flex-shrink-0">
+    <div className="h-full flex flex-col">
+      <div className="fixed bottom-0 left-0 right-0 flex flex-col flex-shrink-0 mx-6 pb-6 px-4 z-50">
         {/* Loading State */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -186,23 +185,6 @@ export default function CardsTab() {
           <Plus className="size-5" />
           Agregar nueva tarjeta
         </button>
-
-        {/* Security Notice */}
-        <div className="mt-5 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="size-5 text-blue-600 mt-0.5" />
-            <div>
-              <p className="text-blue-800 font-medium text-sm">
-                Seguridad garantizada
-              </p>
-              <p className="text-blue-600 text-xs mt-1">
-                Tus datos de tarjeta están protegidos con encriptación de nivel
-                bancario. Solo almacenamos tokens seguros, nunca información
-                sensible.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

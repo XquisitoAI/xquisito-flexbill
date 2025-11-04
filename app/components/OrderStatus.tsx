@@ -306,7 +306,7 @@ export default function OrderStatus() {
                                       {dish.quantity}
                                     </p>
                                     <p className="text-black w-14">
-                                      ${dish.total_price.toFixed(2)}
+                                      ${(dish.total_price / dish.quantity).toFixed(2)}
                                     </p>
                                   </div>
                                 </div>
@@ -416,7 +416,7 @@ export default function OrderStatus() {
                                       {dish.quantity}
                                     </p>
                                     <p className="text-black">
-                                      ${dish.total_price.toFixed(2)}
+                                      ${(dish.total_price / dish.quantity).toFixed(2)}
                                     </p>
                                   </div>
                                 </div>

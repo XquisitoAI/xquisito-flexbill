@@ -182,10 +182,7 @@ export default function CartView() {
                             <div className="w-16 text-right">
                               <p className="text-base text-black">
                                 $
-                                {(
-                                  (item.price + (item.extraPrice || 0)) *
-                                  item.quantity
-                                ).toFixed(2)}
+                                {(item.price + (item.extraPrice || 0)).toFixed(2)}
                               </p>
                             </div>
                           </div>

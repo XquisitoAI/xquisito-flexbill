@@ -2,13 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import {
-  Loader2,
-  ChevronRight,
-  X,
-  Calendar,
-  Utensils,
-} from "lucide-react";
+import { Loader2, ChevronRight, X, Calendar, Utensils } from "lucide-react";
 import { getCardTypeIcon } from "@/app/utils/cardIcons";
 
 interface OrderHistoryItem {
@@ -114,9 +108,7 @@ export default function HistoryTab() {
   // Las órdenes ya vienen agrupadas por transacción desde el backend
   // Cada orden tiene sus platillos en el array "dishes"
   const groupedOrders = orders.sort(
-    (a, b) =>
-      new Date(b.createdAt).getTime() -
-      new Date(a.createdAt).getTime()
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
   return (
@@ -173,7 +165,7 @@ export default function HistoryTab() {
                 <div className="flex items-center gap-3">
                   <div className="text-right">
                     <span
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${
+                      className={`text-xs px-2 py-1 rounded-full font-medium truncate ${
                         order.orderType === "tap-order-and-pay"
                           ? "bg-purple-100 text-purple-700"
                           : "bg-blue-100 text-blue-700"

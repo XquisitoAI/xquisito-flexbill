@@ -24,11 +24,13 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
   const { state } = useTable();
   const { restaurant, menu, loading, error } = useRestaurant();
 
-  // Obtener categorías únicas del menú de la BD
+  // Obtener categorías únicas del menú de la BD ordenadas por display_order
   const categorias = useMemo(() => {
     const categories = ["Todo"];
     if (menu && menu.length > 0) {
-      menu.forEach((section) => {
+      // Ordenar secciones por display_order antes de extraer nombres
+      const sortedSections = [...menu].sort((a, b) => a.display_order - b.display_order);
+      sortedSections.forEach((section) => {
         if (section.name) {
           categories.push(section.name);
         }
@@ -75,7 +77,8 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
         .filter((section) => section.items.length > 0);
     }
 
-    return filtered;
+    // Ordenar por display_order antes de retornar
+    return [...filtered].sort((a, b) => a.display_order - b.display_order);
   }, [menu, filter, searchQuery]);
 
   // Mostrar loader mientras carga

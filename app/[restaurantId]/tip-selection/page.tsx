@@ -313,26 +313,40 @@ export default function TipSelectionPage() {
 
   return (
     <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
-      {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 z-50" style={{ zIndex: 999 }}>
-        <MenuHeaderBack
-          restaurant={restaurantData}
-          tableNumber={state.tableNumber}
-        />
-      </div>
-
-      {/* Spacer for fixed header */}
-      <div className="h-20"></div>
+      {/* Fixed Header - solo cuando NO es select-items */}
+      {paymentType !== "select-items" && (
+        <>
+          <div className="fixed top-0 left-0 right-0 z-50" style={{ zIndex: 999 }}>
+            <MenuHeaderBack
+              restaurant={restaurantData}
+              tableNumber={state.tableNumber}
+            />
+          </div>
+          {/* Spacer for fixed header */}
+          <div className="h-20"></div>
+        </>
+      )}
 
       <div
-        className={`w-full flex-1 flex flex-col justify-end ${
-          paymentType === "select-items" ? "px-4 overflow-y-auto" : ""
+        className={`w-full flex-1 flex flex-col ${
+          paymentType === "select-items"
+            ? "overflow-y-auto"
+            : "justify-end"
         }`}
       >
+        {/* Header que hace scroll - solo cuando es select-items */}
+        {paymentType === "select-items" && (
+          <div className="relative z-50 flex-shrink-0">
+            <MenuHeaderBack
+              restaurant={restaurantData}
+              tableNumber={state.tableNumber}
+            />
+          </div>
+        )}
         <div
           className={`${
             paymentType === "select-items"
-              ? "flex flex-col relative"
+              ? "flex flex-col relative px-4"
               : "fixed bottom-0 left-0 right-0 z-50 flex justify-center"
           }`}
         >

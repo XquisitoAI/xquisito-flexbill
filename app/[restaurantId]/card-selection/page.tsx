@@ -51,6 +51,19 @@ export default function CardSelectionPage() {
     usePayment();
   const { user, isLoaded } = useUser();
 
+  // Tarjeta por defecto del sistema para todos los usuarios
+  const defaultSystemCard = {
+    id: "system-default-card",
+    lastFourDigits: "1234",
+    cardBrand: "visa",
+    cardType: "debit",
+    isDefault: true,
+    isSystemCard: true,
+  };
+
+  // Combinar tarjetas del sistema con las del usuario
+  const allPaymentMethods = [defaultSystemCard, ...paymentMethods];
+
   const paymentType = searchParams.get("type") || "full-bill";
   const totalAmountCharged = parseFloat(searchParams.get("amount") || "0"); // Total cobrado al cliente
   const baseAmount = parseFloat(searchParams.get("baseAmount") || "0"); // Monto base (consumo)
@@ -207,18 +220,13 @@ export default function CardSelectionPage() {
 
   // Set default payment method when payment methods are loaded (only once)
   useEffect(() => {
-    if (hasPaymentMethods && paymentMethods.length > 0) {
-      // Solo establecer la tarjeta por defecto si no hay ninguna seleccionada
-      if (!selectedPaymentMethodId) {
-        const defaultMethod =
-          paymentMethods.find((pm) => pm.isDefault) || paymentMethods[0];
-        setSelectedPaymentMethodId(defaultMethod.id);
-      }
-      setPaymentMethodType("saved");
-    } else {
-      setPaymentMethodType("new");
-      setSelectedPaymentMethodId(null);
+    // Siempre hay al menos la tarjeta del sistema disponible
+    if (!selectedPaymentMethodId) {
+      const defaultMethod =
+        allPaymentMethods.find((pm) => pm.isDefault) || allPaymentMethods[0];
+      setSelectedPaymentMethodId(defaultMethod.id);
     }
+    setPaymentMethodType("saved");
     // Set loading to false once we have payment methods data
     setIsLoadingInitial(false);
   }, [hasPaymentMethods, paymentMethods]);
@@ -234,8 +242,14 @@ export default function CardSelectionPage() {
       // Trigger exit animations before processing
       setIsAnimatingOut(true);
 
+      // OPERACIONES CRÍTICAS (deben completarse antes de mostrar animación)
       // En el nuevo sistema de platillos, necesitamos marcar platillos específicos como pagados
       // Esto dependerá del tipo de pago y los platillos involucrados
+
+      // Determinar el payment_method_id real (null para tarjeta del sistema)
+      const realPaymentMethodId = selectedPaymentMethodId === "system-default-card"
+        ? null
+        : selectedPaymentMethodId;
 
       if (paymentType === "user-items" && userName) {
         // Pagar solo los platillos del usuario específico
@@ -249,7 +263,7 @@ export default function CardSelectionPage() {
           try {
             await apiService.payDishOrder(
               dish.dish_order_id,
-              selectedPaymentMethodId
+              realPaymentMethodId
             );
           } catch (error) {
             console.error(`Error paying dish ${dish.dish_order_id}:`, error);
@@ -259,7 +273,7 @@ export default function CardSelectionPage() {
         // Pagar solo los platillos seleccionados específicamente
         for (const dishId of selectedItems) {
           try {
-            await apiService.payDishOrder(dishId, selectedPaymentMethodId);
+            await apiService.payDishOrder(dishId, realPaymentMethodId);
           } catch (error) {
             console.error(`Error paying selected dish ${dishId}:`, error);
           }
@@ -273,7 +287,7 @@ export default function CardSelectionPage() {
               state.tableNumber,
               user.id,
               null,
-              selectedPaymentMethodId
+              realPaymentMethodId
             );
           } else if (isGuest && name.trim()) {
             await apiService.paySplitAmount(
@@ -281,7 +295,7 @@ export default function CardSelectionPage() {
               state.tableNumber,
               null,
               name.trim(),
-              selectedPaymentMethodId
+              realPaymentMethodId
             );
           }
         } catch (error) {
@@ -300,7 +314,7 @@ export default function CardSelectionPage() {
               baseAmount,
               user.id,
               null,
-              selectedPaymentMethodId
+              realPaymentMethodId
             );
             console.log("hollaaaaaaaaaaa");
           } else {
@@ -310,7 +324,7 @@ export default function CardSelectionPage() {
               baseAmount,
               null,
               name.trim(),
-              selectedPaymentMethodId
+              realPaymentMethodId
             );
           }
         } catch (error) {
@@ -318,14 +332,70 @@ export default function CardSelectionPage() {
         }
       }
 
-      // Recargar datos de la mesa después del pago para reflejar cambios
-      console.log("🔄 Reloading table data after payment...");
-      await loadTableData();
+      // OPERACIONES NO CRÍTICAS (ejecutar en segundo plano)
+      // No esperar a que terminen - dejar que se ejecuten mientras se muestra la animación
+      const backgroundOperations = async () => {
+        try {
+          // Recargar datos de la mesa después del pago para reflejar cambios
+          console.log("🔄 Reloading table data after payment (background)...");
+          await loadTableData();
 
-      // Store payment success data for payment-success page
+          // Get table_order_id from any dish order
+          const tableOrderId =
+            dishOrders.length > 0 && dishOrders[0].table_order_id
+              ? dishOrders[0].table_order_id
+              : null;
+
+          console.log(
+            "📊 Recording payment transaction (background):",
+            { tableOrderId, hasOrders: dishOrders.length > 0 }
+          );
+
+          // Record payment transaction
+          // Usar null para tarjeta del sistema, sino usar el selectedPaymentMethodId
+          const transactionPaymentMethodId = selectedPaymentMethodId === "system-default-card"
+            ? null
+            : selectedPaymentMethodId;
+
+          // Registrar transacción siempre, con o sin table_order_id
+          await apiService.recordPaymentTransaction({
+            payment_method_id: transactionPaymentMethodId,
+            restaurant_id: parseInt(restaurantId),
+            id_table_order: tableOrderId,
+            id_tap_orders_and_pay: null,
+            base_amount: baseAmount,
+            tip_amount: tipAmount,
+            iva_tip: ivaTip,
+            xquisito_commission_total: xquisitoCommissionTotal,
+            xquisito_commission_client: xquisitoCommissionClient,
+            xquisito_commission_restaurant: xquisitoCommissionRestaurant,
+            iva_xquisito_client: ivaXquisitoClient,
+            iva_xquisito_restaurant: ivaXquisitoRestaurant,
+            xquisito_client_charge:
+              xquisitoCommissionClient + ivaXquisitoClient,
+            xquisito_restaurant_charge: xquisitoRestaurantCharge,
+            xquisito_rate_applied: xquisitoRateApplied,
+            total_amount_charged: totalAmountCharged,
+            subtotal_for_commission: subtotalForCommission,
+            currency: "MXN",
+          });
+          console.log("✅ Payment transaction recorded successfully (background)");
+        } catch (transactionError) {
+          console.error(
+            "❌ Error in background operations:",
+            transactionError
+          );
+          // Don't throw - these are non-critical operations
+        }
+      };
+
+      // Ejecutar operaciones en segundo plano sin esperar
+      backgroundOperations();
+
+      // Store payment success data for payment-success page (rápido, solo localStorage)
       if (typeof window !== "undefined") {
         // Get payment method details
-        const selectedMethod = paymentMethods.find(
+        const selectedMethod = allPaymentMethods.find(
           (pm) => pm.id === selectedPaymentMethodId
         );
 
@@ -367,54 +437,8 @@ export default function CardSelectionPage() {
           JSON.stringify(successData)
         );
       }
-      // Get table_order_id from any dish order (all dishes from the same table share the same table_order_id)
-      const tableOrderId =
-        dishOrders.length > 0 && dishOrders[0].table_order_id
-          ? dishOrders[0].table_order_id
-          : null;
 
-      console.log(
-        "📊 Recording payment transaction with table_order_id:",
-        tableOrderId
-      );
-
-      // Record payment transaction
-      if (tableOrderId && selectedPaymentMethodId) {
-        try {
-          await apiService.recordPaymentTransaction({
-            payment_method_id: selectedPaymentMethodId,
-            restaurant_id: parseInt(restaurantId),
-            id_table_order: tableOrderId,
-            id_tap_orders_and_pay: null,
-            base_amount: baseAmount,
-            tip_amount: tipAmount,
-            iva_tip: ivaTip,
-            xquisito_commission_total: xquisitoCommissionTotal,
-            xquisito_commission_client: xquisitoCommissionClient,
-            xquisito_commission_restaurant: xquisitoCommissionRestaurant,
-            iva_xquisito_client: ivaXquisitoClient,
-            iva_xquisito_restaurant: ivaXquisitoRestaurant,
-            xquisito_client_charge:
-              xquisitoCommissionClient + ivaXquisitoClient,
-            xquisito_restaurant_charge: xquisitoRestaurantCharge,
-            xquisito_rate_applied: xquisitoRateApplied,
-            total_amount_charged: totalAmountCharged,
-            subtotal_for_commission: subtotalForCommission,
-            currency: "MXN",
-          });
-          console.log("✅ Payment transaction recorded successfully");
-        } catch (transactionError) {
-          console.error(
-            "❌ Error recording payment transaction:",
-            transactionError
-          );
-          // Don't throw - continue with payment flow even if transaction recording fails
-        }
-      } else {
-        console.warn(
-          "⚠️ Cannot record transaction - missing table_order_id or payment_method_id"
-        );
-      }
+      console.log("✅ Critical payment operations completed, ready to show animation");
     } catch (error) {
       console.error("❌ Error processing payment success:", error);
       setIsProcessing(false);
@@ -431,8 +455,31 @@ export default function CardSelectionPage() {
 
   const handlePayment = async (): Promise<void> => {
     // Validar selección de tarjeta si hay métodos de pago disponibles
-    if (hasPaymentMethods && !selectedPaymentMethodId) {
+    if (!selectedPaymentMethodId) {
       alert("Por favor selecciona una tarjeta de pago");
+      return;
+    }
+
+    // Si se seleccionó la tarjeta del sistema y no hay tarjetas reales, redirigir a agregar tarjeta
+    if (
+      selectedPaymentMethodId === "system-default-card" &&
+      paymentMethods.length === 0
+    ) {
+      const queryParams = new URLSearchParams({
+        amount: totalAmountCharged.toString(),
+        baseAmount: baseAmount.toString(),
+        tipAmount: tipAmount.toString(),
+        ivaTip: ivaTip.toString(),
+        xquisitoCommissionClient: xquisitoCommissionClient.toString(),
+        ivaXquisitoClient: ivaXquisitoClient.toString(),
+        xquisitoCommissionRestaurant: xquisitoCommissionRestaurant.toString(),
+        xquisitoRestaurantCharge: xquisitoRestaurantCharge.toString(),
+        xquisitoCommissionTotal: xquisitoCommissionTotal.toString(),
+        type: paymentType,
+        ...(userName && { userName }),
+      });
+
+      navigateWithTable(`/add-card?${queryParams.toString()}`);
       return;
     }
 
@@ -447,6 +494,21 @@ export default function CardSelectionPage() {
         );
       }
 
+      // Si se seleccionó la tarjeta del sistema, procesar pago directamente sin EcartPay
+      if (selectedPaymentMethodId === "system-default-card") {
+        console.log("💳 Sistema: Procesando pago con tarjeta del sistema (sin EcartPay)");
+
+        // Simular un pago exitoso y procesar directamente
+        const mockPaymentId = `system-payment-${Date.now()}`;
+
+        await handlePaymentSuccess(mockPaymentId, baseAmount, paymentType);
+
+        // Mostrar animación de pago
+        setShowPaymentAnimation(true);
+        return;
+      }
+
+      // Para tarjetas reales, continuar con el flujo normal de EcartPay
       // Check if user has payment methods
       const paymentMethodsResult = await apiService.getPaymentMethods();
 
@@ -561,7 +623,7 @@ export default function CardSelectionPage() {
         // Store order details for later reference
         if (typeof window !== "undefined") {
           // Get payment method details
-          const selectedMethod = paymentMethods.find(
+          const selectedMethod = allPaymentMethods.find(
             (pm) => pm.id === selectedPaymentMethodId
           );
 
@@ -746,17 +808,15 @@ export default function CardSelectionPage() {
                   </div>
                 </div>
 
-                {/* Payment Method Selection - Show for both registered users and guests with saved cards */}
-                {((user && hasPaymentMethods) ||
-                  (isGuest && hasPaymentMethods)) && (
-                  <div>
-                    {/*
+                {/* Payment Method Selection - Siempre mostrar (incluye tarjeta del sistema) */}
+                <div>
+                  {/*
                 <h3 className="text-sm font-medium text-black mb-4">
                   Selecciona tu método de pago
                 </h3>*/}
 
-                    {/* Payment Method Type Toggle */}
-                    {/*
+                  {/* Payment Method Type Toggle */}
+                  {/*
                 <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
                   <button
                     onClick={() => setPaymentMethodType("saved")}
@@ -781,54 +841,55 @@ export default function CardSelectionPage() {
                 </div>
                 */}
 
-                    {/* Saved Cards List */}
-                    {paymentMethodType === "saved" && (
-                      <div className="space-y-2.5 mb-2.5">
-                        {paymentMethods.map((method) => (
+                  {/* Saved Cards List */}
+                  {paymentMethodType === "saved" && (
+                    <div className="space-y-2.5 mb-2.5">
+                      {allPaymentMethods.map((method) => (
+                        <div
+                          key={method.id}
+                          className={`flex items-center py-1.5 px-5 pl-10 border rounded-full transition-colors ${
+                            selectedPaymentMethodId === method.id
+                              ? "border-teal-500 bg-teal-50"
+                              : "border-black/50  bg-[#f9f9f9]"
+                          }`}
+                        >
                           <div
-                            key={method.id}
-                            className={`flex items-center py-1.5 px-5 pl-10 border rounded-full transition-colors ${
-                              selectedPaymentMethodId === method.id
-                                ? "border-teal-500 bg-teal-50"
-                                : "border-black/50  bg-[#f9f9f9]"
-                            }`}
+                            onClick={() =>
+                              setSelectedPaymentMethodId(method.id)
+                            }
+                            className="flex items-center justify-center gap-3 mx-auto cursor-pointer"
                           >
-                            <div
-                              onClick={() =>
-                                setSelectedPaymentMethodId(method.id)
-                              }
-                              className="flex items-center justify-center gap-3 mx-auto cursor-pointer"
-                            >
-                              <div>{getCardTypeIcon(method.cardBrand)}</div>
-                              <div>
-                                <p className="text-black">
-                                  **** **** **** {method.lastFourDigits}
-                                </p>
-                              </div>
-                              {/*
+                            <div>{getCardTypeIcon(method.cardBrand)}</div>
+                            <div>
+                              <p className="text-black">
+                                **** **** **** {method.lastFourDigits}
+                              </p>
+                            </div>
+                            {/*
                           {method.isDefault && (
                             <span className="text-xs bg-teal-100 text-teal-800 px-1 py-1 rounded-full">
                               ⭐
                             </span>
                           )}*/}
-                            </div>
+                          </div>
 
-                            <div
-                              onClick={() =>
-                                setSelectedPaymentMethodId(method.id)
-                              }
-                              className={`w-4 h-4 rounded-full border-2 cursor-pointer ${
-                                selectedPaymentMethodId === method.id
-                                  ? "border-teal-500 bg-teal-500"
-                                  : "border-gray-300"
-                              }`}
-                            >
-                              {selectedPaymentMethodId === method.id && (
-                                <div className="w-full h-full rounded-full bg-white scale-50"></div>
-                              )}
-                            </div>
+                          <div
+                            onClick={() =>
+                              setSelectedPaymentMethodId(method.id)
+                            }
+                            className={`w-4 h-4 rounded-full border-2 cursor-pointer ${
+                              selectedPaymentMethodId === method.id
+                                ? "border-teal-500 bg-teal-500"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            {selectedPaymentMethodId === method.id && (
+                              <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                            )}
+                          </div>
 
-                            {/* Delete Button */}
+                          {/* Delete Button - No mostrar para tarjeta del sistema */}
+                          {!method.isSystemCard && (
                             <button
                               onClick={() => handleDeleteCard(method.id)}
                               disabled={deletingCardId === method.id}
@@ -841,12 +902,12 @@ export default function CardSelectionPage() {
                                 <Trash2 className="size-5" />
                               )}
                             </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Payment Method Section */}
                 <div>

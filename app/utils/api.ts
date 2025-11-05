@@ -13,6 +13,7 @@ export interface PaymentMethod {
   cardholderName: string;
   isDefault: boolean;
   createdAt: string;
+  isSystemCard?: boolean;
 }
 
 export interface ApiResponse<T = any> {
@@ -175,7 +176,7 @@ class ApiService {
 
   // Payment Transaction Recording API
   async recordPaymentTransaction(transactionData: {
-    payment_method_id: string;
+    payment_method_id: string | null;
     restaurant_id: number;
     id_table_order?: string | null;
     id_tap_orders_and_pay?: string | null;

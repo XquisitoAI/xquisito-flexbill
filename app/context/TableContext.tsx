@@ -472,10 +472,24 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const { user, isLoaded } = useUser();
   const { restaurantId } = useRestaurant();
 
+  // Ref para evitar cargas duplicadas
+  const lastLoadedTable = React.useRef<string | null>(null);
+  const isLoadingRef = React.useRef(false);
+
   // Cargar todos los datos cuando se establece el número de mesa
   useEffect(() => {
-    if (state.tableNumber) {
-      loadTableData();
+    // Evitar cargas duplicadas
+    if (
+      state.tableNumber &&
+      state.tableNumber !== lastLoadedTable.current &&
+      !isLoadingRef.current
+    ) {
+      lastLoadedTable.current = state.tableNumber;
+      isLoadingRef.current = true;
+
+      loadTableData().finally(() => {
+        isLoadingRef.current = false;
+      });
     }
   }, [state.tableNumber]);
 
@@ -557,18 +571,11 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const loadSplitPayments = async () => {
     if (!state.tableNumber || !restaurantId) return;
 
-    console.log(
-      "🔄 TableContext: Loading split payments for table:",
-      state.tableNumber
-    );
-
     try {
       const response = await apiService.getSplitPaymentStatus(
         restaurantId.toString(),
         state.tableNumber
       );
-
-      console.log("📡 TableContext: Split payments API response:", response);
 
       if (response.success && response.data) {
         const splitPayments = response.data.split_payments || [];
@@ -577,10 +584,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
           type: "SET_SPLIT_BILL_ACTIVE",
           payload: splitPayments.length > 0,
         });
-        console.log(
-          "✅ TableContext: Split payments updated in state:",
-          splitPayments
-        );
       }
     } catch (error) {
       console.error("Error loading split payments:", error);
@@ -626,10 +629,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
               userIds.length > 0 ? userIds : undefined,
               guestNames.length > 0 ? guestNames : undefined
             );
-            console.log(
-              `🔄 Split bill recalculated with ${totalUsers} active users:`,
-              { userIds: userIds, guestNames: guestNames }
-            );
 
             // Recargar tableSummary después del recálculo
             await loadTableSummary();
@@ -670,10 +669,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
               totalUsers,
               userIds.length > 0 ? userIds : undefined,
               guestNames.length > 0 ? guestNames : undefined
-            );
-            console.log(
-              `✅ Split bill auto-initialized with ${totalUsers} active users:`,
-              { userIds: userIds, guestNames: guestNames }
             );
 
             // Recargar tableSummary después de la inicialización
@@ -884,11 +879,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
           finalGuestNames = activeUsers
             .filter((user: any) => !user.user_id && user.guest_name)
             .map((user: any) => user.guest_name);
-
-          console.log("🔍 Auto-detected active users for split:", {
-            userIds: finalUserIds,
-            guestNames: finalGuestNames,
-          });
         }
       }
 
@@ -930,13 +920,9 @@ export function TableProvider({ children }: { children: ReactNode }) {
       );
 
       if (response.success) {
-        console.log(
-          "💰 TableContext: Split payment successful, reloading data..."
-        );
         // Recargar datos de la mesa incluyendo split payments
         await loadTableData();
         await loadSplitPayments();
-        console.log("✅ TableContext: Data reloaded after split payment");
       } else {
         dispatch({
           type: "SET_ERROR",

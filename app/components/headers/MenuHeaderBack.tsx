@@ -201,20 +201,20 @@ export default function MenuHeaderBack({
   };
 
   return (
-    <header className="container mx-auto px-5 pt-5 relative" style={{ zIndex: 100 }}>
+    <header className="container mx-auto px-5 md:px-8 lg:px-10 pt-5 md:pt-7 lg:pt-9 relative" style={{ zIndex: 100 }}>
       <div className="relative flex items-center justify-between z-10">
         {/* Back */}
         <div className="flex items-center z-10">
           <div
             onClick={handleBack}
-            className="size-10 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+            className="size-10 md:size-12 lg:size-14 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
           >
-            <ChevronLeft className="text-primary" />
+            <ChevronLeft className="text-primary size-5 md:size-6 lg:size-7" />
           </div>
         </div>
 
         {/* Xquisito Logo */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 size-10">
+        <div className="absolute left-1/2 transform -translate-x-1/2 size-10 md:size-12 lg:size-14">
           <img src="/logo-short-green.webp" alt="Xquisito Logo" />
         </div>
 
@@ -222,14 +222,14 @@ export default function MenuHeaderBack({
         {!isLoaded ? (
           // Loading
           <div className="flex items-center space-x-1">
-            <div className="size-10 bg-gray-300 animate-pulse rounded-full border border-white shadow-sm"></div>
+            <div className="size-10 md:size-12 lg:size-14 bg-gray-300 animate-pulse rounded-full border border-white shadow-sm"></div>
           </div>
         ) : participants.length > 0 ? (
           <div className="flex items-center space-x-1">
             {remainingCount > 0 && (
               <div
                 onClick={() => setIsParticipantsModalOpen(true)}
-                className="size-10 bg-white rounded-full flex items-center justify-center text-black text-base font-medium border border-[#8e8e8e] shadow-sm cursor-pointer"
+                className="size-10 md:size-12 lg:size-14 bg-white rounded-full flex items-center justify-center text-black text-base md:text-lg lg:text-xl font-medium border border-[#8e8e8e] shadow-sm cursor-pointer"
               >
                 +{remainingCount}
               </div>
@@ -247,7 +247,7 @@ export default function MenuHeaderBack({
                 <div
                   key={participant.guest_name}
                   onClick={() => setIsParticipantsModalOpen(true)}
-                  className={`size-10 rounded-full flex items-center justify-center text-white text-base font-medium border border-white shadow-sm cursor-pointer overflow-hidden ${!hasImage ? getAvatarColor(displayName) : ""}`}
+                  className={`size-10 md:size-12 lg:size-14 rounded-full flex items-center justify-center text-white text-base md:text-lg lg:text-xl font-medium border border-white shadow-sm cursor-pointer overflow-hidden ${!hasImage ? getAvatarColor(displayName) : ""}`}
                   style={{
                     marginLeft: remainingCount > 0 || index > 0 ? "-12px" : "0",
                   }}
@@ -256,7 +256,7 @@ export default function MenuHeaderBack({
                     <img
                       src={userImage}
                       alt={displayName}
-                      className="size-10 rounded-full object-cover"
+                      className="size-10 md:size-12 lg:size-14 rounded-full object-cover"
                     />
                   ) : (
                     getInitials(displayName)
@@ -283,24 +283,24 @@ export default function MenuHeaderBack({
           ></div>
 
           {/* Modal */}
-          <div className="relative bg-white rounded-t-4xl w-full mx-4">
+          <div className="relative bg-white rounded-t-4xl w-full mx-4 md:mx-6 lg:mx-8">
             {/* Titulo */}
-            <div className="px-6 pt-4">
-              <div className="flex items-center justify-between pb-4 border-b border-[#8e8e8e]">
-                <h3 className="text-lg font-semibold text-black">
+            <div className="px-6 md:px-8 lg:px-10 pt-4 md:pt-5 lg:pt-6">
+              <div className="flex items-center justify-between pb-4 md:pb-5 border-b border-[#8e8e8e]">
+                <h3 className="text-lg md:text-xl lg:text-2xl font-semibold text-black">
                   Participantes
                 </h3>
                 <button
                   onClick={() => setIsParticipantsModalOpen(false)}
-                  className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+                  className="p-1 md:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
                 >
-                  <X className="size-5 text-gray-500" />
+                  <X className="size-5 md:size-6 lg:size-7 text-gray-500" />
                 </button>
               </div>
             </div>
 
             {/* Lista de participantes */}
-            <div className="px-6 py-4 space-y-3 max-h-80 overflow-y-auto">
+            <div className="px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 space-y-3 md:space-y-4 lg:space-y-5 max-h-80 md:max-h-96 lg:max-h-[28rem] overflow-y-auto">
               {participants.map((participant) => {
                 const isCurrent = isCurrentUser(participant);
                 const displayName = getDisplayName(participant);
@@ -313,31 +313,31 @@ export default function MenuHeaderBack({
                 return (
                   <div
                     key={participant.guest_name}
-                    className="flex items-center gap-3"
+                    className="flex items-center gap-3 md:gap-4"
                   >
                     <div
-                      className={`size-12 rounded-full flex items-center justify-center text-white text-base font-semibold overflow-hidden ${!hasImage ? getAvatarColor(displayName) : ""}`}
+                      className={`size-12 md:size-14 lg:size-16 rounded-full flex items-center justify-center text-white text-base md:text-lg lg:text-xl font-semibold overflow-hidden ${!hasImage ? getAvatarColor(displayName) : ""}`}
                     >
                       {hasImage ? (
                         <img
                           src={userImage}
                           alt={displayName}
-                          className="size-12 rounded-full object-cover"
+                          className="size-12 md:size-14 lg:size-16 rounded-full object-cover"
                         />
                       ) : (
                         getInitials(displayName)
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-black">
+                      <p className="font-medium text-black text-base md:text-lg lg:text-xl">
                         {displayName}
                         {isCurrent && (
-                          <span className="ml-2 text-xs text-primary">
+                          <span className="ml-2 text-xs md:text-sm lg:text-base text-primary">
                             (Tú)
                           </span>
                         )}
                       </p>
-                      <p className="text-sm text-[#8e8e8e]">
+                      <p className="text-sm md:text-base lg:text-lg text-[#8e8e8e]">
                         {(() => {
                           const userOrders = Array.isArray(state.dishOrders)
                             ? state.dishOrders.filter(

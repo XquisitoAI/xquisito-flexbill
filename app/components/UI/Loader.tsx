@@ -6,7 +6,7 @@ const Loader = () => {
           <img
             src="/logo-short-green.webp"
             alt="Xquisito Logo"
-            className="size-24 justify-self-center"
+            className="size-24 md:size-28 lg:size-32 justify-self-center"
           />
         </div>
       </div>

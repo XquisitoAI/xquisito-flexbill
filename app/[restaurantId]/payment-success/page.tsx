@@ -126,7 +126,8 @@ export default function PaymentSuccessPage() {
   };
 
   // Calculate total amount charged to client
-  const amount = paymentDetails?.totalAmountCharged || paymentDetails?.amount || urlAmount;
+  const amount =
+    paymentDetails?.totalAmountCharged || paymentDetails?.amount || urlAmount;
 
   // Get dish orders from paymentDetails
   const dishOrders = paymentDetails?.dishOrders || [];
@@ -195,32 +196,32 @@ export default function PaymentSuccessPage() {
         <img
           src="/logo-short-green.webp"
           alt="Xquisito Logo"
-          className="size-20 animate-logo-fade-in"
+          className="size-20 md:size-28 lg:size-32 animate-logo-fade-in"
         />
       </div>
 
-      <div className="px-4 w-full animate-slide-up">
+      <div className="px-4 md:px-6 lg:px-8 w-full animate-slide-up">
         <div className="flex-1 flex flex-col">
           <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
-            <div className="py-6 px-8 flex flex-col justify-center items-center mb-6 mt-2 gap-2">
-              <h1 className="font-medium text-white text-3xl leading-7">
+            <div className="py-6 px-8 md:px-10 lg:px-12 flex flex-col justify-center items-center mb-6 md:mb-8 lg:mb-10 mt-2 md:mt-4 lg:mt-6 gap-2 md:gap-3 lg:gap-4">
+              <h1 className="font-medium text-white text-3xl md:text-4xl lg:text-5xl leading-7">
                 ¡Gracias por tu pedido!
               </h1>
-              <p className="text-white">
+              <p className="text-white text-base md:text-lg lg:text-xl">
                 Hemos recibido tu pago y tu orden está en proceso.
               </p>
             </div>
           </div>
 
-          <div className="bg-white rounded-t-4xl relative z-10 flex flex-col min-h-96 justify-center px-6 flex-1 py-8">
+          <div className="bg-white rounded-t-4xl relative z-10 flex flex-col min-h-96 justify-center px-6 md:px-8 lg:px-10 flex-1 py-8">
             {/* Rating Prompt */}
             <div className="text-center mb-8">
-              <p className="text-xl font-medium text-black mb-2">
+              <p className="text-xl md:text-2xl lg:text-2xl font-medium text-black mb-2">
                 {hasRated
                   ? "¡Gracias por tu calificación!"
                   : "Califica tu experiencia en el restaurante"}
               </p>
-              <div className="flex justify-center gap-1">
+              <div className="flex justify-center gap-1 md:gap-1.5">
                 {[1, 2, 3, 4, 5].map((starIndex) => {
                   const currentRating = hoveredRating || rating;
                   const isFilled = currentRating >= starIndex;
@@ -239,7 +240,7 @@ export default function PaymentSuccessPage() {
                     >
                       {/* Estrella */}
                       <svg
-                        className={`size-8 transition-all ${
+                        className={`size-8 md:size-9 lg:size-10 transition-all ${
                           isFilled ? "text-yellow-400" : "text-white"
                         }`}
                         fill="currentColor"
@@ -264,7 +265,7 @@ export default function PaymentSuccessPage() {
             >
               <button
                 onClick={handleGoHome}
-                className="w-full text-white py-3 rounded-full cursor-pointer transition-colors bg-gradient-to-r from-[#34808C] to-[#173E44]"
+                className="w-full text-white py-3 md:py-4 lg:py-5 rounded-full cursor-pointer transition-colors bg-gradient-to-r from-[#34808C] to-[#173E44] text-base md:text-lg lg:text-xl"
               >
                 Ir al menú
               </button>
@@ -272,9 +273,12 @@ export default function PaymentSuccessPage() {
               {/* Ticket btn */}
               <button
                 onClick={() => setIsTicketModalOpen(true)}
-                className="w-full flex items-center justify-center gap-2 text-black border border-black py-3 rounded-full cursor-pointer transition-colors bg-white hover:bg-stone-100"
+                className="text-base md:text-lg lg:text-xl w-full flex items-center justify-center gap-2 text-black border border-black py-3 md:py-4 lg:py-5 rounded-full cursor-pointer transition-colors bg-white hover:bg-stone-100"
               >
-                <Receipt className="size-5" strokeWidth={1.5} />
+                <Receipt
+                  className="size-5 md:size-6 lg:size-7"
+                  strokeWidth={1.5}
+                />
                 Ver ticket de compra
               </button>
 
@@ -285,7 +289,7 @@ export default function PaymentSuccessPage() {
                     sessionStorage.setItem("signupFromPaymentSuccess", "true");
                     router.push("/sign-up");
                   }}
-                  className="w-full text-black border border-black py-3 rounded-full cursor-pointer transition-colors bg-white hover:bg-stone-100"
+                  className="w-full text-black border border-black py-3 md:py-4 lg:py-5 rounded-full cursor-pointer transition-colors bg-white hover:bg-stone-100 text-base md:text-lg lg:text-xl"
                 >
                   Crear una cuenta
                 </button>
@@ -503,13 +507,20 @@ export default function PaymentSuccessPage() {
                   </div>
                 )}
 
-                {((paymentDetails?.xquisitoCommissionClient || 0) + (paymentDetails?.ivaXquisitoClient || 0)) > 0 && (
+                {(paymentDetails?.xquisitoCommissionClient || 0) +
+                  (paymentDetails?.ivaXquisitoClient || 0) >
+                  0 && (
                   <div className="flex justify-between items-center">
                     <span className="text-black font-medium">
                       + Comisión de servicio
                     </span>
                     <span className="text-black font-medium">
-                      ${((paymentDetails?.xquisitoCommissionClient || 0) + (paymentDetails?.ivaXquisitoClient || 0)).toFixed(2)} MXN
+                      $
+                      {(
+                        (paymentDetails?.xquisitoCommissionClient || 0) +
+                        (paymentDetails?.ivaXquisitoClient || 0)
+                      ).toFixed(2)}{" "}
+                      MXN
                     </span>
                   </div>
                 )}

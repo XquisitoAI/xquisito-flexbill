@@ -269,7 +269,7 @@ export default function ProfileTab() {
       {/* Profile Image */}
       <div className="flex flex-col items-center">
         <div className="relative group mb-4">
-          <div className="size-28 rounded-full bg-gray-200 overflow-hidden border-2 border-teal-600">
+          <div className="size-28 md:size-32 lg:size-36 rounded-full bg-gray-200 overflow-hidden border-2 md:border-4 border-teal-600">
             <img
               src={user.imageUrl}
               alt="Profile"
@@ -278,9 +278,9 @@ export default function ProfileTab() {
           </div>
           <label
             htmlFor="profile-image"
-            className="absolute bottom-0 right-0 bg-teal-600 text-white p-2 rounded-full cursor-pointer hover:bg-teal-700 transition-colors"
+            className="absolute bottom-0 right-0 bg-teal-600 text-white p-2 md:p-2.5 lg:p-3 rounded-full cursor-pointer hover:bg-teal-700 transition-colors"
           >
-            <Camera className="size-4" />
+            <Camera className="size-4 md:size-5 lg:size-6" />
             <input
               id="profile-image"
               type="file"

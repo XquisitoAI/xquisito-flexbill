@@ -371,8 +371,8 @@ export default function PaymentOptionsPage() {
   if (user && isSyncing) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col items-center justify-center">
-        <Loader2 className="size-12 text-white animate-spin" />
-        <p className="text-white mt-4">Configurando tu cuenta...</p>
+        <Loader2 className="size-12 md:size-14 lg:size-16 text-white animate-spin" />
+        <p className="text-white mt-4 md:mt-5 lg:mt-6 text-base md:text-lg lg:text-xl">Configurando tu cuenta...</p>
       </div>
     );
   }
@@ -384,10 +384,10 @@ export default function PaymentOptionsPage() {
         tableNumber={state.tableNumber}
       />
 
-      <div className="px-4 w-full flex-1 flex flex-col">
+      <div className="px-4 md:px-6 lg:px-8 w-full flex-1 flex flex-col">
         <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
-          <div className="py-6 px-8 flex flex-col justify-center">
-            <h1 className="font-medium text-white text-3xl leading-7 mt-2 mb-6">
+          <div className="py-6 md:py-8 lg:py-10 px-8 md:px-10 lg:px-12 flex flex-col justify-center">
+            <h1 className="font-medium text-white text-3xl md:text-4xl lg:text-5xl leading-7 md:leading-9 lg:leading-tight mt-2 md:mt-3 mb-6 md:mb-8">
               Elige cómo quieres pagar la cuenta
             </h1>
           </div>
@@ -396,27 +396,27 @@ export default function PaymentOptionsPage() {
         <div className="flex-1 h-full flex flex-col overflow-hidden relative">
           <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col overflow-hidden">
             {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto px-8 pb-[140px]">
+            <div className="flex-1 overflow-y-auto px-6 md:px-8 lg:px-10 pb-[140px] md:pb-[160px] lg:pb-[180px]">
               {/* 4 OPCIONES PRINCIPALES DE PAGO */}
-              <div className="flex flex-col mt-4">
+              <div className="flex flex-col mt-4 md:mt-6">
                 {/* Opción 1: Pagar cuenta completa */}
                 {unpaidAmount > 0 && (
                   <button
                     onClick={handlePayFullBill}
                     className="w-full bg-white cursor-pointer border-b border-[#8e8e8e]"
                   >
-                    <div className="flex items-center gap-4 py-4">
-                      <div className="size-16 rounded-sm border border-black flex items-center justify-center">
+                    <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5">
+                      <div className="size-16 md:size-20 lg:size-24 rounded-sm md:rounded-md border border-black flex items-center justify-center">
                         <ReceiptText
-                          className="text-black size-9"
+                          className="text-black size-9 md:size-11 lg:size-12"
                           strokeWidth={1}
                         />
                       </div>
                       <div className="flex-1 text-left">
-                        <h3 className="text-black">Pagar cuenta completa</h3>
+                        <h3 className="text-black text-base md:text-lg lg:text-xl">Pagar cuenta completa</h3>
                       </div>
                       <div className="text-black">
-                        <ChevronRight className="size-5" />
+                        <ChevronRight className="size-5 md:size-6 lg:size-7" />
                       </div>
                     </div>
                   </button>
@@ -428,19 +428,19 @@ export default function PaymentOptionsPage() {
                     onClick={handleSelectItems}
                     className="w-full bg-white cursor-pointer border-b border-[#8e8e8e]"
                   >
-                    <div className="flex items-center gap-4 py-4">
-                      <div className="size-16 rounded-sm border border-black flex items-center justify-center">
+                    <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5">
+                      <div className="size-16 md:size-20 lg:size-24 rounded-sm md:rounded-md border border-black flex items-center justify-center">
                         <img
                           src="/icons/select-items-logo.svg"
                           alt=""
-                          className="rounded-sm"
+                          className="rounded-sm md:rounded-md"
                         />
                       </div>
                       <div className="flex-1 text-left">
-                        <h3 className="text-black">Seleccionar artículos</h3>
+                        <h3 className="text-black text-base md:text-lg lg:text-xl">Seleccionar artículos</h3>
                       </div>
                       <div className="text-black">
-                        <ChevronRight className="size-5" />
+                        <ChevronRight className="size-5 md:size-6 lg:size-7" />
                       </div>
                     </div>
                   </button>
@@ -452,18 +452,18 @@ export default function PaymentOptionsPage() {
                     onClick={handleEqualShares}
                     className="w-full bg-white cursor-pointer border-b border-[#8e8e8e]"
                   >
-                    <div className="flex items-center gap-4 py-4">
-                      <div className="size-16 rounded-sm border border-black flex items-center justify-center">
+                    <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5">
+                      <div className="size-16 md:size-20 lg:size-24 rounded-sm md:rounded-md border border-black flex items-center justify-center">
                         <img
                           src="/icons/split-bill-logo.png"
                           alt=""
-                          className="size-9"
+                          className="size-9 md:size-11 lg:size-12"
                         />
                       </div>
                       <div className="flex-1 text-left">
-                        <h3 className="text-black">Dividir cuenta</h3>
+                        <h3 className="text-black text-base md:text-lg lg:text-xl">Dividir cuenta</h3>
                         {uniqueUsers.length > 1 && (
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm md:text-base lg:text-lg text-gray-600">
                             ${(unpaidAmount / uniqueUsers.length).toFixed(2)}{" "}
                             por persona (${uniqueUsers.length} personas
                             pendientes)
@@ -471,7 +471,7 @@ export default function PaymentOptionsPage() {
                         )}
                       </div>
                       <div className="text-black">
-                        <ChevronRight className="size-5" />
+                        <ChevronRight className="size-5 md:size-6 lg:size-7" />
                       </div>
                     </div>
                   </button>
@@ -483,18 +483,18 @@ export default function PaymentOptionsPage() {
                     onClick={handleChooseAmount}
                     className="w-full bg-white cursor-pointer"
                   >
-                    <div className="flex items-center gap-4 py-4">
-                      <div className="size-16 rounded-sm border border-black flex items-center justify-center">
+                    <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5">
+                      <div className="size-16 md:size-20 lg:size-24 rounded-sm md:rounded-md border border-black flex items-center justify-center">
                         <DollarSign
-                          className="text-black size-9"
+                          className="text-black size-9 md:size-11 lg:size-12"
                           strokeWidth={1}
                         />
                       </div>
                       <div className="flex-1 text-left">
-                        <h3 className="text-black">Elegir monto</h3>
+                        <h3 className="text-black text-base md:text-lg lg:text-xl">Elegir monto</h3>
                       </div>
                       <div className="text-black">
-                        <ChevronRight className="size-5" />
+                        <ChevronRight className="size-5 md:size-6 lg:size-7" />
                       </div>
                     </div>
                   </button>
@@ -503,12 +503,12 @@ export default function PaymentOptionsPage() {
 
               {/* Mensaje si no hay platillos pendientes */}
               {unpaidAmount <= 0 && (
-                <div className="my-8 text-center">
-                  <div className="p-6 bg-green-50 rounded-lg">
-                    <h3 className="text-lg font-medium text-green-800 mb-2">
+                <div className="my-8 md:my-10 lg:my-12 text-center">
+                  <div className="p-6 md:p-8 lg:p-10 bg-green-50 rounded-lg md:rounded-xl">
+                    <h3 className="text-lg md:text-xl lg:text-2xl font-medium text-green-800 mb-2 md:mb-3">
                       ¡Cuenta pagada completamente!
                     </h3>
-                    <p className="text-green-600">
+                    <p className="text-green-600 text-base md:text-lg lg:text-xl">
                       Todos los platillos de la mesa han sido pagados.
                     </p>
                   </div>
@@ -518,31 +518,31 @@ export default function PaymentOptionsPage() {
 
             {/* Total - Fixed to bottom */}
             {unpaidAmount > 0 && (
-              <div className="fixed bottom-0 left-0 right-0 bg-white mx-4 px-6 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                <div className=" py-4 space-y-2">
+              <div className="fixed bottom-0 left-0 right-0 bg-white mx-4 md:mx-6 lg:mx-8 px-6 md:px-8 lg:px-10 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <div className="py-4 md:py-5 lg:py-6 space-y-2 md:space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-medium text-black">
+                    <span className="text-lg md:text-xl lg:text-2xl font-medium text-black">
                       Total mesa {state.tableNumber}
                     </span>
-                    <span className="text-lg font-medium text-black">
+                    <span className="text-lg md:text-xl lg:text-2xl font-medium text-black">
                       ${tableTotalPrice.toFixed(2)}
                     </span>
                   </div>
                   {paidAmount > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-green-600 font-medium">
+                      <span className="text-green-600 font-medium text-base md:text-lg lg:text-xl">
                         Pagado:
                       </span>
-                      <span className="text-green-600 font-medium">
+                      <span className="text-green-600 font-medium text-base md:text-lg lg:text-xl">
                         ${paidAmount.toFixed(2)}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
-                    <span className="text-[#eab3f4] font-medium">
+                    <span className="text-[#eab3f4] font-medium text-base md:text-lg lg:text-xl">
                       Restante:
                     </span>
-                    <span className="text-[#eab3f4] font-medium">
+                    <span className="text-[#eab3f4] font-medium text-base md:text-lg lg:text-xl">
                       ${unpaidAmount.toFixed(2)}
                     </span>
                   </div>

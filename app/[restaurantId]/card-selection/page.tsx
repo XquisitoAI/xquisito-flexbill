@@ -221,15 +221,16 @@ export default function CardSelectionPage() {
   // Set default payment method when payment methods are loaded (only once)
   useEffect(() => {
     // Siempre hay al menos la tarjeta del sistema disponible
-    if (!selectedPaymentMethodId) {
+    if (!selectedPaymentMethodId && allPaymentMethods.length > 0) {
       const defaultMethod =
         allPaymentMethods.find((pm) => pm.isDefault) || allPaymentMethods[0];
       setSelectedPaymentMethodId(defaultMethod.id);
+      console.log("💳 Auto-seleccionando tarjeta:", defaultMethod.id);
     }
     setPaymentMethodType("saved");
     // Set loading to false once we have payment methods data
     setIsLoadingInitial(false);
-  }, [hasPaymentMethods, paymentMethods]);
+  }, [allPaymentMethods.length]);
 
   const handlePaymentSuccess = async (
     paymentId: string,
@@ -247,9 +248,10 @@ export default function CardSelectionPage() {
       // Esto dependerá del tipo de pago y los platillos involucrados
 
       // Determinar el payment_method_id real (null para tarjeta del sistema)
-      const realPaymentMethodId = selectedPaymentMethodId === "system-default-card"
-        ? null
-        : selectedPaymentMethodId;
+      const realPaymentMethodId =
+        selectedPaymentMethodId === "system-default-card"
+          ? null
+          : selectedPaymentMethodId;
 
       if (paymentType === "user-items" && userName) {
         // Pagar solo los platillos del usuario específico
@@ -346,16 +348,17 @@ export default function CardSelectionPage() {
               ? dishOrders[0].table_order_id
               : null;
 
-          console.log(
-            "📊 Recording payment transaction (background):",
-            { tableOrderId, hasOrders: dishOrders.length > 0 }
-          );
+          console.log("📊 Recording payment transaction (background):", {
+            tableOrderId,
+            hasOrders: dishOrders.length > 0,
+          });
 
           // Record payment transaction
           // Usar null para tarjeta del sistema, sino usar el selectedPaymentMethodId
-          const transactionPaymentMethodId = selectedPaymentMethodId === "system-default-card"
-            ? null
-            : selectedPaymentMethodId;
+          const transactionPaymentMethodId =
+            selectedPaymentMethodId === "system-default-card"
+              ? null
+              : selectedPaymentMethodId;
 
           // Registrar transacción siempre, con o sin table_order_id
           await apiService.recordPaymentTransaction({
@@ -379,12 +382,11 @@ export default function CardSelectionPage() {
             subtotal_for_commission: subtotalForCommission,
             currency: "MXN",
           });
-          console.log("✅ Payment transaction recorded successfully (background)");
-        } catch (transactionError) {
-          console.error(
-            "❌ Error in background operations:",
-            transactionError
+          console.log(
+            "✅ Payment transaction recorded successfully (background)"
           );
+        } catch (transactionError) {
+          console.error("❌ Error in background operations:", transactionError);
           // Don't throw - these are non-critical operations
         }
       };
@@ -438,7 +440,9 @@ export default function CardSelectionPage() {
         );
       }
 
-      console.log("✅ Critical payment operations completed, ready to show animation");
+      console.log(
+        "✅ Critical payment operations completed, ready to show animation"
+      );
     } catch (error) {
       console.error("❌ Error processing payment success:", error);
       setIsProcessing(false);
@@ -460,29 +464,6 @@ export default function CardSelectionPage() {
       return;
     }
 
-    // Si se seleccionó la tarjeta del sistema y no hay tarjetas reales, redirigir a agregar tarjeta
-    if (
-      selectedPaymentMethodId === "system-default-card" &&
-      paymentMethods.length === 0
-    ) {
-      const queryParams = new URLSearchParams({
-        amount: totalAmountCharged.toString(),
-        baseAmount: baseAmount.toString(),
-        tipAmount: tipAmount.toString(),
-        ivaTip: ivaTip.toString(),
-        xquisitoCommissionClient: xquisitoCommissionClient.toString(),
-        ivaXquisitoClient: ivaXquisitoClient.toString(),
-        xquisitoCommissionRestaurant: xquisitoCommissionRestaurant.toString(),
-        xquisitoRestaurantCharge: xquisitoRestaurantCharge.toString(),
-        xquisitoCommissionTotal: xquisitoCommissionTotal.toString(),
-        type: paymentType,
-        ...(userName && { userName }),
-      });
-
-      navigateWithTable(`/add-card?${queryParams.toString()}`);
-      return;
-    }
-
     setIsProcessing(true);
 
     try {
@@ -496,7 +477,9 @@ export default function CardSelectionPage() {
 
       // Si se seleccionó la tarjeta del sistema, procesar pago directamente sin EcartPay
       if (selectedPaymentMethodId === "system-default-card") {
-        console.log("💳 Sistema: Procesando pago con tarjeta del sistema (sin EcartPay)");
+        console.log(
+          "💳 Sistema: Procesando pago con tarjeta del sistema (sin EcartPay)"
+        );
 
         // Simular un pago exitoso y procesar directamente
         const mockPaymentId = `system-payment-${Date.now()}`;
@@ -772,28 +755,30 @@ export default function CardSelectionPage() {
           className={`w-full flex-1 flex flex-col justify-end ${isAnimatingOut ? "animate-slide-down" : ""}`}
         >
           <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center">
-            <div className="flex flex-col relative mx-4 w-full">
+            <div className="flex flex-col relative mx-4 md:mx-6 lg:mx-8 w-full">
               <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
-                <div className="py-6 px-8 flex flex-col justify-center">
-                  <h1 className="font-medium text-white text-3xl leading-7 mt-2 mb-6">
+                <div className="py-6 md:py-8 lg:py-10 px-8 md:px-10 lg:px-12 flex flex-col justify-center">
+                  <h1 className="font-medium text-white text-3xl md:text-4xl lg:text-5xl leading-7 md:leading-9 lg:leading-tight mt-2 md:mt-3 mb-6 md:mb-8">
                     Selecciona tu método de pago
                   </h1>
                 </div>
               </div>
 
-              <div className="bg-white rounded-t-4xl relative z-10 flex flex-col px-6 flex-1 py-8">
+              <div className="bg-white rounded-t-4xl relative z-10 flex flex-col px-6 md:px-8 lg:px-10 flex-1 py-8 md:py-10 lg:py-12">
                 {/* Payment Summary */}
                 <div className="space-y-2 mb-6">
                   <div className="flex justify-between items-center">
-                    <span className="text-black font-medium">Tu parte</span>
-                    <span className="text-black font-medium">
+                    <span className="text-black font-medium text-base md:text-lg lg:text-xl">
+                      Tu parte
+                    </span>
+                    <span className="text-black font-medium text-base md:text-lg lg:text-xl">
                       ${baseAmount.toFixed(2)} MXN
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center border-t pt-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-black">
+                      <span className="font-medium text-black text-base md:text-lg lg:text-xl">
                         Total a pagar
                       </span>
                       <CircleAlert
@@ -802,7 +787,7 @@ export default function CardSelectionPage() {
                         onClick={() => setShowTotalModal(true)}
                       />
                     </div>
-                    <span className="font-medium text-black">
+                    <span className="font-medium text-black text-base md:text-lg lg:text-xl">
                       ${totalAmountCharged.toFixed(2)} MXN
                     </span>
                   </div>
@@ -857,7 +842,7 @@ export default function CardSelectionPage() {
                             onClick={() =>
                               setSelectedPaymentMethodId(method.id)
                             }
-                            className="flex items-center justify-center gap-3 mx-auto cursor-pointer"
+                            className="flex items-center justify-center gap-3 mx-auto cursor-pointer text-base md:text-lg lg:text-xl"
                           >
                             <div>{getCardTypeIcon(method.cardBrand)}</div>
                             <div>
@@ -913,7 +898,7 @@ export default function CardSelectionPage() {
                 <div>
                   <button
                     onClick={handleAddCard}
-                    className="border border-black/50 flex justify-center items-center gap-1 w-full text-black py-3 rounded-full cursor-pointer transition-colors bg-[#f9f9f9] hover:bg-gray-100"
+                    className="border border-black/50 flex justify-center items-center gap-1 w-full text-black py-3 rounded-full cursor-pointer transition-colors bg-[#f9f9f9] hover:bg-gray-100 text-base md:text-lg lg:text-xl"
                   >
                     <Plus className="size-5" />
                     Agregar método de pago
@@ -938,7 +923,7 @@ export default function CardSelectionPage() {
                       isProcessing ||
                       (hasPaymentMethods && !selectedPaymentMethodId)
                     }
-                    className={`w-full text-white py-3 rounded-full cursor-pointer transition-colors ${
+                    className={`w-full text-white py-3 rounded-full cursor-pointer transition-colors text-base md:text-lg lg:text-xl ${
                       paymentLoading ||
                       isProcessing ||
                       (hasPaymentMethods && !selectedPaymentMethodId)

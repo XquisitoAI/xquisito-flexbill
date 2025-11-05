@@ -5,7 +5,6 @@ import { useTable } from "../../context/TableContext";
 import { useTableNavigation } from "../../hooks/useTableNavigation";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, ReceiptText } from "lucide-react";
-import GlassSurface from "@/app/components/UI/GlassSurface";
 
 interface MenuHeaderProps {
   restaurant: Restaurant;
@@ -29,61 +28,41 @@ export default function MenuHeader({
   };
 
   return (
-    <header className="sticky top-0 container mx-auto px-5 pt-5 z-5">
+    <header className="sticky top-0 container mx-auto px-5 md:px-8 lg:px-10 pt-5 md:pt-7 lg:pt-9 z-5">
       <div className="flex items-center justify-end z-10">
         {/*<div className="flex items-center z-10">
-            <img src="/logo-short-green.webp" alt="Xquisito Logo" className="size-10 justify-self-center" />
-            <span className="text-lg font-semibold text-gray-800">
+            <img src="/logo-short-green.webp" alt="Xquisito Logo" className="size-10 md:size-12 lg:size-14 justify-self-center" />
+            <span className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-800">
               Table {tableNumber || restaurant.tableNumber}
             </span>
           </div>*/}
 
-        <div className="flex items-center space-x-2 z-10">
+        <div className="flex items-center space-x-2 md:space-x-3 lg:space-x-4 z-10">
           <div className="relative group">
-            <div className="hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer rounded-full">
-              <GlassSurface
-                width={40}
-                height={40}
-                borderRadius={50}
-                blur={1}
-                backgroundOpacity={0.85}
-              >
-                <div
-                  onClick={handleOrderClick}
-                  className="size-10 rounded-full flex items-center justify-center"
-                >
-                  <ReceiptText className="text-primary size-5 group-hover:scale-105 transition-transform" />
-                </div>
-              </GlassSurface>
+            <div
+              onClick={handleOrderClick}
+              className="size-10 md:size-12 lg:size-14 rounded-full flex items-center justify-center bg-white/85 backdrop-blur-sm shadow-sm hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer"
+            >
+              <ReceiptText className="text-primary size-5 md:size-6 lg:size-7 group-hover:scale-105 transition-transform" />
             </div>
             {Array.isArray(state.dishOrders) && state.dishOrders.length > 0 && (
-              <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-4 flex items-center justify-center text-xs font-normal">
+              <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-4 md:size-5 lg:size-6 flex items-center justify-center text-xs md:text-sm font-normal">
                 {state.dishOrders.length}
               </div>
             )}
           </div>
 
           <div className="relative group" id="cart-icon">
-            <div className="hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer rounded-full">
-              <GlassSurface
-                width={40}
-                height={40}
-                borderRadius={50}
-                blur={1}
-                backgroundOpacity={0.85}
-              >
-                <div
-                  onClick={handleCartClick}
-                  className="size-10 rounded-full flex items-center justify-center"
-                >
-                  <ShoppingCart className="text-primary size-5 group-hover:scale-105 transition-transform" />
-                </div>
-              </GlassSurface>
+            <div
+              onClick={handleCartClick}
+              className="size-10 md:size-12 lg:size-14 rounded-full flex items-center justify-center bg-white/85 backdrop-blur-sm shadow-sm hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer"
+            >
+              <ShoppingCart className="text-primary size-5 md:size-6 lg:size-7 group-hover:scale-105 transition-transform" />
             </div>
             {state.currentUserTotalItems > 0 && (
               <div
                 id="cart-badge"
-                className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-4 flex items-center justify-center text-xs font-normal"
+                className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-4 md:size-5 lg:size-6 flex items-center justify-center text-xs md:text-sm font-normal"
               >
                 {state.currentUserTotalItems}
               </div>

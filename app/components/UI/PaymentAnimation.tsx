@@ -91,7 +91,7 @@ export default function PaymentAnimation({
 
         {/* Success text */}
         <div
-          className="absolute bottom-24 left-0 right-0 text-center"
+          className="absolute bottom-24 md:bottom-32 lg:bottom-40 left-0 right-0 text-center"
           style={{
             animation: "fadeInText 0.4s ease-out 0.9s both",
           }}

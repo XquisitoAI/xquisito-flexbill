@@ -405,9 +405,9 @@ export default function PaymentOptionsPage() {
                 {unpaidAmount > 0 && (
                   <button
                     onClick={handlePayFullBill}
-                    className="w-full bg-white cursor-pointer border-b border-[#8e8e8e]"
+                    className="w-full bg-white cursor-pointer border-b border-[#8e8e8e] active:scale-95 active:bg-[#0a8b9b]/10 transition-all duration-150"
                   >
-                    <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5">
+                    <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5 px-4 md:px-5 lg:px-6">
                       <div className="size-16 md:size-20 lg:size-24 rounded-sm md:rounded-md border border-black flex items-center justify-center">
                         <ReceiptText
                           className="text-black size-9 md:size-11 lg:size-12"
@@ -430,9 +430,9 @@ export default function PaymentOptionsPage() {
                 {unpaidDishes.length > 0 && (
                   <button
                     onClick={handleSelectItems}
-                    className="w-full bg-white cursor-pointer border-b border-[#8e8e8e]"
+                    className="w-full bg-white cursor-pointer border-b border-[#8e8e8e] active:scale-95 active:bg-[#0a8b9b]/10 transition-all duration-150"
                   >
-                    <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5">
+                    <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5 px-4 md:px-5 lg:px-6">
                       <div className="size-16 md:size-20 lg:size-24 rounded-sm md:rounded-md border border-black flex items-center justify-center">
                         <img
                           src="/icons/select-items-logo.svg"
@@ -456,9 +456,9 @@ export default function PaymentOptionsPage() {
                 {unpaidAmount > 0 && (
                   <button
                     onClick={handleEqualShares}
-                    className="w-full bg-white cursor-pointer border-b border-[#8e8e8e]"
+                    className="w-full bg-white cursor-pointer border-b border-[#8e8e8e] active:scale-95 active:bg-[#0a8b9b]/10 transition-all duration-150"
                   >
-                    <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5">
+                    <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5 px-4 md:px-5 lg:px-6">
                       <div className="size-16 md:size-20 lg:size-24 rounded-sm md:rounded-md border border-black flex items-center justify-center">
                         <img
                           src="/icons/split-bill-logo.png"
@@ -489,9 +489,9 @@ export default function PaymentOptionsPage() {
                 {unpaidAmount > 0 && (
                   <button
                     onClick={handleChooseAmount}
-                    className="w-full bg-white cursor-pointer"
+                    className="w-full bg-white cursor-pointer active:scale-95 active:bg-[#0a8b9b]/10 transition-all duration-150"
                   >
-                    <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5">
+                    <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5 px-4 md:px-5 lg:px-6">
                       <div className="size-16 md:size-20 lg:size-24 rounded-sm md:rounded-md border border-black flex items-center justify-center">
                         <DollarSign
                           className="text-black size-9 md:size-11 lg:size-12"
@@ -513,7 +513,7 @@ export default function PaymentOptionsPage() {
 
               {/* Mensaje si no hay platillos pendientes */}
               {unpaidAmount <= 0 && (
-                <div className="my-8 md:my-10 lg:my-12 text-center">
+                <div className="my-8 md:my-10 lg:my-12 text-center px-6 md:px-8 lg:px-10">
                   <div className="p-6 md:p-8 lg:p-10 bg-green-50 rounded-lg md:rounded-xl">
                     <h3 className="text-lg md:text-xl lg:text-2xl font-medium text-green-800 mb-2 md:mb-3">
                       ¡Cuenta pagada completamente!

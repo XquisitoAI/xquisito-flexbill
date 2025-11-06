@@ -29,19 +29,21 @@ export default function CardsTab() {
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
 
-  // System default card
-  const defaultSystemCard = {
-    id: "system-default-card",
+  // System card available for all users
+  const systemCard = {
+    id: "system-card",
     lastFourDigits: "1234",
     cardBrand: "visa",
     cardType: "debit",
-    isDefault: true,
+    isDefault: false,
     isSystemCard: true,
+    expiryMonth: undefined,
+    expiryYear: undefined,
   };
 
-  // Combine system default card with user payment methods
+  // Combine system card with user payment methods
   const allPaymentMethods = useMemo(() => {
-    return [defaultSystemCard, ...paymentMethods];
+    return [systemCard, ...paymentMethods];
   }, [paymentMethods]);
 
   const handleAddNewCard = () => {
@@ -85,72 +87,74 @@ export default function CardsTab() {
         ) : (
           <>
             {/* Payment Methods List */}
-            {hasPaymentMethods ? (
-              <div className="space-y-2 md:space-y-3 lg:space-y-4">
-                {paymentMethods.map((method) => (
-                  <div
-                    key={method.id}
-                    className={`relative border rounded-full py-1.5 md:py-2 lg:py-2.5 px-5 md:px-6 lg:px-8 ${
-                      method.isDefault
-                        ? "border-teal-300 bg-teal-50"
-                        : "border-black/50 bg-[#f9f9f9]"
-                    }`}
-                  >
-                    {/* Default Badge */}
-                    {method.isDefault && (
-                      <div className="absolute -top-2 md:-top-2.5 lg:-top-3 left-4 md:left-5 lg:left-6 bg-teal-600 text-white text-xs md:text-sm lg:text-base px-2 md:px-3 lg:px-4 py-1 md:py-1.5 lg:py-2 rounded-full">
-                        Por defecto
+            <div className="space-y-2 md:space-y-3 lg:space-y-4">
+              {allPaymentMethods.map((method) => (
+                <div
+                  key={method.id}
+                  className={`relative border rounded-full py-1.5 md:py-2 lg:py-2.5 px-5 md:px-6 lg:px-8 ${
+                    method.isDefault
+                      ? "border-teal-300 bg-teal-50"
+                      : "border-black/50 bg-[#f9f9f9]"
+                  }`}
+                >
+                  {/* Default Badge */}
+                  {method.isDefault && (
+                    <div className="absolute -top-2 md:-top-2.5 lg:-top-3 left-4 md:left-5 lg:left-6 bg-teal-600 text-white text-xs md:text-sm lg:text-base px-2 md:px-3 lg:px-4 py-1 md:py-1.5 lg:py-2 rounded-full">
+                      Por defecto
+                    </div>
+                  )}
+
+                  <div className="flex items-center">
+                    <div className="flex items-center gap-2 md:gap-3 lg:gap-4 mx-auto">
+                      <div>
+                        <span className="text-2xl md:text-3xl lg:text-4xl">
+                          {getCardTypeIcon(method.cardBrand, "medium")}
+                        </span>
                       </div>
-                    )}
 
-                    <div className="flex items-center">
-                      <div className="flex items-center gap-2 md:gap-3 lg:gap-4 mx-auto">
-                        <div>
-                          <span className="text-2xl md:text-3xl lg:text-4xl">
-                            {getCardTypeIcon(method.cardBrand, "medium")}
+                      <div>
+                        <div className="flex items-center gap-2 md:gap-3 lg:gap-4">
+                          <span className="text-black text-base md:text-lg lg:text-xl">
+                            **** **** **** {method.lastFourDigits}
                           </span>
-                        </div>
-
-                        <div>
-                          <div className="flex items-center gap-2 md:gap-3 lg:gap-4">
-                            <span className="text-black text-base md:text-lg lg:text-xl">
-                              **** **** **** {method.lastFourDigits}
-                            </span>
+                          {method.expiryMonth && method.expiryYear && (
                             <p className="text-xs md:text-sm lg:text-base text-gray-500">
                               {method.expiryMonth?.toString().padStart(2, "0")}/
                               {method.expiryYear?.toString().slice(-2)}
                             </p>
-                          </div>
+                          )}
                         </div>
                       </div>
+                    </div>
 
-                      <div className="flex items-center">
-                        {/* Set Default Button */}
-                        {!method.isDefault && (
-                          <button
-                            onClick={() => handleSetDefault(method.id)}
-                            disabled={settingDefaultId === method.id}
-                            className="text-gray-400 hover:text-teal-600 transition-colors disabled:opacity-50 cursor-pointer"
-                            title="Establecer como predeterminada"
-                          >
-                            {settingDefaultId === method.id ? (
-                              <Loader2 className="size-5 md:size-6 lg:size-7 animate-spin" />
-                            ) : (
-                              <StarOff className="size-5 md:size-6 lg:size-7" />
-                            )}
-                          </button>
-                        )}
+                    <div className="flex items-center">
+                      {/* Set Default Button */}
+                      {!method.isDefault && !method.isSystemCard && (
+                        <button
+                          onClick={() => handleSetDefault(method.id)}
+                          disabled={settingDefaultId === method.id}
+                          className="text-gray-400 hover:text-teal-600 transition-colors disabled:opacity-50 cursor-pointer"
+                          title="Establecer como predeterminada"
+                        >
+                          {settingDefaultId === method.id ? (
+                            <Loader2 className="size-5 md:size-6 lg:size-7 animate-spin" />
+                          ) : (
+                            <StarOff className="size-5 md:size-6 lg:size-7" />
+                          )}
+                        </button>
+                      )}
 
-                        {method.isDefault && (
-                          <div
-                            className="text-teal-600"
-                            title="Tarjeta predeterminada"
-                          >
-                            <Star className="size-5 md:size-6 lg:size-7 fill-current" />
-                          </div>
-                        )}
+                      {method.isDefault && (
+                        <div
+                          className="text-teal-600"
+                          title="Tarjeta predeterminada"
+                        >
+                          <Star className="size-5 md:size-6 lg:size-7 fill-current" />
+                        </div>
+                      )}
 
-                        {/* Delete Button */}
+                      {/* Delete Button - not shown for system card */}
+                      {!method.isSystemCard && (
                         <button
                           onClick={() => handleDeleteCard(method.id)}
                           disabled={deletingCardId === method.id}
@@ -163,26 +167,12 @@ export default function CardsTab() {
                             <Trash2 className="size-5 md:size-6 lg:size-7" />
                           )}
                         </button>
-                      </div>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              /* Empty State */
-              <div className="text-center py-12 md:py-16 lg:py-20">
-                <div className="size-20 md:size-24 lg:size-28 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-5 lg:mb-6">
-                  <CreditCard className="size-10 md:size-12 lg:size-14 text-gray-400" />
                 </div>
-                <h3 className="text-lg md:text-xl lg:text-2xl font-medium text-gray-900 mb-2 md:mb-3 lg:mb-4">
-                  No tienes tarjetas guardadas
-                </h3>
-                <p className="text-gray-500 text-base md:text-lg lg:text-xl mb-6 md:mb-8 lg:mb-10">
-                  Agrega una tarjeta para pagar más rápido en tus próximos
-                  pedidos
-                </p>
-              </div>
-            )}
+              ))}
+            </div>
           </>
         )}
 

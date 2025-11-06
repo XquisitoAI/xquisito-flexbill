@@ -267,10 +267,10 @@ body {
 }
 @keyframes dash-check {
   0% {
-    stroke-dashoffset: -100;
+    stroke-dashoffset: 1000;
   }
   100% {
-    stroke-dashoffset: 900;
+    stroke-dashoffset: 0;
   }
 }
 @keyframes fadeInText {
@@ -319,6 +319,36 @@ body {
   100% {
     box-shadow: 0 0 0 0 rgba(52, 128, 140, 0);
   }
+}
+
+/* 🔧 Corrección Safari/iOS */
+.animated_checkmark {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+}
+
+.animated_checkmark .path {
+  will-change: stroke-dashoffset;
+  shape-rendering: geometricPrecision;
+}
+
+.animated_checkmark .path.circle {
+  stroke-dashoffset: 1000;
+  -webkit-animation: dash 0.9s ease-in-out forwards;
+  animation: dash 0.9s ease-in-out forwards;
+}
+
+.animated_checkmark .path.check {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000; /* totalmente oculto */
+  animation: dash-check 0.9s 0.3s ease-in-out forwards;
+}
+
+svg {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .animate-pulse-button {

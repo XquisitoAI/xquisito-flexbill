@@ -22,7 +22,6 @@ export default function PaymentAnimation({
 
     // Start fade out immediately after checkmark animation completes (~1.3s)
     const fadeOutTimer = setTimeout(() => {
-      console.log("🎬 PaymentAnimation: Starting fade out");
       setFadeOut(true);
     }, 1300);
 
@@ -46,7 +45,7 @@ export default function PaymentAnimation({
   return (
     <>
       <div
-        className={`fixed inset-0 overflow-hidden z-50 transition-opacity duration-700 ${
+        className={`fixed inset-0 z-50 transition-opacity duration-700 ${
           fadeOut ? "opacity-0" : "opacity-100"
         }`}
       >

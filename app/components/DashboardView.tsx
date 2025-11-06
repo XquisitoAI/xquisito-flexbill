@@ -24,9 +24,10 @@ export default function DashboardView() {
   }
 
   // Not authenticated (shouldn't happen but good fallback)
+  /*
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex items-center justify-center">
+      <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex items-center justify-center">
         <div className="text-center px-6">
           <h1 className="text-2xl font-medium text-white mb-4">
             Acceso denegado
@@ -43,7 +44,7 @@ export default function DashboardView() {
         </div>
       </div>
     );
-  }
+  }*/
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">

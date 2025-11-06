@@ -190,7 +190,7 @@ export default function PaymentSuccessPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       {/* Success Icon */}
       <div className="flex-1 flex justify-center items-center">
         <img
@@ -203,8 +203,8 @@ export default function PaymentSuccessPage() {
       <div className="px-4 md:px-6 lg:px-8 w-full animate-slide-up">
         <div className="flex-1 flex flex-col">
           <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
-            <div className="py-6 px-8 md:px-10 lg:px-12 flex flex-col justify-center items-center mb-6 md:mb-8 lg:mb-10 mt-2 md:mt-4 lg:mt-6 gap-2 md:gap-3 lg:gap-4">
-              <h1 className="font-medium text-white text-3xl md:text-4xl lg:text-5xl leading-7">
+            <div className="py-6 md:py-8 lg:py-10 px-8 md:px-10 lg:px-12 flex flex-col justify-center items-center mb-6 md:mb-8 lg:mb-10 mt-2 md:mt-4 lg:mt-6 gap-2 md:gap-3 lg:gap-4">
+              <h1 className="font-medium text-white text-3xl md:text-4xl lg:text-5xl leading-7 md:leading-9 lg:leading-tight">
                 ¡Gracias por tu pedido!
               </h1>
               <p className="text-white text-base md:text-lg lg:text-xl">
@@ -213,15 +213,15 @@ export default function PaymentSuccessPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-t-4xl relative z-10 flex flex-col min-h-96 justify-center px-6 md:px-8 lg:px-10 flex-1 py-8">
+          <div className="bg-white rounded-t-4xl relative z-10 flex flex-col min-h-96 justify-center px-6 md:px-8 lg:px-10 flex-1 py-8 md:py-10 lg:py-12">
             {/* Rating Prompt */}
-            <div className="text-center mb-8">
-              <p className="text-xl md:text-2xl lg:text-2xl font-medium text-black mb-2">
+            <div className="text-center mb-8 md:mb-10 lg:mb-12">
+              <p className="text-xl md:text-2xl lg:text-3xl font-medium text-black mb-2 md:mb-3 lg:mb-4">
                 {hasRated
                   ? "¡Gracias por tu calificación!"
                   : "Califica tu experiencia en el restaurante"}
               </p>
-              <div className="flex justify-center gap-1 md:gap-1.5">
+              <div className="flex justify-center gap-1 md:gap-1.5 lg:gap-2">
                 {[1, 2, 3, 4, 5].map((starIndex) => {
                   const currentRating = hoveredRating || rating;
                   const isFilled = currentRating >= starIndex;
@@ -240,7 +240,7 @@ export default function PaymentSuccessPage() {
                     >
                       {/* Estrella */}
                       <svg
-                        className={`size-8 md:size-9 lg:size-10 transition-all ${
+                        className={`size-8 md:size-10 lg:size-12 transition-all ${
                           isFilled ? "text-yellow-400" : "text-white"
                         }`}
                         fill="currentColor"
@@ -258,7 +258,7 @@ export default function PaymentSuccessPage() {
 
             {/* Action Buttons */}
             <div
-              className="space-y-3"
+              className="space-y-3 md:space-y-4 lg:space-y-5"
               style={{
                 paddingBottom: "max(0rem, env(safe-area-inset-bottom))",
               }}
@@ -273,7 +273,7 @@ export default function PaymentSuccessPage() {
               {/* Ticket btn */}
               <button
                 onClick={() => setIsTicketModalOpen(true)}
-                className="text-base md:text-lg lg:text-xl w-full flex items-center justify-center gap-2 text-black border border-black py-3 md:py-4 lg:py-5 rounded-full cursor-pointer transition-colors bg-white hover:bg-stone-100"
+                className="text-base md:text-lg lg:text-xl w-full flex items-center justify-center gap-2 md:gap-3 lg:gap-4 text-black border border-black py-3 md:py-4 lg:py-5 rounded-full cursor-pointer transition-colors bg-white hover:bg-stone-100"
               >
                 <Receipt
                   className="size-5 md:size-6 lg:size-7"
@@ -281,7 +281,7 @@ export default function PaymentSuccessPage() {
                 />
                 Ver ticket de compra
               </button>
-
+              {/*
               {!isSignedIn && (
                 <button
                   onClick={() => {
@@ -293,7 +293,7 @@ export default function PaymentSuccessPage() {
                 >
                   Crear una cuenta
                 </button>
-              )}
+              )}*/}
             </div>
           </div>
         </div>
@@ -306,35 +306,35 @@ export default function PaymentSuccessPage() {
           onClick={() => setIsTicketModalOpen(false)}
         >
           <div
-            className="bg-white w-full mx-4 rounded-4xl overflow-y-auto z-999 max-h-[85vh]"
+            className="bg-white w-full mx-4 md:mx-12 lg:mx-28 rounded-4xl overflow-y-auto z-999 max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-full flex justify-end">
               <button
                 onClick={() => setIsTicketModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors justify-end flex items-end mt-3 mr-3"
+                className="p-2 md:p-3 lg:p-4 hover:bg-gray-100 rounded-lg md:rounded-xl transition-colors justify-end flex items-end mt-3 md:mt-4 lg:mt-5 mr-3 md:mr-4 lg:mr-5"
               >
-                <X className="w-6 h-6 text-gray-600" />
+                <X className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-gray-600" />
               </button>
             </div>
 
             {/* Header */}
-            <div className="px-6 flex items-center justify-center mb-4">
-              <div className="flex flex-col justify-center items-center gap-3">
+            <div className="px-6 md:px-8 lg:px-10 flex items-center justify-center mb-4 md:mb-5 lg:mb-6">
+              <div className="flex flex-col justify-center items-center gap-3 md:gap-4 lg:gap-5">
                 {restaurant?.logo_url ? (
                   <img
                     src={restaurant.logo_url}
                     alt={restaurant.name}
-                    className="size-20 object-cover rounded-lg"
+                    className="size-20 md:size-24 lg:size-28 object-cover rounded-lg md:rounded-xl"
                   />
                 ) : (
-                  <Receipt className="size-20 text-teal-600" />
+                  <Receipt className="size-20 md:size-24 lg:size-28 text-teal-600" />
                 )}
                 <div className="flex flex-col items-center justify-center">
-                  <h2 className="text-xl text-black">
+                  <h2 className="text-xl md:text-2xl lg:text-3xl text-black">
                     {restaurant?.name || restaurantData.name}
                   </h2>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm md:text-base lg:text-lg text-gray-600">
                     Mesa {state.tableNumber || tableNumber || "N/A"}
                   </p>
                 </div>
@@ -342,22 +342,24 @@ export default function PaymentSuccessPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 space-y-4">
+            <div className="px-6 md:px-8 lg:px-10 space-y-4 md:space-y-5 lg:space-y-6">
               {/* Order Info */}
-              <div className="border-t border-[#8e8e8e] pt-4">
-                <h3 className="font-medium text-xl text-black mb-3">
+              <div className="border-t border-[#8e8e8e] pt-4 md:pt-5 lg:pt-6">
+                <h3 className="font-medium text-xl md:text-2xl lg:text-3xl text-black mb-3 md:mb-4 lg:mb-5">
                   Detalles del pago
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-2 md:space-y-3 lg:space-y-4">
                   {paymentDetails?.userName && (
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Utensils className="w-4 h-4 text-gray-700" />
-                      <span className="text-sm">{paymentDetails.userName}</span>
+                    <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-gray-700">
+                      <Utensils className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-gray-700" />
+                      <span className="text-sm md:text-base lg:text-lg">
+                        {paymentDetails.userName}
+                      </span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <Calendar className="w-4 h-4 text-gray-700" />
-                    <span className="text-sm capitalize">
+                  <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-gray-700">
+                    <Calendar className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-gray-700" />
+                    <span className="text-sm md:text-base lg:text-lg capitalize">
                       {new Date().toLocaleDateString("es-MX", {
                         weekday: "long",
                         year: "numeric",
@@ -370,12 +372,12 @@ export default function PaymentSuccessPage() {
                   </div>
 
                   {paymentDetails?.cardLast4 && (
-                    <div className="flex items-center gap-2 text-gray-700">
+                    <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-gray-700">
                       {getCardTypeIcon(
                         paymentDetails.cardBrand || "unknown",
                         "small"
                       )}
-                      <span className="text-sm">
+                      <span className="text-sm md:text-base lg:text-lg">
                         **** **** **** {paymentDetails.cardLast4}
                       </span>
                     </div>
@@ -385,28 +387,28 @@ export default function PaymentSuccessPage() {
 
               {/* Order Items */}
               {dishOrders.length > 0 && (
-                <div className="border-t border-[#8e8e8e] pt-4">
-                  <h3 className="font-medium text-xl text-black mb-3">
+                <div className="border-t border-[#8e8e8e] pt-4 md:pt-5 lg:pt-6">
+                  <h3 className="font-medium text-xl md:text-2xl lg:text-3xl text-black mb-3 md:mb-4 lg:mb-5">
                     Items de la orden
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-3 md:space-y-4 lg:space-y-5">
                     {dishOrders.map((dish: any, index: number) => (
                       <div
                         key={dish.dish_order_id || index}
-                        className="flex justify-between items-start gap-3"
+                        className="flex justify-between items-start gap-3 md:gap-4 lg:gap-5"
                       >
                         <div className="flex-1">
-                          <p className="text-black font-medium">
+                          <p className="text-black font-medium text-base md:text-lg lg:text-xl">
                             {dish.quantity}x {dish.item}
                           </p>
                           {dish.guest_name && (
-                            <p className="text-xs text-gray-600 uppercase">
+                            <p className="text-xs md:text-sm lg:text-base text-gray-600 uppercase">
                               {dish.guest_name}
                             </p>
                           )}
                         </div>
                         <div className="text-right">
-                          <p className="text-black font-medium">
+                          <p className="text-black font-medium text-base md:text-lg lg:text-xl">
                             ${dish.total_price?.toFixed(2) || "0.00"} MXN
                           </p>
                         </div>
@@ -415,12 +417,14 @@ export default function PaymentSuccessPage() {
 
                     {/* Propina como item */}
                     {paymentDetails?.tipAmount > 0 && (
-                      <div className="flex justify-between items-start gap-3 pt-3">
+                      <div className="flex justify-between items-start gap-3 md:gap-4 lg:gap-5 pt-3 md:pt-4 lg:pt-5">
                         <div className="flex-1">
-                          <p className="text-black font-medium">Propina</p>
+                          <p className="text-black font-medium text-base md:text-lg lg:text-xl">
+                            Propina
+                          </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-black font-medium">
+                          <p className="text-black font-medium text-base md:text-lg lg:text-xl">
                             ${paymentDetails.tipAmount.toFixed(2)} MXN
                           </p>
                         </div>
@@ -431,21 +435,23 @@ export default function PaymentSuccessPage() {
               )}
 
               {/* Total Summary with Info Button */}
-              <div className="flex justify-between items-center border-t border-[#8e8e8e] pt-4 mb-6">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-medium text-black">Total</span>
+              <div className="flex justify-between items-center border-t border-[#8e8e8e] pt-4 md:pt-5 lg:pt-6 mb-6 md:mb-8 lg:mb-10">
+                <div className="flex items-center gap-2 md:gap-3 lg:gap-4">
+                  <span className="text-lg md:text-xl lg:text-2xl font-medium text-black">
+                    Total
+                  </span>
                   <button
                     onClick={() => setIsBreakdownModalOpen(true)}
                     className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                     aria-label="Ver desglose"
                   >
                     <CircleAlert
-                      className="size-4 cursor-pointer text-gray-500"
+                      className="size-4 md:size-5 lg:size-6 cursor-pointer text-gray-500"
                       strokeWidth={2.3}
                     />
                   </button>
                 </div>
-                <span className="text-lg font-medium text-black">
+                <span className="text-lg md:text-xl lg:text-2xl font-medium text-black">
                   ${amount.toFixed(2)} MXN
                 </span>
               </div>
@@ -467,32 +473,34 @@ export default function PaymentSuccessPage() {
           ></div>
 
           {/* Modal */}
-          <div className="relative bg-white rounded-t-4xl w-full mx-4">
+          <div className="relative bg-white rounded-t-4xl w-full mx-4 md:mx-6 lg:mx-8">
             {/* Titulo */}
-            <div className="px-6 pt-4">
-              <div className="flex items-center justify-between pb-4 border-b border-[#8e8e8e]">
-                <h3 className="text-lg font-semibold text-black">
+            <div className="px-6 md:px-8 lg:px-10 pt-4 md:pt-6 lg:pt-8">
+              <div className="flex items-center justify-between pb-4 md:pb-5 lg:pb-6 border-b border-[#8e8e8e]">
+                <h3 className="text-lg md:text-xl lg:text-2xl font-semibold text-black">
                   Desglose del pago
                 </h3>
                 <button
                   onClick={() => setIsBreakdownModalOpen(false)}
                   className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
                 >
-                  <X className="size-5 text-gray-500" />
+                  <X className="size-5 md:size-6 lg:size-7 text-gray-500" />
                 </button>
               </div>
             </div>
 
             {/* Contenido */}
-            <div className="px-6 py-4">
-              <p className="text-black mb-4">
+            <div className="px-6 md:px-8 lg:px-10 py-4 md:py-6 lg:py-8">
+              <p className="text-black text-base md:text-lg lg:text-xl mb-4 md:mb-5 lg:mb-6">
                 El total se obtiene de la suma de:
               </p>
-              <div className="space-y-3">
+              <div className="space-y-3 md:space-y-4 lg:space-y-5">
                 {paymentDetails?.baseAmount && (
                   <div className="flex justify-between items-center">
-                    <span className="text-black font-medium">+ Consumo</span>
-                    <span className="text-black font-medium">
+                    <span className="text-black font-medium text-base md:text-lg lg:text-xl">
+                      + Consumo
+                    </span>
+                    <span className="text-black font-medium text-base md:text-lg lg:text-xl">
                       ${paymentDetails.baseAmount.toFixed(2)} MXN
                     </span>
                   </div>
@@ -500,8 +508,10 @@ export default function PaymentSuccessPage() {
 
                 {paymentDetails?.tipAmount > 0 && (
                   <div className="flex justify-between items-center">
-                    <span className="text-black font-medium">+ Propina</span>
-                    <span className="text-black font-medium">
+                    <span className="text-black font-medium text-base md:text-lg lg:text-xl">
+                      + Propina
+                    </span>
+                    <span className="text-black font-medium text-base md:text-lg lg:text-xl">
                       ${paymentDetails.tipAmount.toFixed(2)} MXN
                     </span>
                   </div>
@@ -511,10 +521,10 @@ export default function PaymentSuccessPage() {
                   (paymentDetails?.ivaXquisitoClient || 0) >
                   0 && (
                   <div className="flex justify-between items-center">
-                    <span className="text-black font-medium">
+                    <span className="text-black font-medium text-base md:text-lg lg:text-xl">
                       + Comisión de servicio
                     </span>
-                    <span className="text-black font-medium">
+                    <span className="text-black font-medium text-base md:text-lg lg:text-xl">
                       $
                       {(
                         (paymentDetails?.xquisitoCommissionClient || 0) +

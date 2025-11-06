@@ -372,7 +372,9 @@ export default function PaymentOptionsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col items-center justify-center">
         <Loader2 className="size-12 md:size-14 lg:size-16 text-white animate-spin" />
-        <p className="text-white mt-4 md:mt-5 lg:mt-6 text-base md:text-lg lg:text-xl">Configurando tu cuenta...</p>
+        <p className="text-white mt-4 md:mt-5 lg:mt-6 text-base md:text-lg lg:text-xl">
+          Configurando tu cuenta...
+        </p>
       </div>
     );
   }
@@ -413,7 +415,9 @@ export default function PaymentOptionsPage() {
                         />
                       </div>
                       <div className="flex-1 text-left">
-                        <h3 className="text-black text-base md:text-lg lg:text-xl">Pagar cuenta completa</h3>
+                        <h3 className="text-black text-base md:text-lg lg:text-xl">
+                          Pagar cuenta completa
+                        </h3>
                       </div>
                       <div className="text-black">
                         <ChevronRight className="size-5 md:size-6 lg:size-7" />
@@ -437,7 +441,9 @@ export default function PaymentOptionsPage() {
                         />
                       </div>
                       <div className="flex-1 text-left">
-                        <h3 className="text-black text-base md:text-lg lg:text-xl">Seleccionar artículos</h3>
+                        <h3 className="text-black text-base md:text-lg lg:text-xl">
+                          Seleccionar artículos
+                        </h3>
                       </div>
                       <div className="text-black">
                         <ChevronRight className="size-5 md:size-6 lg:size-7" />
@@ -461,7 +467,9 @@ export default function PaymentOptionsPage() {
                         />
                       </div>
                       <div className="flex-1 text-left">
-                        <h3 className="text-black text-base md:text-lg lg:text-xl">Dividir cuenta</h3>
+                        <h3 className="text-black text-base md:text-lg lg:text-xl">
+                          Dividir cuenta
+                        </h3>
                         {uniqueUsers.length > 1 && (
                           <p className="text-sm md:text-base lg:text-lg text-gray-600">
                             ${(unpaidAmount / uniqueUsers.length).toFixed(2)}{" "}
@@ -491,7 +499,9 @@ export default function PaymentOptionsPage() {
                         />
                       </div>
                       <div className="flex-1 text-left">
-                        <h3 className="text-black text-base md:text-lg lg:text-xl">Elegir monto</h3>
+                        <h3 className="text-black text-base md:text-lg lg:text-xl">
+                          Elegir monto
+                        </h3>
                       </div>
                       <div className="text-black">
                         <ChevronRight className="size-5 md:size-6 lg:size-7" />
@@ -519,30 +529,30 @@ export default function PaymentOptionsPage() {
             {/* Total - Fixed to bottom */}
             {unpaidAmount > 0 && (
               <div className="fixed bottom-0 left-0 right-0 bg-white mx-4 md:mx-6 lg:mx-8 px-6 md:px-8 lg:px-10 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                <div className="py-4 md:py-5 lg:py-6 space-y-2 md:space-y-3">
+                <div className="py-4 md:py-8 lg:py-12 space-y-2 md:space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-lg md:text-xl lg:text-2xl font-medium text-black">
+                    <span className="text-lg md:text-2xl lg:text-3xl font-medium text-black">
                       Total mesa {state.tableNumber}
                     </span>
-                    <span className="text-lg md:text-xl lg:text-2xl font-medium text-black">
+                    <span className="text-lg md:text-2xl lg:text-3xl font-medium text-black">
                       ${tableTotalPrice.toFixed(2)}
                     </span>
                   </div>
                   {paidAmount > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-green-600 font-medium text-base md:text-lg lg:text-xl">
+                      <span className="text-green-600 font-medium text-base md:text-xl lg:text-2xl">
                         Pagado:
                       </span>
-                      <span className="text-green-600 font-medium text-base md:text-lg lg:text-xl">
+                      <span className="text-green-600 font-medium text-base md:text-xl lg:text-2xl">
                         ${paidAmount.toFixed(2)}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
-                    <span className="text-[#eab3f4] font-medium text-base md:text-lg lg:text-xl">
+                    <span className="text-[#eab3f4] font-medium text-base md:text-xl lg:text-2xl">
                       Restante:
                     </span>
-                    <span className="text-[#eab3f4] font-medium text-base md:text-lg lg:text-xl">
+                    <span className="text-[#eab3f4] font-medium text-base md:text-xl lg:text-2xl">
                       ${unpaidAmount.toFixed(2)}
                     </span>
                   </div>

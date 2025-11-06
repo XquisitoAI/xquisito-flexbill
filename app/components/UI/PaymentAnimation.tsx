@@ -63,7 +63,7 @@ export default function PaymentAnimation({
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 130.2 130.2"
                 className="m-0 p-0"
-                style={{ width: "160px", height: "160px", display: "block" }}
+                style={{ width: "200px", height: "200px", display: "block" }}
               >
                 <circle
                   className="path circle"
@@ -96,7 +96,9 @@ export default function PaymentAnimation({
             animation: "fadeInText 0.4s ease-out 0.9s both",
           }}
         >
-          <h1 className="text-4xl font-medium text-white">¡Pago exitoso!</h1>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-medium text-white">
+            ¡Pago exitoso!
+          </h1>
         </div>
       </div>
     </>

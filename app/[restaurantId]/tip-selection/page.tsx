@@ -570,7 +570,7 @@ export default function TipSelectionPage() {
                           <button
                             key={percentage}
                             onClick={() => handleTipPercentage(percentage)}
-                            className={`py-1 rounded-full border border-[#8e8e8e]/40 text-black transition-colors cursor-pointer ${
+                            className={`py-1 md:py-1.5 lg:py-2 rounded-full border border-[#8e8e8e]/40 text-black transition-colors cursor-pointer ${
                               tipPercentage === percentage
                                 ? "bg-[#eab3f4] text-white"
                                 : "bg-[#f9f9f9] hover:border-gray-400"
@@ -594,7 +594,7 @@ export default function TipSelectionPage() {
                               placeholder="0.00"
                               step="0.01"
                               min="0"
-                              className="w-full pl-6 pr-1 py-1 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                              className="w-full pl-6 pr-1 py-1 md:py-1.5 lg:py-2 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                             />
                           </div>
                         </div>
@@ -617,7 +617,7 @@ export default function TipSelectionPage() {
                         <span className="text-gray-600 text-sm md:text-base lg:text-lg">
                           Total a pagar
                         </span>
-                        <div className="flex items-center justify-center w-fit text-2xl font-medium text-black text-center gap-2">
+                        <div className="flex items-center justify-center w-fit text-2xl md:text-3xl lg:text-4xl font-medium text-black text-center gap-2">
                           ${paymentAmount.toFixed(2)}
                           <CircleAlert
                             className="size-4 cursor-pointer text-gray-500"
@@ -648,7 +648,7 @@ export default function TipSelectionPage() {
                           <button
                             onClick={handleContinueToCardSelection}
                             disabled={isDisabled || isNavigating}
-                            className={`rounded-full cursor-pointer transition-colors h-10 md:h-12 lg:h-12 flex items-center justify-center  ${
+                            className={`rounded-full cursor-pointer transition-colors h-10 md:h-12 lg:h-12 flex items-center justify-center text-base md:text-lg lg:text-xl  ${
                               isDisabled || isNavigating
                                 ? "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed text-white px-10"
                                 : "bg-gradient-to-r from-[#34808C] to-[#173E44] text-white px-20 animate-pulse-button"
@@ -730,7 +730,7 @@ export default function TipSelectionPage() {
                     <button
                       key={percentage}
                       onClick={() => handleTipPercentage(percentage)}
-                      className={`py-1 rounded-full border border-[#8e8e8e]/40 text-black transition-colors cursor-pointer ${
+                      className={`py-1 md:py-1.5 lg:py-2 rounded-full border border-[#8e8e8e]/40 text-black transition-colors cursor-pointer ${
                         tipPercentage === percentage
                           ? "bg-[#eab3f4] text-white"
                           : "bg-[#f9f9f9] hover:border-gray-400"
@@ -752,7 +752,7 @@ export default function TipSelectionPage() {
                         placeholder="0.00"
                         step="0.01"
                         min="0"
-                        className="w-full pl-6 pr-1 py-1 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                        className="w-full pl-6 pr-1 py-1 md:py-1.5 lg:py-2 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                       />
                     </div>
                   </div>
@@ -794,7 +794,7 @@ export default function TipSelectionPage() {
                     <button
                       onClick={handleContinueToCardSelection}
                       disabled={isDisabled || isNavigating}
-                      className={`rounded-full cursor-pointer transition-colors h-10 md:h-12 lg:h-12 flex items-center justify-center  ${
+                      className={`rounded-full cursor-pointer transition-colors h-10 md:h-12 lg:h-12 flex items-center justify-center text-base md:text-lg lg:text-xl ${
                         isDisabled || isNavigating
                           ? "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed text-white px-10"
                           : "bg-gradient-to-r from-[#34808C] to-[#173E44] text-white px-20"

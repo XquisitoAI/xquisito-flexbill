@@ -131,14 +131,7 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
           <div className="mt-6 md:mt-8 flex items-start justify-between w-full">
             {/* Settings Icon */}
             <div
-              onClick={() => {
-                if (user && isLoaded) {
-                  navigateWithTable("/dashboard");
-                } else {
-                  sessionStorage.setItem("signInFromMenu", "true");
-                  navigateWithTable("/sign-in");
-                }
-              }}
+              onClick={() => navigateWithTable("/dashboard")}
               className="bg-white rounded-full p-1.5 md:p-2 lg:p-2.5 border border-gray-400 shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
             >
               <Settings

@@ -25,7 +25,7 @@ export default function DashboardHeader() {
         <div className="flex items-center z-10">
           <div
             onClick={handleBack}
-            className="size-10 md:size-12 lg:size-14 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+            className="size-10 md:size-12 lg:size-14 bg-white border border-gray-300 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-transform active:scale-95 duration-200"
           >
             <ChevronLeft className="text-primary size-5 md:size-6 lg:size-7" />
           </div>
@@ -34,7 +34,7 @@ export default function DashboardHeader() {
         {/* Xquisito Logo */}
         <div
           onClick={handleLogoClick}
-          className="absolute left-1/2 transform -translate-x-1/2 size-10 md:size-12 lg:size-14"
+          className="absolute left-1/2 transform -translate-x-1/2 size-10 md:size-12 lg:size-14 active:scale-95 transition-transform duration-200"
         >
           <img src="/logo-short-green.webp" alt="Xquisito Logo" />
         </div>

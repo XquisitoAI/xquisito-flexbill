@@ -150,6 +150,9 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
                 loop
                 muted
                 playsInline
+                disablePictureInPicture
+                controls={false}
+                controlsList="nodownload nofullscreen noremoteplayback"
                 className="w-full h-full object-cover rounded-full"
               />
               {/*<img src="/logo-short-green.webp" alt="AI" className="size-6" />*/}

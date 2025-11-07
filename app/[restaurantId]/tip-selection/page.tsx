@@ -352,7 +352,7 @@ export default function TipSelectionPage() {
           }`}
         >
           <div
-            className={`flex flex-col relative ${paymentType !== "select-items" ? "mx-4 md:mx-6 lg:mx-8 w-full" : "flex-1"}`}
+            className={`flex flex-col relative ${paymentType !== "select-items" ? "px-4 md:px-6 lg:px-8 w-full" : "flex-1"}`}
           >
             <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
               <div className="py-6 md:py-8 lg:py-10 px-8 md:px-10 lg:px-12 flex flex-col justify-center">

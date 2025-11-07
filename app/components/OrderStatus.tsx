@@ -116,7 +116,7 @@ export default function OrderStatus() {
   }, [state.dishOrders?.length, state.tableSummary, state.error]); // Only log meaningful changes
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <MenuHeaderBackOrder
         restaurant={restaurantData}
         tableNumber={state.tableNumber}
@@ -234,7 +234,10 @@ export default function OrderStatus() {
                               statusMap[dish.status] || "En preparación";
 
                             return (
-                              <div key={dish.dish_order_id} className="py-3 md:py-4 lg:py-5">
+                              <div
+                                key={dish.dish_order_id}
+                                className="py-3 md:py-4 lg:py-5"
+                              >
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-3 md:gap-4 lg:gap-5">
                                     <div className="flex-shrink-0 mt-1">
@@ -309,7 +312,10 @@ export default function OrderStatus() {
                                       {dish.quantity}
                                     </p>
                                     <p className="text-black w-14 md:w-16 lg:w-20 text-base md:text-lg lg:text-xl">
-                                      ${(dish.total_price / dish.quantity).toFixed(2)}
+                                      $
+                                      {(
+                                        dish.total_price / dish.quantity
+                                      ).toFixed(2)}
                                     </p>
                                   </div>
                                 </div>
@@ -419,7 +425,10 @@ export default function OrderStatus() {
                                       {dish.quantity}
                                     </p>
                                     <p className="text-black text-base md:text-lg lg:text-xl">
-                                      ${(dish.total_price / dish.quantity).toFixed(2)}
+                                      $
+                                      {(
+                                        dish.total_price / dish.quantity
+                                      ).toFixed(2)}
                                     </p>
                                   </div>
                                 </div>
@@ -460,7 +469,9 @@ export default function OrderStatus() {
                     <div className="space-y-3 md:space-y-4">
                       {/* Total de la Mesa */}
                       <div className="flex justify-between items-center">
-                        <span className="font-medium text-black text-base md:text-lg lg:text-xl">Subtotal</span>
+                        <span className="font-medium text-black text-base md:text-lg lg:text-xl">
+                          Subtotal
+                        </span>
                         <span className="font-medium text-black text-base md:text-lg lg:text-xl">
                           ${tableTotalPrice.toFixed(2)} MXN
                         </span>
@@ -480,7 +491,9 @@ export default function OrderStatus() {
 
                       {/* Restante por pagar */}
                       <div className="flex justify-between items-center">
-                        <span className="text-black font-bold text-base md:text-lg lg:text-xl">Total:</span>
+                        <span className="text-black font-bold text-base md:text-lg lg:text-xl">
+                          Total:
+                        </span>
                         <span className="text-black font-bold text-base md:text-lg lg:text-xl">
                           ${tableRemainingAmount.toFixed(2)} MXN
                         </span>

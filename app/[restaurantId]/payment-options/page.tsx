@@ -405,7 +405,7 @@ export default function PaymentOptionsPage() {
                 {unpaidAmount > 0 && (
                   <button
                     onClick={handlePayFullBill}
-                    className="w-full bg-white cursor-pointer border-b border-[#8e8e8e] active:scale-95 active:bg-[#0a8b9b]/10 transition-all duration-150"
+                    className="w-full bg-white cursor-pointer border-b border-[#8e8e8e] active:bg-[#0a8b9b]/10 transition-all duration-300"
                   >
                     <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5 px-4 md:px-5 lg:px-6">
                       <div className="size-16 md:size-20 lg:size-24 rounded-sm md:rounded-md border border-black flex items-center justify-center">
@@ -430,7 +430,7 @@ export default function PaymentOptionsPage() {
                 {unpaidDishes.length > 0 && (
                   <button
                     onClick={handleSelectItems}
-                    className="w-full bg-white cursor-pointer border-b border-[#8e8e8e] active:scale-95 active:bg-[#0a8b9b]/10 transition-all duration-150"
+                    className="w-full bg-white cursor-pointer border-b border-[#8e8e8e] active:bg-[#0a8b9b]/10 transition-all duration-300"
                   >
                     <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5 px-4 md:px-5 lg:px-6">
                       <div className="size-16 md:size-20 lg:size-24 rounded-sm md:rounded-md border border-black flex items-center justify-center">
@@ -456,7 +456,7 @@ export default function PaymentOptionsPage() {
                 {unpaidAmount > 0 && (
                   <button
                     onClick={handleEqualShares}
-                    className="w-full bg-white cursor-pointer border-b border-[#8e8e8e] active:scale-95 active:bg-[#0a8b9b]/10 transition-all duration-150"
+                    className="w-full bg-white cursor-pointer border-b border-[#8e8e8e] active:bg-[#0a8b9b]/10 transition-all duration-300"
                   >
                     <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5 px-4 md:px-5 lg:px-6">
                       <div className="size-16 md:size-20 lg:size-24 rounded-sm md:rounded-md border border-black flex items-center justify-center">
@@ -489,7 +489,7 @@ export default function PaymentOptionsPage() {
                 {unpaidAmount > 0 && (
                   <button
                     onClick={handleChooseAmount}
-                    className="w-full bg-white cursor-pointer active:scale-95 active:bg-[#0a8b9b]/10 transition-all duration-150"
+                    className="w-full bg-white cursor-pointer active:bg-[#0a8b9b]/10 transition-all duration-300"
                   >
                     <div className="flex items-center gap-3 md:gap-4 lg:gap-5 py-3 md:py-4 lg:py-5 px-4 md:px-5 lg:px-6">
                       <div className="size-16 md:size-20 lg:size-24 rounded-sm md:rounded-md border border-black flex items-center justify-center">

@@ -99,7 +99,7 @@ export default function UserPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <MenuHeaderBack
         restaurant={restaurantData}
         tableNumber={state.tableNumber}

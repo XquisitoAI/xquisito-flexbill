@@ -617,7 +617,13 @@ export default function TipSelectionPage() {
                         <span className="text-gray-600 text-sm md:text-base lg:text-lg">
                           Total a pagar
                         </span>
-                        <div className="flex items-center justify-center w-fit text-2xl md:text-3xl lg:text-4xl font-medium text-black text-center gap-2">
+                        <div className="flex items-center justify-center w-fit text-2xl md:text-3xl lg:text-4xl font-medium text-black text-center gap-2" style={{
+                          WebkitFontSmoothing: 'antialiased',
+                          MozOsxFontSmoothing: 'grayscale',
+                          transform: 'translateZ(0)',
+                          willChange: 'contents',
+                          backfaceVisibility: 'hidden' as const
+                        }}>
                           ${paymentAmount.toFixed(2)}
                           <CircleAlert
                             className="size-4 cursor-pointer text-gray-500"
@@ -775,7 +781,13 @@ export default function TipSelectionPage() {
                   <span className="text-gray-600 text-sm md:text-base lg:text-lg">
                     Total a pagar
                   </span>
-                  <div className="flex items-center justify-center w-fit text-2xl font-medium text-black text-center gap-2">
+                  <div className="flex items-center justify-center w-fit text-2xl font-medium text-black text-center gap-2" style={{
+                    WebkitFontSmoothing: 'antialiased',
+                    MozOsxFontSmoothing: 'grayscale',
+                    transform: 'translateZ(0)',
+                    willChange: 'contents',
+                    backfaceVisibility: 'hidden' as const
+                  }}>
                     ${paymentAmount.toFixed(2)}
                     <CircleAlert
                       className="size-4 cursor-pointer text-gray-500"
@@ -797,7 +809,7 @@ export default function TipSelectionPage() {
                       className={`rounded-full cursor-pointer transition-colors h-10 md:h-12 lg:h-12 flex items-center justify-center text-base md:text-lg lg:text-xl ${
                         isDisabled || isNavigating
                           ? "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed text-white px-10"
-                          : "bg-gradient-to-r from-[#34808C] to-[#173E44] text-white px-20"
+                          : "bg-gradient-to-r from-[#34808C] to-[#173E44] text-white px-20 animate-pulse-button"
                       }`}
                     >
                       {isNavigating ? (

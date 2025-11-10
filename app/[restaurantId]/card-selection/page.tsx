@@ -928,7 +928,7 @@ export default function CardSelectionPage() {
                       isProcessing ||
                       (hasPaymentMethods && !selectedPaymentMethodId)
                         ? "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed"
-                        : "bg-gradient-to-r from-[#34808C] to-[#173E44]"
+                        : "bg-gradient-to-r from-[#34808C] to-[#173E44] animate-pulse-button"
                     }`}
                   >
                     {paymentLoading || isProcessing ? (

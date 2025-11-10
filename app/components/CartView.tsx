@@ -92,19 +92,26 @@ export default function CartView() {
               {state.currentUserItems.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center py-8 md:py-12 text-center">
                   <div>
-                    <div className="text-gray-400 text-6xl md:text-7xl lg:text-8xl mb-4 md:mb-6">🛒</div>
-                    <p className="text-black text-2xl md:text-3xl lg:text-4xl">El carrito está vacío</p>
+                    <div className="text-gray-400 text-6xl md:text-7xl lg:text-8xl mb-4 md:mb-6">
+                      🛒
+                    </div>
+                    <p className="text-black text-2xl md:text-3xl lg:text-4xl">
+                      El carrito está vacío
+                    </p>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <div className="text-black font-medium text-sm md:text-base lg:text-lg flex gap-10 md:gap-12 lg:gap-14 justify-end translate-y-4">
+                  <div className="text-black font-medium text-sm md:text-base lg:text-lg flex gap-10 md:gap-12 lg:gap-[68px] justify-end translate-y-4">
                     <span>Cant.</span>
                     <span>Precio</span>
                   </div>
                   <div className="divide-y divide-[#8e8e8e]/50">
                     {state.currentUserItems.map((item, index) => (
-                      <div key={`${item.id}-${index}`} className="py-3 md:py-4 lg:py-5">
+                      <div
+                        key={`${item.id}-${index}`}
+                        className="py-3 md:py-4 lg:py-5"
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3 md:gap-4 lg:gap-5">
                             <div className="flex-shrink-0">
@@ -182,7 +189,9 @@ export default function CartView() {
                             <div className="w-16 md:w-20 lg:w-24 text-right">
                               <p className="text-base md:text-lg lg:text-xl text-black">
                                 $
-                                {(item.price + (item.extraPrice || 0)).toFixed(2)}
+                                {(item.price + (item.extraPrice || 0)).toFixed(
+                                  2
+                                )}
                               </p>
                             </div>
                           </div>

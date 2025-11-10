@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useTable } from "../../context/TableContext";
 import { useTableNavigation } from "../../hooks/useTableNavigation";
 import { useRestaurant } from "../../context/RestaurantContext";
@@ -198,17 +198,17 @@ export default function TipSelectionPage() {
     state.tableSummary?.data?.data?.remaining_amount || unpaidAmount;
   const maxAllowedAmount = currentRemainingAmount;
 
-  const calculateTipAmount = () => {
+  const tipAmount = useMemo(() => {
     if (customTip && parseFloat(customTip) > 0) {
       return parseFloat(customTip);
     }
     return (baseAmount * tipPercentage) / 100;
-  };
-
-  const tipAmount = calculateTipAmount();
+  }, [customTip, baseAmount, tipPercentage]);
 
   // Calcular comisiones dinámicas según el monto (rangos: <$100, $100-$150, >$150)
-  const commissions = calculateCommissions(baseAmount, tipAmount);
+  const commissions = useMemo(() => {
+    return calculateCommissions(baseAmount, tipAmount);
+  }, [baseAmount, tipAmount]);
 
   // Extraer valores calculados
   const {
@@ -621,9 +621,8 @@ export default function TipSelectionPage() {
                           WebkitFontSmoothing: 'antialiased',
                           MozOsxFontSmoothing: 'grayscale',
                           transform: 'translateZ(0)',
-                          willChange: 'contents',
                           backfaceVisibility: 'hidden' as const
-                        }}>
+                        }} key={paymentAmount}>
                           ${paymentAmount.toFixed(2)}
                           <CircleAlert
                             className="size-4 cursor-pointer text-gray-500"
@@ -785,9 +784,8 @@ export default function TipSelectionPage() {
                     WebkitFontSmoothing: 'antialiased',
                     MozOsxFontSmoothing: 'grayscale',
                     transform: 'translateZ(0)',
-                    willChange: 'contents',
                     backfaceVisibility: 'hidden' as const
-                  }}>
+                  }} key={paymentAmount}>
                     ${paymentAmount.toFixed(2)}
                     <CircleAlert
                       className="size-4 cursor-pointer text-gray-500"

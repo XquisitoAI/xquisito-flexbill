@@ -3,7 +3,7 @@
 import MenuHeader from "./headers/MenuHeader";
 import MenuCategory from "./MenuCategory";
 import { Search, ShoppingCart, Settings } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useUserData } from "../context/UserDataContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
@@ -21,8 +21,13 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
   const { user, isLoaded } = useUser();
   const { signUpData } = useUserData();
   const { navigateWithTable } = useTableNavigation();
-  const { state: cartState } = useCart();
+  const { state: cartState, refreshCart } = useCart();
   const { restaurant, menu, loading, error } = useRestaurant();
+
+  // Refresh del carrito cada vez que se renderiza el componente
+  useEffect(() => {
+    refreshCart();
+  }, []);
 
   // Obtener categorías únicas del menú de la BD ordenadas por display_order
   const categorias = useMemo(() => {

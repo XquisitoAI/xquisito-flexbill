@@ -6,6 +6,7 @@ import { useTable } from "../../context/TableContext";
 import { useTableNavigation } from "../../hooks/useTableNavigation";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, ReceiptText } from "lucide-react";
+import { useEffect } from "react";
 
 interface MenuHeaderProps {
   restaurant: Restaurant;
@@ -16,10 +17,15 @@ export default function MenuHeader({
   restaurant,
   tableNumber,
 }: MenuHeaderProps) {
-  const { state: cartState } = useCart();
+  const { state: cartState, refreshCart } = useCart();
   const { state: tableState } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const pathname = usePathname();
+
+  // Refresh del carrito cada vez que se renderiza el componente
+  useEffect(() => {
+    refreshCart();
+  }, []);
 
   const handleCartClick = () => {
     navigateWithTable("/cart");

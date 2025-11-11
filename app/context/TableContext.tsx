@@ -427,7 +427,7 @@ const TableContext = createContext<{
   state: TableState;
   dispatch: React.Dispatch<TableAction>;
   // Funciones del carrito (mantiene funcionalidad existente)
-  submitOrder: (userName?: string) => Promise<void>;
+  submitOrder: (userName?: string, cartItems?: CartItem[]) => Promise<void>;
   // Nuevas funciones para el sistema de platillos
   loadTableData: () => Promise<void>;
   loadTableSummary: () => Promise<void>;
@@ -681,16 +681,30 @@ export function TableProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const submitOrder = async (userName?: string) => {
+  const submitOrder = async (userName?: string, cartItems?: CartItem[]) => {
     const finalUserName = userName || state.currentUserName;
+    // Usar cartItems pasados como parámetro, o fallback a state.currentUserItems (legacy)
+    const itemsToOrder = cartItems || state.currentUserItems;
 
     if (
       !state.tableNumber ||
       !finalUserName ||
-      state.currentUserItems.length === 0
+      itemsToOrder.length === 0
     ) {
+      console.log("❌ submitOrder - Validación falló:", {
+        tableNumber: state.tableNumber,
+        userName: finalUserName,
+        itemsCount: itemsToOrder.length
+      });
       return;
     }
+
+    console.log("✅ submitOrder - Iniciando orden:", {
+      tableNumber: state.tableNumber,
+      userName: finalUserName,
+      itemsCount: itemsToOrder.length,
+      items: itemsToOrder
+    });
 
     dispatch({ type: "SET_LOADING", payload: true });
 
@@ -716,7 +730,8 @@ export function TableProvider({ children }: { children: ReactNode }) {
       }
 
       // Crear órdenes de platillos con la cantidad correcta
-      for (const item of state.currentUserItems) {
+      for (const item of itemsToOrder) {
+        console.log("📤 Creando orden para item:", item.name);
         const response = await apiService.createDishOrder(
           restaurantId?.toString() || "1", // restaurantId del contexto
           state.tableNumber,
@@ -732,10 +747,12 @@ export function TableProvider({ children }: { children: ReactNode }) {
         );
 
         if (!response.success) {
+          console.error("❌ Error creando orden:", response.error);
           throw new Error(
             response.error?.message || "Failed to create dish order"
           );
         }
+        console.log("✅ Orden creada exitosamente para:", item.name);
       }
 
       // Actualizar el nombre del usuario en el estado si se pasó como parámetro
@@ -743,7 +760,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "SET_CURRENT_USER_NAME", payload: finalUserName });
       }
 
-      // Limpiar carrito actual
+      // Limpiar carrito actual (legacy)
       dispatch({ type: "CLEAR_CURRENT_USER_CART" });
 
       // Recargar datos de la mesa
@@ -751,12 +768,16 @@ export function TableProvider({ children }: { children: ReactNode }) {
 
       // Recalcular split bill automáticamente
       await recalculateSplitBill();
+
+      console.log("✅ submitOrder completado exitosamente");
     } catch (error) {
+      console.error("❌ submitOrder - Error:", error);
       dispatch({
         type: "SET_ERROR",
         payload:
           error instanceof Error ? error.message : "Network error occurred",
       });
+      throw error; // Re-throw para que los componentes puedan manejarlo
     }
   };
 

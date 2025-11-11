@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTable, CartItem } from "../../context/TableContext";
+import { useCart, CartItem } from "../../context/CartContext";
+import { useTable } from "../../context/TableContext";
 import { useTableNavigation } from "../../hooks/useTableNavigation";
 import { useRestaurant } from "../../context/RestaurantContext";
 import { getRestaurantData } from "../../utils/restaurantData";
@@ -26,6 +27,7 @@ export default function UserPage() {
   const [showOrderAnimation, setShowOrderAnimation] = useState(false);
   const [orderedItems, setOrderedItems] = useState<CartItem[]>([]);
   const [orderUserName, setOrderUserName] = useState("");
+  const { state: cartState, clearCart } = useCart();
   const { state, dispatch, submitOrder } = useTable();
   const { tableNumber, navigateWithTable } = useTableNavigation();
   const router = useRouter();
@@ -63,12 +65,16 @@ export default function UserPage() {
       setIsSubmitting(true);
       try {
         // Guardar items antes de que se limpie el carrito
-        setOrderedItems([...state.currentUserItems]);
+        const itemsToOrder = [...cartState.items];
+        setOrderedItems(itemsToOrder);
         setOrderUserName(userName.trim());
         // Mostrar animación de orden INMEDIATAMENTE
         setShowOrderAnimation(true);
         // Enviar la orden a la API en segundo plano
-        await submitOrder(userName.trim());
+        // IMPORTANTE: Pasar los items del carrito a submitOrder
+        await submitOrder(userName.trim(), itemsToOrder);
+        // Limpiar el carrito de la base de datos después de la orden exitosa
+        await clearCart();
       } catch (error) {
         console.error("Error submitting order:", error);
         // Si hay error, ocultar la animación

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useTable, CartItem } from "../../context/TableContext";
+import { CartItem } from "../../context/CartContext";
+import { useTable } from "../../context/TableContext";
 import { useRestaurant } from "../../context/RestaurantContext";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import Loader from "@/app/components/UI/Loader";
@@ -19,7 +20,7 @@ const OrderAnimation = ({
   onContinue,
 }: OrderAnimationProps) => {
   const { navigateWithTable } = useTableNavigation();
-  const { state } = useTable();
+  const { state: tableState } = useTable();
   const { restaurant, loading } = useRestaurant();
   const { user } = useUser();
   const [animationState, setAnimationState] = useState<
@@ -27,7 +28,7 @@ const OrderAnimation = ({
   >("circle");
   const [logoColorful, setLogoColorful] = useState(false);
 
-  const displayName = userName || state.currentUserName || "Usuario";
+  const displayName = userName || tableState.currentUserName || user?.fullName || user?.firstName || "Usuario";
   const displayItems = orderedItems || [];
   const displayRestaurant = restaurant?.name || "Restaurante";
 

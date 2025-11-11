@@ -1,6 +1,7 @@
 "use client";
 
 import { Restaurant } from "../../interfaces/restaurante";
+import { useCart } from "../../context/CartContext";
 import { useTable } from "../../context/TableContext";
 import { useTableNavigation } from "../../hooks/useTableNavigation";
 import { usePathname } from "next/navigation";
@@ -15,7 +16,8 @@ export default function MenuHeader({
   restaurant,
   tableNumber,
 }: MenuHeaderProps) {
-  const { state } = useTable();
+  const { state: cartState } = useCart();
+  const { state: tableState } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const pathname = usePathname();
 
@@ -45,9 +47,9 @@ export default function MenuHeader({
             >
               <ReceiptText className="text-primary size-5 md:size-6 lg:size-7 group-hover:scale-105 transition-transform" />
             </div>
-            {Array.isArray(state.dishOrders) && state.dishOrders.length > 0 && (
+            {Array.isArray(tableState.dishOrders) && tableState.dishOrders.length > 0 && (
               <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-4 md:size-5 lg:size-6 flex items-center justify-center text-xs md:text-sm font-normal">
-                {state.dishOrders.length}
+                {tableState.dishOrders.length}
               </div>
             )}
           </div>
@@ -59,12 +61,12 @@ export default function MenuHeader({
             >
               <ShoppingCart className="text-primary size-5 md:size-6 lg:size-7 group-hover:scale-105 transition-transform" />
             </div>
-            {state.currentUserTotalItems > 0 && (
+            {cartState.totalItems > 0 && (
               <div
                 id="cart-badge"
                 className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-4 md:size-5 lg:size-6 flex items-center justify-center text-xs md:text-sm font-normal"
               >
-                {state.currentUserTotalItems}
+                {cartState.totalItems}
               </div>
             )}
           </div>

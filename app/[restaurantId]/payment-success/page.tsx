@@ -306,15 +306,15 @@ export default function PaymentSuccessPage() {
           onClick={() => setIsTicketModalOpen(false)}
         >
           <div
-            className="bg-white w-full mx-4 md:mx-12 lg:mx-28 rounded-4xl overflow-y-auto z-999 max-h-[85vh]"
+            className="bg-[#173E44]/80 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] w-full mx-4 md:mx-12 lg:mx-28 rounded-4xl overflow-y-auto z-999 max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-full flex justify-end">
               <button
                 onClick={() => setIsTicketModalOpen(false)}
-                className="p-2 md:p-3 lg:p-4 hover:bg-gray-100 rounded-lg md:rounded-xl transition-colors justify-end flex items-end mt-3 md:mt-4 lg:mt-5 mr-3 md:mr-4 lg:mr-5"
+                className="p-2 md:p-3 lg:p-4 hover:bg-white/10 rounded-lg md:rounded-xl transition-colors justify-end flex items-end mt-3 md:mt-4 lg:mt-5 mr-3 md:mr-4 lg:mr-5"
               >
-                <X className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-gray-600" />
+                <X className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-white" />
               </button>
             </div>
 
@@ -328,14 +328,20 @@ export default function PaymentSuccessPage() {
                     className="size-20 md:size-24 lg:size-28 object-cover rounded-lg md:rounded-xl"
                   />
                 ) : (
-                  <Receipt className="size-20 md:size-24 lg:size-28 text-teal-600" />
+                  <Receipt className="size-20 md:size-24 lg:size-28 text-white" />
                 )}
                 <div className="flex flex-col items-center justify-center">
-                  <h2 className="text-xl md:text-2xl lg:text-3xl text-black">
+                  <h2 className="text-xl md:text-2xl lg:text-3xl text-white font-bold">
                     {restaurant?.name || restaurantData.name}
                   </h2>
-                  <p className="text-sm md:text-base lg:text-lg text-gray-600">
+                  <p className="text-sm md:text-base lg:text-lg text-white/80">
                     Mesa {state.tableNumber || tableNumber || "N/A"}
+                  </p>
+                  <p className="text-xs md:text-sm text-white/70 mt-1">
+                    {new Date().toLocaleTimeString("es-MX", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </p>
                 </div>
               </div>
@@ -344,41 +350,46 @@ export default function PaymentSuccessPage() {
             {/* Content */}
             <div className="px-6 md:px-8 lg:px-10 space-y-4 md:space-y-5 lg:space-y-6">
               {/* Order Info */}
-              <div className="border-t border-[#8e8e8e] pt-4 md:pt-5 lg:pt-6">
-                <h3 className="font-medium text-xl md:text-2xl lg:text-3xl text-black mb-3 md:mb-4 lg:mb-5">
+              <div className="border-t border-white/20 pt-4 md:pt-5 lg:pt-6">
+                <h3 className="font-medium text-xl md:text-2xl lg:text-3xl text-white mb-3 md:mb-4 lg:mb-5">
                   Detalles del pago
                 </h3>
                 <div className="space-y-2 md:space-y-3 lg:space-y-4">
                   {paymentDetails?.userName && (
-                    <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-gray-700">
-                      <Utensils className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-gray-700" />
+                    <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-white/90">
+                      <div className="bg-orange-100 p-2 md:p-2.5 lg:p-3 rounded-xl flex items-center justify-center">
+                        <Utensils className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-orange-600" />
+                      </div>
                       <span className="text-sm md:text-base lg:text-lg">
                         {paymentDetails.userName}
                       </span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-gray-700">
-                    <Calendar className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-gray-700" />
-                    <span className="text-sm md:text-base lg:text-lg capitalize">
+                  <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-white/90">
+                    <div className="bg-blue-100 p-2 md:p-2.5 lg:p-3 rounded-xl flex items-center justify-center">
+                      <Calendar className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-blue-600" />
+                    </div>
+                    <span className="text-sm md:text-base lg:text-lg">
                       {new Date().toLocaleDateString("es-MX", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "2-digit",
+                      }).replace(/\//g, "/")}
                     </span>
                   </div>
 
                   {paymentDetails?.cardLast4 && (
-                    <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-gray-700">
-                      {getCardTypeIcon(
-                        paymentDetails.cardBrand || "unknown",
-                        "small"
-                      )}
+                    <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-white/90">
+                      <div className="bg-green-100 p-2 md:p-2.5 lg:p-3 rounded-xl flex items-center justify-center">
+                        <div className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 flex items-center justify-center">
+                          {getCardTypeIcon(
+                            paymentDetails.cardBrand || "unknown",
+                            "small"
+                          )}
+                        </div>
+                      </div>
                       <span className="text-sm md:text-base lg:text-lg">
-                        **** **** **** {paymentDetails.cardLast4}
+                        *** {paymentDetails.cardLast4.slice(-3)}
                       </span>
                     </div>
                   )}
@@ -387,8 +398,8 @@ export default function PaymentSuccessPage() {
 
               {/* Order Items */}
               {dishOrders.length > 0 && (
-                <div className="border-t border-[#8e8e8e] pt-4 md:pt-5 lg:pt-6">
-                  <h3 className="font-medium text-xl md:text-2xl lg:text-3xl text-black mb-3 md:mb-4 lg:mb-5">
+                <div className="border-t border-white/20 pt-4 md:pt-5 lg:pt-6">
+                  <h3 className="font-medium text-xl md:text-2xl lg:text-3xl text-white mb-3 md:mb-4 lg:mb-5">
                     Items de la orden
                   </h3>
                   <div className="space-y-3 md:space-y-4 lg:space-y-5">
@@ -398,17 +409,17 @@ export default function PaymentSuccessPage() {
                         className="flex justify-between items-start gap-3 md:gap-4 lg:gap-5"
                       >
                         <div className="flex-1">
-                          <p className="text-black font-medium text-base md:text-lg lg:text-xl">
+                          <p className="text-white font-medium text-base md:text-lg lg:text-xl">
                             {dish.quantity}x {dish.item}
                           </p>
                           {dish.guest_name && (
-                            <p className="text-xs md:text-sm lg:text-base text-gray-600 uppercase">
+                            <p className="text-xs md:text-sm lg:text-base text-white/60 uppercase">
                               {dish.guest_name}
                             </p>
                           )}
                         </div>
                         <div className="text-right">
-                          <p className="text-black font-medium text-base md:text-lg lg:text-xl">
+                          <p className="text-white font-medium text-base md:text-lg lg:text-xl">
                             ${dish.total_price?.toFixed(2) || "0.00"} MXN
                           </p>
                         </div>
@@ -419,12 +430,12 @@ export default function PaymentSuccessPage() {
                     {paymentDetails?.tipAmount > 0 && (
                       <div className="flex justify-between items-start gap-3 md:gap-4 lg:gap-5 pt-3 md:pt-4 lg:pt-5">
                         <div className="flex-1">
-                          <p className="text-black font-medium text-base md:text-lg lg:text-xl">
+                          <p className="text-white font-medium text-base md:text-lg lg:text-xl">
                             Propina
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-black font-medium text-base md:text-lg lg:text-xl">
+                          <p className="text-white font-medium text-base md:text-lg lg:text-xl">
                             ${paymentDetails.tipAmount.toFixed(2)} MXN
                           </p>
                         </div>
@@ -435,23 +446,23 @@ export default function PaymentSuccessPage() {
               )}
 
               {/* Total Summary with Info Button */}
-              <div className="flex justify-between items-center border-t border-[#8e8e8e] pt-4 md:pt-5 lg:pt-6 mb-6 md:mb-8 lg:mb-10">
+              <div className="flex justify-between items-center border-t border-white/20 pt-4 md:pt-5 lg:pt-6 mb-6 md:mb-8 lg:mb-10">
                 <div className="flex items-center gap-2 md:gap-3 lg:gap-4">
-                  <span className="text-lg md:text-xl lg:text-2xl font-medium text-black">
+                  <span className="text-lg md:text-xl lg:text-2xl font-medium text-white">
                     Total
                   </span>
                   <button
                     onClick={() => setIsBreakdownModalOpen(true)}
-                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    className="p-1 hover:bg-white/10 rounded-full transition-colors"
                     aria-label="Ver desglose"
                   >
                     <CircleAlert
-                      className="size-4 md:size-5 lg:size-6 cursor-pointer text-gray-500"
+                      className="size-4 md:size-5 lg:size-6 cursor-pointer text-white/70"
                       strokeWidth={2.3}
                     />
                   </button>
                 </div>
-                <span className="text-lg md:text-xl lg:text-2xl font-medium text-black">
+                <span className="text-lg md:text-xl lg:text-2xl font-medium text-white">
                   ${amount.toFixed(2)} MXN
                 </span>
               </div>

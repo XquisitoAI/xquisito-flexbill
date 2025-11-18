@@ -121,8 +121,9 @@ function AddCardContent() {
         apiService.setGuestInfo(guestId, tableNumber.toString());
       }
 
-      // Use user's email from Clerk if authenticated, otherwise empty string (backend will generate guest email)
-      const userEmail = user?.emailAddresses?.[0]?.emailAddress || "";
+      // Use user's email from Clerk if authenticated, otherwise generate temporary guest email
+      const userEmail = user?.emailAddresses?.[0]?.emailAddress ||
+                       `guest-${guestId || Date.now()}@xquisito.temp`;
 
       const result = await apiService.addPaymentMethod({
         fullName,

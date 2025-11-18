@@ -29,23 +29,6 @@ export default function CardsTab() {
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
 
-  // System card available for all users
-  const systemCard = {
-    id: "system-card",
-    lastFourDigits: "1234",
-    cardBrand: "visa",
-    cardType: "debit",
-    isDefault: false,
-    isSystemCard: true,
-    expiryMonth: undefined,
-    expiryYear: undefined,
-  };
-
-  // Combine system card with user payment methods
-  const allPaymentMethods = useMemo(() => {
-    return [systemCard, ...paymentMethods];
-  }, [paymentMethods]);
-
   const handleAddNewCard = () => {
     navigateWithTable("/add-card");
   };
@@ -88,7 +71,7 @@ export default function CardsTab() {
           <>
             {/* Payment Methods List */}
             <div className="space-y-2 md:space-y-3 lg:space-y-4">
-              {allPaymentMethods.map((method) => (
+              {paymentMethods.map((method) => (
                 <div
                   key={method.id}
                   className={`relative border rounded-full py-1.5 md:py-2 lg:py-2.5 px-5 md:px-6 lg:px-8 ${

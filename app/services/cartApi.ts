@@ -49,12 +49,20 @@ export interface CartTotals {
 
 class CartApiService {
   private clerkUserId: string | null = null;
+  private restaurantId: number | null = null;
 
   /**
    * Establecer el clerk_user_id manualmente (llamar desde el componente con useUser)
    */
   public setClerkUserId(userId: string | null) {
     this.clerkUserId = userId;
+  }
+
+  /**
+   * Establecer el restaurant_id manualmente (llamar desde el componente)
+   */
+  public setRestaurantId(restaurantId: number | null) {
+    this.restaurantId = restaurantId;
   }
 
   private async request<T>(
@@ -136,6 +144,7 @@ class CartApiService {
         quantity,
         custom_fields: customFields,
         extra_price: extraPrice,
+        restaurant_id: this.restaurantId,
       }),
     });
   }
@@ -147,6 +156,10 @@ class CartApiService {
     const userId = this.getUserIdentifier();
     const params = new URLSearchParams(userId as Record<string, string>);
 
+    if (this.restaurantId) {
+      params.append('restaurant_id', this.restaurantId.toString());
+    }
+
     return this.request<Cart>(`/cart?${params.toString()}`);
   }
 
@@ -156,6 +169,10 @@ class CartApiService {
   async getCartTotals(): Promise<ApiResponse<CartTotals>> {
     const userId = this.getUserIdentifier();
     const params = new URLSearchParams(userId as Record<string, string>);
+
+    if (this.restaurantId) {
+      params.append('restaurant_id', this.restaurantId.toString());
+    }
 
     return this.request<CartTotals>(`/cart/totals?${params.toString()}`);
   }
@@ -190,7 +207,10 @@ class CartApiService {
 
     return this.request<{ message: string }>("/cart", {
       method: "DELETE",
-      body: JSON.stringify(userId),
+      body: JSON.stringify({
+        ...userId,
+        restaurant_id: this.restaurantId,
+      }),
     });
   }
 

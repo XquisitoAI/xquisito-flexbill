@@ -4,6 +4,7 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { MenuItemData } from '../interfaces/menuItemData';
 import { cartApi, CartItem as ApiCartItem } from '../services/cartApi';
 import { useUser } from '@clerk/nextjs';
+import { useRestaurant } from './RestaurantContext';
 
 // Interfaz para un item del carrito (frontend)
 export interface CartItem extends MenuItemData {
@@ -118,13 +119,18 @@ const CartContext = createContext<CartContextType | null>(null);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const { user, isLoaded } = useUser();
+  const { restaurantId } = useRestaurant();
 
-  // Establecer clerk_user_id en cartApi cuando el usuario cambie
+  // Establecer clerk_user_id y restaurant_id en cartApi cuando cambien
   useEffect(() => {
     if (isLoaded) {
       cartApi.setClerkUserId(user?.id || null);
     }
   }, [user, isLoaded]);
+
+  useEffect(() => {
+    cartApi.setRestaurantId(restaurantId);
+  }, [restaurantId]);
 
   // Función para refrescar el carrito desde el backend
   const refreshCart = async () => {
@@ -265,11 +271,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setUserName
   };
 
-  // Cargar carrito al montar el componente
+  // Cargar carrito al montar el componente o cuando cambie el restaurante
   useEffect(() => {
-    refreshCart();
+    if (restaurantId) {
+      refreshCart();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [restaurantId]);
 
   return (
     <CartContext.Provider value={value}>

@@ -28,16 +28,16 @@ export default function OrderStatus() {
     setIsProcessingPayment(true);
     try {
       // Permitir que tanto usuarios autenticados como invitados accedan a payment-options
-      navigateWithTable("/payment-options");
+      // navigateWithTable("/payment-options");
 
-      // if (isLoaded && user) {
-      //   // User is authenticated, redirect directly to payment options
-      //   navigateWithTable("/payment-options");
-      // } else {
-      //   // User is guest, show authentication modal
-      //   //setShowAuthModal(true);
-      //   navigateWithTable("/sign-in");
-      // }
+      if (isLoaded && user) {
+        // User is authenticated, redirect directly to payment options
+        navigateWithTable("/payment-options");
+      } else {
+        // User is guest, show authentication modal
+        //setShowAuthModal(true);
+        navigateWithTable("/sign-in");
+      }
     } finally {
       setIsProcessingPayment(false);
     }

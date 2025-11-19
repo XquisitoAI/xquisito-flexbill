@@ -50,23 +50,40 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       console.log(
-        "🔍 Payment success page - checking localStorage for payment data"
+        "🔍 Payment success page - checking storage for payment data"
       );
 
-      // Check for completed payment first (most recent flow)
-      let storedPayment = localStorage.getItem("xquisito-completed-payment");
-      let storageKey = "xquisito-completed-payment";
+      // Get payment ID from URL to identify this specific payment
+      const urlPaymentId = paymentId || searchParams.get("transactionId");
 
-      // Check for pending payment (EcartPay redirect flow)
-      if (!storedPayment) {
-        storedPayment = localStorage.getItem("xquisito-pending-payment");
-        storageKey = "xquisito-pending-payment";
-      }
+      // First check sessionStorage with payment ID (persistent on reload)
+      const sessionKey = urlPaymentId
+        ? `xquisito-payment-success-${urlPaymentId}`
+        : "xquisito-payment-success";
 
-      // Check for payment intent (SDK flow)
+      let storedPayment = sessionStorage.getItem(sessionKey);
+      let storageKey = sessionKey;
+      let fromSession = true;
+
+      // If not in sessionStorage, check localStorage (first time)
       if (!storedPayment) {
-        storedPayment = localStorage.getItem("xquisito-payment-intent");
-        storageKey = "xquisito-payment-intent";
+        fromSession = false;
+
+        // Check for completed payment first (most recent flow)
+        storedPayment = localStorage.getItem("xquisito-completed-payment");
+        storageKey = "xquisito-completed-payment";
+
+        // Check for pending payment (EcartPay redirect flow)
+        if (!storedPayment) {
+          storedPayment = localStorage.getItem("xquisito-pending-payment");
+          storageKey = "xquisito-pending-payment";
+        }
+
+        // Check for payment intent (SDK flow)
+        if (!storedPayment) {
+          storedPayment = localStorage.getItem("xquisito-payment-intent");
+          storageKey = "xquisito-payment-intent";
+        }
       }
 
       console.log("📦 Found payment data in:", storageKey);
@@ -78,21 +95,36 @@ export default function PaymentSuccessPage() {
           console.log("📦 Parsed payment details:", parsed);
           setPaymentDetails(parsed);
 
-          // Clean up after retrieval
-          localStorage.removeItem("xquisito-pending-payment");
-          localStorage.removeItem("xquisito-payment-intent");
-          localStorage.removeItem("xquisito-completed-payment");
+          // If from localStorage (first time), save to sessionStorage for persistence
+          if (!fromSession) {
+            // Save with unique key based on payment/transaction ID
+            const paymentIdentifier = parsed.paymentId ||
+                                     parsed.transactionId ||
+                                     urlPaymentId ||
+                                     Date.now().toString();
+            const uniqueKey = `xquisito-payment-success-${paymentIdentifier}`;
+
+            sessionStorage.setItem(uniqueKey, storedPayment);
+
+            // Also save the current payment key reference
+            sessionStorage.setItem("xquisito-current-payment-key", uniqueKey);
+
+            // Clean up localStorage
+            localStorage.removeItem("xquisito-pending-payment");
+            localStorage.removeItem("xquisito-payment-intent");
+            localStorage.removeItem("xquisito-completed-payment");
+
+            // Clear all session data after successful payment
+            clearGuestSession();
+          }
         } catch (e) {
           console.error("Failed to parse stored payment details:", e);
         }
       } else {
-        console.log("📦 No payment data found in localStorage");
+        console.log("📦 No payment data found in storage");
       }
-
-      // Clear all session data after successful payment
-      clearGuestSession();
     }
-  }, []);
+  }, [paymentId, searchParams]);
 
   const clearGuestSession = async () => {
     if (typeof window !== "undefined") {
@@ -133,11 +165,29 @@ export default function PaymentSuccessPage() {
   const dishOrders = paymentDetails?.dishOrders || [];
 
   const handleBackToMenu = () => {
+    // Clear payment success data from sessionStorage
+    const currentKey = sessionStorage.getItem("xquisito-current-payment-key");
+    if (currentKey) {
+      sessionStorage.removeItem(currentKey);
+      sessionStorage.removeItem("xquisito-current-payment-key");
+    }
+    // Fallback: also remove generic key
+    sessionStorage.removeItem("xquisito-payment-success");
+
     // Since session is cleared, redirect to home page to select table again
     router.push("/");
   };
 
   const handleGoHome = () => {
+    // Clear payment success data from sessionStorage
+    const currentKey = sessionStorage.getItem("xquisito-current-payment-key");
+    if (currentKey) {
+      sessionStorage.removeItem(currentKey);
+      sessionStorage.removeItem("xquisito-current-payment-key");
+    }
+    // Fallback: also remove generic key
+    sessionStorage.removeItem("xquisito-payment-success");
+
     // Complete exit - go to menu with table parameters
     navigateWithTable("/menu");
   };

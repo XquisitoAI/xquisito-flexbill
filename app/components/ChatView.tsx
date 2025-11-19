@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, Mic, Plus, SendHorizontal } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect, useMemo, memo } from "react";
 import { useRestaurant } from "../context/RestaurantContext";
 import { useGuest } from "../context/GuestContext";
 import { useUser } from "@clerk/nextjs";
@@ -34,41 +34,44 @@ async function chatWithAgent(message: string, sessionId: string | null = null) {
   return data;
 }
 
-// Componente para renderizar mensajes con imágenes
-function MessageContent({ content }: { content: string }) {
+// Componente para renderizar mensajes con imágenes (memoizado para evitar re-renders innecesarios)
+const MessageContent = memo(({ content }: { content: string }) => {
   // Regex para detectar URLs de imágenes (incluyendo avif)
   const imageUrlRegex =
     /(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp|svg|avif)(?:\?[^\s]*)?)/gi;
 
-  // Dividir el contenido en partes (texto e imágenes)
-  const parts = content.split(imageUrlRegex);
+  // Dividir el contenido en partes (texto e imágenes) y memoizar el resultado
+  const parts = useMemo(() => content.split(imageUrlRegex), [content]);
 
   return (
     <div className="space-y-2">
       {parts.map((part, index) => {
-        // Si la parte coincide con una URL de imagen
-        if (part.match(imageUrlRegex)) {
+        // Verificar si es una URL de imagen sin ejecutar match dos veces
+        const isImage = imageUrlRegex.test(part);
+        imageUrlRegex.lastIndex = 0; // Resetear el índice del regex
+
+        if (isImage) {
           return (
             <img
               key={index}
               src={part}
               alt="Imagen del agente"
               className="rounded-lg max-w-full h-auto"
-              onError={(e) => {
-                // Si la imagen falla, mostrar el URL como texto
-                e.currentTarget.style.display = "none";
-                const textNode = document.createTextNode(part);
-                e.currentTarget.parentNode?.appendChild(textNode);
-              }}
+              loading="lazy"
             />
           );
         }
-        // Si es texto normal
-        return part ? <p key={index}>{part}</p> : null;
+        return part ? (
+          <p key={index} className="whitespace-pre-wrap">
+            {part}
+          </p>
+        ) : null;
       })}
     </div>
   );
-}
+});
+
+MessageContent.displayName = "MessageContent";
 
 export default function ChatView({ onBack }: ChatViewProps) {
   const [message, setMessage] = useState("");
@@ -78,11 +81,22 @@ export default function ChatView({ onBack }: ChatViewProps) {
   const [hasStartedChat, setHasStartedChat] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Obtener contextos
   const { restaurantId } = useRestaurant();
   const { guestId, isGuest } = useGuest();
   const { user } = useUser();
+
+  // Auto-scroll cuando cambian los mensajes (solo cuando hay nuevos mensajes)
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Usar requestAnimationFrame para asegurar que el DOM esté actualizado
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      });
+    }
+  }, [messages.length]);
 
   const handleSend = async () => {
     if (message.trim() && !isLoading) {
@@ -237,6 +251,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}

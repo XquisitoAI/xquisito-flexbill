@@ -33,6 +33,7 @@ export default function ProfileTab() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [phone, setPhone] = useState("");
   const [age, setAge] = useState<number | null>(null);
   const [gender, setGender] = useState("");
@@ -446,7 +447,7 @@ export default function ProfileTab() {
         )}
         {!isLoggedIn && <div></div>}
         <button
-          onClick={isLoggedIn ? () => signOut() : handleLogin}
+          onClick={isLoggedIn ? () => setIsLogoutModalOpen(true) : handleLogin}
           className={`font-medium text-sm md:text-base lg:text-lg flex items-center gap-2 cursor-pointer ${
             isLoggedIn
               ? "text-red-600 hover:text-red-700"
@@ -616,6 +617,56 @@ export default function ProfileTab() {
                 "Cambiar contraseña"
               )}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Logout Confirmation Modal */}
+      {isLogoutModalOpen && (
+        <div
+          className="fixed inset-0 flex items-end justify-center"
+          style={{ zIndex: 99999 }}
+        >
+          {/* Fondo */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setIsLogoutModalOpen(false)}
+          ></div>
+
+          <div className="relative bg-white rounded-t-4xl w-full mx-4 p-6 md:p-7 lg:p-8">
+            {/* Close Button */}
+            <button
+              onClick={() => setIsLogoutModalOpen(false)}
+              className="absolute top-4 md:top-5 lg:top-6 right-4 md:right-5 lg:right-6 text-gray-400 hover:text-gray-600"
+            >
+              <X className="size-5 md:size-6 lg:size-7" />
+            </button>
+
+            {/* Modal Title */}
+            <h3 className="text-base md:text-xl lg:text-2xl font-semibold text-gray-800 mb-4 md:mb-5">
+              Cerrar sesión
+            </h3>
+
+            {/* Confirmation Message */}
+            <p className="text-sm md:text-base text-gray-600 mb-6 md:mb-8">
+              ¿Estás seguro de que deseas cerrar sesión?
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 md:gap-4">
+              <button
+                onClick={() => setIsLogoutModalOpen(false)}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 md:py-3 text-base md:text-lg rounded-full cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => signOut()}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 md:py-3 text-base md:text-lg rounded-full cursor-pointer transition-colors"
+              >
+                Cerrar sesión
+              </button>
+            </div>
           </div>
         </div>
       )}

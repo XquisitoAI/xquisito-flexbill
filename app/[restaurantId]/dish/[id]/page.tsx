@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useCart } from "../../../context/CartContext";
 import { useTableNavigation } from "../../../hooks/useTableNavigation";
 import { useRestaurant } from "../../../context/RestaurantContext";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, X, Home, QrCode, AlertCircle } from "lucide-react";
 import MenuHeaderDish from "@/app/components/headers/MenuHeaderDish";
 import Loader from "@/app/components/UI/Loader";
 import RestaurantClosedModal from "@/app/components/RestaurantClosedModal";
@@ -24,8 +24,8 @@ export default function DishDetailPage() {
   const dishId = parseInt(params.id as string);
   const restaurantId = params.restaurantId as string;
   const { state, addItem, removeItem, updateQuantity } = useCart();
-  const { tableNumber, goBack, navigateWithTable } = useTableNavigation();
-  const { restaurant, menu, loading, isOpen } = useRestaurant();
+  const { tableNumber, navigateWithTable } = useTableNavigation();
+  const { restaurant, menu, isOpen } = useRestaurant();
   const [localQuantity, setLocalQuantity] = useState(0);
   const [isPulsing, setIsPulsing] = useState(false);
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>(
@@ -47,10 +47,11 @@ export default function DishDetailPage() {
   const [isLoadingReviews, setIsLoadingReviews] = useState(true);
   const { isLoaded, user } = useUser();
 
-  // Buscar el dish en el menú del contexto
-  const dishData = useMemo(() => {
-    if (!menu || menu.length === 0) return null;
+  // Intentar cargar datos del menú del contexto de forma sincrónica (precarga instantánea)
+  const initialDishData = useMemo(() => {
+    if (!menu || menu.length === 0 || !dishId) return null;
 
+    // Buscar el platillo en el menú del contexto
     for (const section of menu) {
       const foundItem = section.items.find((item) => item.id === dishId);
       if (foundItem) {
@@ -79,16 +80,114 @@ export default function DishDetailPage() {
           features: [],
           discount: foundItem.discount || 0,
         };
+
         return {
           dish: adaptedDish,
           section: section.name,
           customFields: parsedCustomFields,
-          rawItem: foundItem,
         };
       }
     }
     return null;
   }, [menu, dishId]);
+
+  const [dishLoading, setDishLoading] = useState(!initialDishData);
+  const [dishError, setDishError] = useState<string | null>(null);
+  const [dishData, setDishData] = useState<{
+    dish: MenuItemData;
+    section: string;
+    customFields: CustomField[];
+  } | null>(initialDishData);
+
+  // Obtener datos del platillo directamente de la API (para recargas o si no está en caché)
+  useEffect(() => {
+    const fetchDish = async () => {
+      if (!dishId) return;
+
+      // Si ya tenemos datos del menú, no mostrar skeleton
+      const hasDataFromMenu = dishData !== null;
+
+      if (!hasDataFromMenu) {
+        setDishLoading(true);
+      }
+      setDishError(null);
+
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL;
+        const response = await fetch(`${API_URL}/menu/items/${dishId}`);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            setDishError("not_found");
+          } else {
+            setDishError("error");
+          }
+          setDishLoading(false);
+          return;
+        }
+
+        const result = await response.json();
+
+        if (!result.success || !result.data) {
+          setDishError("error");
+          setDishLoading(false);
+          return;
+        }
+
+        const foundItem = result.data;
+
+        // Buscar la sección en el menú del contexto si está disponible
+        let sectionName = "Menú";
+        if (menu && menu.length > 0) {
+          for (const section of menu) {
+            if (section.items.some((item) => item.id === dishId)) {
+              sectionName = section.name;
+              break;
+            }
+          }
+        }
+
+        // Parsear custom_fields si es string JSON
+        let parsedCustomFields: CustomField[] = [];
+        if (foundItem.custom_fields) {
+          if (typeof foundItem.custom_fields === "string") {
+            try {
+              const parsed = JSON.parse(foundItem.custom_fields);
+              parsedCustomFields = Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+              console.error("Error parsing custom_fields:", e);
+            }
+          } else {
+            parsedCustomFields = foundItem.custom_fields;
+          }
+        }
+
+        // Adaptar el item de BD al formato esperado
+        const adaptedDish: MenuItemData = {
+          id: foundItem.id,
+          name: foundItem.name,
+          description: foundItem.description || "",
+          price: Number(foundItem.price),
+          images: foundItem.image_url ? [foundItem.image_url] : [],
+          features: [],
+          discount: foundItem.discount || 0,
+        };
+
+        setDishData({
+          dish: adaptedDish,
+          section: sectionName,
+          customFields: parsedCustomFields,
+        });
+        setDishLoading(false);
+      } catch (error) {
+        console.error("Error fetching dish:", error);
+        setDishError("error");
+        setDishLoading(false);
+      }
+    };
+
+    fetchDish();
+  }, [dishId]);
 
   // Inicializar selecciones por defecto para dropdown fields
   useEffect(() => {
@@ -462,9 +561,8 @@ export default function DishDetailPage() {
   };
 
   const currentQuantity = dishData
-    ? state.items.find(
-        (cartItem) => cartItem.id === dishData.dish.id
-      )?.quantity || 0
+    ? state.items.find((cartItem) => cartItem.id === dishData.dish.id)
+        ?.quantity || 0
     : 0;
 
   const displayQuantity = Math.max(localQuantity, currentQuantity);
@@ -476,36 +574,173 @@ export default function DishDetailPage() {
     }
   }, [isPulsing]);
 
-  if (loading) {
+  // Mostrar loader mientras está cargando el platillo
+  if (dishLoading) {
     return <Loader />;
   }
 
-  if (!tableNumber || isNaN(parseInt(tableNumber))) {
+  // Si hubo error cargando el platillo
+  if (dishError === "error") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-medium text-gray-800 mb-4">
-            Mesa Inválida
-          </h1>
-          <p className="text-gray-600">Por favor escanee el código QR</p>
+      <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
+          <div className="w-full max-w-md">
+            {/* Logo */}
+            <div className="mb-6 md:mb-8 lg:mb-10 text-center">
+              <img
+                src="/logo-short-green.webp"
+                alt="Xquisito Logo"
+                className="size-16 md:size-20 lg:size-24 mx-auto mb-4 md:mb-5 lg:mb-6"
+              />
+              <div className="bg-red-500/20 p-3 md:p-4 lg:p-5 rounded-full w-fit mx-auto mb-4 md:mb-5 lg:mb-6">
+                <AlertCircle className="size-10 md:size-12 lg:size-14 text-white" />
+              </div>
+              <h1 className="text-white text-xl md:text-2xl lg:text-3xl font-medium mb-2 md:mb-3 lg:mb-4">
+                Error al cargar
+              </h1>
+              <p className="text-white/80 text-sm md:text-base lg:text-lg">
+                No pudimos cargar el platillo
+              </p>
+            </div>
+
+            {/* Options */}
+            <div className="space-y-3 md:space-y-4 lg:space-y-5">
+              {/* Go to Menu Option */}
+              <button
+                onClick={() => router.push("/")}
+                className="w-full bg-white hover:bg-gray-50 text-black py-4 md:py-5 lg:py-6 px-4 md:px-5 lg:px-6 rounded-xl md:rounded-2xl transition-all duration-200 flex items-center gap-3 md:gap-4 lg:gap-5 active:scale-95"
+              >
+                <div className="bg-gradient-to-r from-[#34808C] to-[#173E44] p-2 md:p-2.5 lg:p-3 rounded-full group-hover:scale-110 transition-transform">
+                  <Home className="size-5 md:size-6 lg:size-7 text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h2 className="text-base md:text-lg lg:text-xl font-medium mb-0.5 md:mb-1">
+                    Volver al inicio
+                  </h2>
+                  <p className="text-xs md:text-sm lg:text-base text-gray-600">
+                    Regresar a la página principal
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            {/* Additional Info */}
+            <div className="mt-6 md:mt-7 lg:mt-8 text-center">
+              <p className="text-white/70 text-xs md:text-sm lg:text-base">
+                Por favor intenta de nuevo más tarde
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!dishData) {
+  if (!tableNumber || isNaN(parseInt(tableNumber))) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex items-center justify-center">
-        <div className="text-center px-6">
-          <h1 className="text-2xl font-medium text-white mb-4">
-            Platillo no encontrado
-          </h1>
-          <button
-            onClick={() => goBack()}
-            className="bg-white text-[#0a8b9b] px-6 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Volver al menú
-          </button>
+      <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
+          <div className="w-full max-w-md">
+            {/* Logo */}
+            <div className="mb-6 md:mb-8 lg:mb-10 text-center">
+              <img
+                src="/logo-short-green.webp"
+                alt="Xquisito Logo"
+                className="size-16 md:size-20 lg:size-24 mx-auto mb-4 md:mb-5 lg:mb-6"
+              />
+              <div className="bg-amber-500/20 p-3 md:p-4 lg:p-5 rounded-full w-fit mx-auto mb-4 md:mb-5 lg:mb-6">
+                <QrCode className="size-10 md:size-12 lg:size-14 text-white" />
+              </div>
+              <h1 className="text-white text-xl md:text-2xl lg:text-3xl font-medium mb-2 md:mb-3 lg:mb-4">
+                Mesa Inválida
+              </h1>
+              <p className="text-white/80 text-sm md:text-base lg:text-lg">
+                Por favor escanee el código QR de su mesa
+              </p>
+            </div>
+
+            {/* Options */}
+            <div className="space-y-3 md:space-y-4 lg:space-y-5">
+              {/* Scan QR Option */}
+              <button
+                onClick={() => router.push("/")}
+                className="w-full bg-white hover:bg-gray-50 text-black py-4 md:py-5 lg:py-6 px-4 md:px-5 lg:px-6 rounded-xl md:rounded-2xl transition-all duration-200 flex items-center gap-3 md:gap-4 lg:gap-5 active:scale-95"
+              >
+                <div className="bg-gradient-to-r from-[#34808C] to-[#173E44] p-2 md:p-2.5 lg:p-3 rounded-full group-hover:scale-110 transition-transform">
+                  <QrCode className="size-5 md:size-6 lg:size-7 text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h2 className="text-base md:text-lg lg:text-xl font-medium mb-0.5 md:mb-1">
+                    Escanear código QR
+                  </h2>
+                  <p className="text-xs md:text-sm lg:text-base text-gray-600">
+                    Use el código en su mesa
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            {/* Additional Info */}
+            <div className="mt-6 md:mt-7 lg:mt-8 text-center">
+              <p className="text-white/70 text-xs md:text-sm lg:text-base">
+                Cada mesa tiene un código QR único para acceder al menú
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Si el platillo no fue encontrado o no hay datos
+  if (dishError === "not_found" || !dishData) {
+    return (
+      <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
+          <div className="w-full max-w-md">
+            {/* Logo */}
+            <div className="mb-6 md:mb-8 lg:mb-10 text-center">
+              <img
+                src="/logo-short-green.webp"
+                alt="Xquisito Logo"
+                className="size-16 md:size-20 lg:size-24 mx-auto mb-4 md:mb-5 lg:mb-6"
+              />
+              <h1 className="text-white text-xl md:text-2xl lg:text-3xl font-medium mb-2 md:mb-3 lg:mb-4">
+                Platillo no encontrado
+              </h1>
+              <p className="text-white/80 text-sm md:text-base lg:text-lg">
+                Este platillo no está disponible
+              </p>
+            </div>
+
+            {/* Options */}
+            <div className="space-y-3 md:space-y-4 lg:space-y-5">
+              {/* Go to Menu Option */}
+              <button
+                onClick={() => navigateWithTable("/menu")}
+                className="w-full bg-white hover:bg-gray-50 text-black py-4 md:py-5 lg:py-6 px-4 md:px-5 lg:px-6 rounded-xl md:rounded-2xl transition-all duration-200 flex items-center gap-3 md:gap-4 lg:gap-5 active:scale-95"
+              >
+                <div className="bg-gradient-to-r from-[#34808C] to-[#173E44] p-2 md:p-2.5 lg:p-3 rounded-full group-hover:scale-110 transition-transform">
+                  <Home className="size-5 md:size-6 lg:size-7 text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h2 className="text-base md:text-lg lg:text-xl font-medium mb-0.5 md:mb-1">
+                    Volver al menú
+                  </h2>
+                  <p className="text-xs md:text-sm lg:text-base text-gray-600">
+                    Ver platillos disponibles
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            {/* Additional Info */}
+            <div className="mt-6 md:mt-7 lg:mt-8 text-center">
+              <p className="text-white/70 text-xs md:text-sm lg:text-base">
+                Es posible que este platillo ya no esté disponible en el menú
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -837,8 +1072,12 @@ export default function DishDetailPage() {
                   </div>
                 )}
                 <div className="flex flex-col items-center justify-center">
-                  <h2 className="text-xl md:text-2xl lg:text-3xl text-black capitalize">{dish.name}</h2>
-                  <p className="text-sm md:text-base lg:text-lg text-gray-600">{section}</p>
+                  <h2 className="text-xl md:text-2xl lg:text-3xl text-black capitalize">
+                    {dish.name}
+                  </h2>
+                  <p className="text-sm md:text-base lg:text-lg text-gray-600">
+                    {section}
+                  </p>
                 </div>
               </div>
             </div>

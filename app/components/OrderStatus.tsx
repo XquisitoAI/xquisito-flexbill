@@ -27,16 +27,13 @@ export default function OrderStatus() {
   const handleCheckOut = async () => {
     setIsProcessingPayment(true);
     try {
-      // Permitir que tanto usuarios autenticados como invitados accedan a payment-options
-      // navigateWithTable("/payment-options");
-
       if (isLoaded && user) {
         // User is authenticated, redirect directly to payment options
         navigateWithTable("/payment-options");
       } else {
-        // User is guest, show authentication modal
-        //setShowAuthModal(true);
-        navigateWithTable("/sign-in");
+        // User is guest, redirect to auth selection page
+        sessionStorage.setItem("signupFromOrder", "true");
+        navigateWithTable("/auth-selection");
       }
     } finally {
       setIsProcessingPayment(false);

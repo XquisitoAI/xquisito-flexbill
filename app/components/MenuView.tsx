@@ -246,7 +246,7 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
             className="bg-gradient-to-r from-[#34808C] to-[#173E44] text-white rounded-full px-6 md:px-8 lg:px-10 py-3 md:py-4 lg:py-5 shadow-lg flex items-center gap-3 md:gap-4 cursor-pointer transition-all hover:scale-105 animate-bounce-in"
           >
             <ShoppingCart className="size-5 md:size-6 lg:size-7" />
-            <span className="text-base md:text-lg lg:text-xl font-medium">
+            <span className="text-base md:text-lg lg:text-xl font-medium active:scale-95">
               Ver el carrito • {totalItems}
             </span>
           </div>

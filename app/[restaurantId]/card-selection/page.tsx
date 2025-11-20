@@ -52,7 +52,7 @@ export default function CardSelectionPage() {
   const { user, isLoaded } = useUser();
 
   // Tarjeta por defecto del sistema para todos los usuarios
-  /*
+
   const defaultSystemCard = {
     id: "system-default-card",
     lastFourDigits: "1234",
@@ -63,7 +63,7 @@ export default function CardSelectionPage() {
   };
 
   // Combinar tarjetas del sistema con las del usuario
-  const allPaymentMethods = [defaultSystemCard, ...paymentMethods];*/
+  const allPaymentMethods = [defaultSystemCard, ...paymentMethods];
 
   const paymentType = searchParams.get("type") || "full-bill";
   const totalAmountCharged = parseFloat(searchParams.get("amount") || "0"); // Total cobrado al cliente
@@ -222,16 +222,16 @@ export default function CardSelectionPage() {
   // Set default payment method when payment methods are loaded (only once)
   useEffect(() => {
     // Siempre hay al menos la tarjeta del sistema disponible
-    if (!selectedPaymentMethodId && paymentMethods.length > 0) {
+    if (!selectedPaymentMethodId && allPaymentMethods.length > 0) {
       const defaultMethod =
-        paymentMethods.find((pm) => pm.isDefault) || paymentMethods[0];
+        allPaymentMethods.find((pm) => pm.isDefault) || allPaymentMethods[0];
       setSelectedPaymentMethodId(defaultMethod.id);
       console.log("💳 Auto-seleccionando tarjeta:", defaultMethod.id);
     }
     setPaymentMethodType("saved");
     // Set loading to false once we have payment methods data
     setIsLoadingInitial(false);
-  }, [paymentMethods.length]);
+  }, [allPaymentMethods.length]);
 
   const handlePaymentSuccess = async (
     paymentId: string,
@@ -398,7 +398,7 @@ export default function CardSelectionPage() {
       // Store payment success data for payment-success page (rápido, solo localStorage)
       if (typeof window !== "undefined") {
         // Get payment method details
-        const selectedMethod = paymentMethods.find(
+        const selectedMethod = allPaymentMethods.find(
           (pm) => pm.id === selectedPaymentMethodId
         );
 
@@ -830,7 +830,7 @@ export default function CardSelectionPage() {
                   {/* Saved Cards List */}
                   {paymentMethodType === "saved" && (
                     <div className="space-y-2.5 mb-2.5">
-                      {paymentMethods.map((method) => (
+                      {allPaymentMethods.map((method) => (
                         <div
                           key={method.id}
                           className={`flex items-center py-1.5 px-5 pl-10 border rounded-full transition-colors ${

@@ -28,7 +28,12 @@ const OrderAnimation = ({
   >("circle");
   const [logoColorful, setLogoColorful] = useState(false);
 
-  const displayName = userName || tableState.currentUserName || user?.fullName || user?.firstName || "Usuario";
+  const displayName =
+    userName ||
+    tableState.currentUserName ||
+    user?.fullName ||
+    user?.firstName ||
+    "Usuario";
   const displayItems = orderedItems || [];
   const displayRestaurant = restaurant?.name || "Restaurante";
 
@@ -89,8 +94,8 @@ const OrderAnimation = ({
 
       {/* Contenido */}
       {(animationState === "content" || animationState === "greenCircle") && (
-        <div className="fixed inset-0 z-[9999] bg-white overflow-y-auto">
-          <div className="min-h-screen bg-white p-6 md:p-8 lg:p-10 animate-fade-in flex flex-col">
+        <div className="fixed inset-0 z-[9999] bg-white overflow-hidden">
+          <div className="h-[100dvh] bg-white p-8 animate-fade-in flex flex-col overflow-y-auto">
             <div className="flex flex-col flex-1">
               {/* Logo animado */}
               <div className="mb-6 md:mb-8 lg:mb-10 mt-8 md:mt-12 lg:mt-14 w-fit relative">
@@ -131,7 +136,9 @@ const OrderAnimation = ({
                       <span className="text-black text-base md:text-lg lg:text-xl font-medium">
                         {displayRestaurant}
                       </span>
-                      <p className="text-xs md:text-sm lg:text-base text-gray-500">Restaurante</p>
+                      <p className="text-xs md:text-sm lg:text-base text-gray-500">
+                        Restaurante
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -156,7 +163,9 @@ const OrderAnimation = ({
                       <span className="text-black text-base md:text-lg lg:text-xl font-medium">
                         {displayName}
                       </span>
-                      <p className="text-xs md:text-sm lg:text-base text-gray-500">Nombre</p>
+                      <p className="text-xs md:text-sm lg:text-base text-gray-500">
+                        Nombre
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -229,8 +238,8 @@ const OrderAnimation = ({
 
       {/* Success screen */}
       {animationState === "success" && (
-        <div className="fixed inset-0 z-[9999] bg-green-500">
-          <div className="min-h-screen p-6 md:p-8 lg:p-10 flex flex-col">
+        <div className="fixed inset-0 z-[9999] bg-green-500 overflow-hidden">
+          <div className="h-[100dvh] p-8 flex flex-col">
             <div className="flex flex-col flex-1">
               {/* Checkmark */}
               <div className="mb-6 md:mb-8 lg:mb-10 mt-8 md:mt-12 lg:mt-14 animate-simple-fade-in">

@@ -197,6 +197,8 @@ export default function TipSelectionPage() {
   const currentRemainingAmount =
     state.tableSummary?.data?.data?.remaining_amount || unpaidAmount;
   const maxAllowedAmount = currentRemainingAmount;
+  const MINIMUM_AMOUNT = 20; // Mínimo de compra requerido
+  const isUnderMinimum = baseAmount < MINIMUM_AMOUNT;
 
   const tipAmount = useMemo(() => {
     if (customTip && parseFloat(customTip) > 0) {
@@ -366,13 +368,13 @@ export default function TipSelectionPage() {
             </div>
 
             <div
-              className={`bg-white rounded-t-4xl relative z-10 flex flex-col px-8 md:px-10 lg:px-12 pt-8 md:pt-10 lg:pt-12 pb-4 md:pb-6${
+              className={`bg-white rounded-t-4xl relative z-10 flex flex-col pt-8 md:pt-10 lg:pt-12 pb-4 md:pb-6${
                 paymentType === "select-items" ? "pb-[200px] flex-1" : ""
               }`}
             >
               {/* Seleccionar monto a pagar para choose-amount */}
               {paymentType === "choose-amount" && (
-                <div>
+                <div className="px-8 md:px-10 lg:px-12">
                   <div className="flex flex-col w-full items-center">
                     <label className="block text-xl md:text-2xl lg:text-3xl font-medium text-black mb-4 md:mb-5 lg:mb-6">
                       Monto a pagar
@@ -416,7 +418,7 @@ export default function TipSelectionPage() {
 
               {/* Seleccionar artículos específicos */}
               {paymentType === "select-items" && (
-                <div className="mb-6">
+                <div className="mb-6 px-8 md:px-10 lg:px-12">
                   <div className="space-y-3">
                     {unpaidDishes.map((dish) => {
                       const isSelected = selectedItems.includes(
@@ -497,7 +499,7 @@ export default function TipSelectionPage() {
 
               {/* Tip Selection Section - Incluido en contenedor blanco cuando NO es select-items */}
               {paymentType !== "select-items" && (
-                <div className="space-y-4 md:space-y-5 lg:space-y-6 ">
+                <div className="space-y-4 md:space-y-5 lg:space-y-6 px-8 md:px-10 lg:px-12">
                   {/* Resumen del pago */}
                   <div className="space-y-2 md:space-y-3 lg:space-y-4">
                     {/* Total de la Mesa - solo mostrar si NO es full-bill ni equal-shares ni select-items */}
@@ -609,20 +611,45 @@ export default function TipSelectionPage() {
                       </div>
                     )}
                   </div>
+                </div>
+              )}
 
+              {/* Alerta de mínimo de compra */}
+              {isUnderMinimum &&
+                baseAmount > 0 &&
+                paymentType !== "select-items" && (
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 px-4 py-2">
+                    <div className="flex items-center gap-3 px-8 md:px-10 lg:px-12">
+                      <X className="size-6 text-red-500 flex-shrink-0" />
+                      <p className="text-red-700 font-medium text-base md:text-lg">
+                        ¡No has completado el mínimo de compra!
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+              {/* Tip Selection Section - Incluido en contenedor blanco cuando NO es select-items */}
+              {paymentType !== "select-items" && (
+                <div className="px-8 md:px-10 lg:px-12">
                   {/* Total final */}
-                  <div className="border-t border-gray-200 pt-6">
+                  <div
+                    className={`border-t border-gray-200 ${isUnderMinimum && baseAmount > 0 ? "pt-4 -mt-0" : "pt-6"}`}
+                  >
                     <div className="w-full flex gap-3 justify-between">
                       <div className="flex flex-col justify-center -translate-y-2">
                         <span className="text-gray-600 text-sm md:text-base lg:text-lg">
                           Total a pagar
                         </span>
-                        <div className="flex items-center justify-center w-fit text-2xl md:text-3xl lg:text-4xl font-medium text-black text-center gap-2" style={{
-                          WebkitFontSmoothing: 'antialiased',
-                          MozOsxFontSmoothing: 'grayscale',
-                          transform: 'translateZ(0)',
-                          backfaceVisibility: 'hidden' as const
-                        }} key={paymentAmount}>
+                        <div
+                          className="flex items-center justify-center w-fit text-2xl md:text-3xl lg:text-4xl font-medium text-black text-center gap-2"
+                          style={{
+                            WebkitFontSmoothing: "antialiased",
+                            MozOsxFontSmoothing: "grayscale",
+                            transform: "translateZ(0)",
+                            backfaceVisibility: "hidden" as const,
+                          }}
+                          key={paymentAmount}
+                        >
                           ${paymentAmount.toFixed(2)}
                           <CircleAlert
                             className="size-4 cursor-pointer text-gray-500"
@@ -647,7 +674,8 @@ export default function TipSelectionPage() {
                         const isDisabled =
                           baseAmount <= 0 ||
                           isChooseAmountInvalid ||
-                          isSelectItemsInvalid;
+                          isSelectItemsInvalid ||
+                          isUnderMinimum;
 
                         return (
                           <button
@@ -664,6 +692,8 @@ export default function TipSelectionPage() {
                                 <Loader2 className="h-5 w-5 animate-spin" />
                                 <span>Cargando...</span>
                               </div>
+                            ) : isUnderMinimum && baseAmount > 0 ? (
+                              "Mínimo de compra no alcanzado"
                             ) : paymentType === "choose-amount" &&
                               (!customPaymentAmount ||
                                 parseFloat(customPaymentAmount) <= 0) ? (
@@ -692,137 +722,164 @@ export default function TipSelectionPage() {
         {/* Tip Selection Section - Fijo cuando es select-items */}
         {paymentType === "select-items" && (
           <div
-            className="fixed bottom-0 left-0 right-0 bg-white px-8 md:px-10 lg:px-12 pt-8 md:pt-10 lg:pt-12 mx-4 md:mx-6 lg:mx-8 space-y-4"
+            className="fixed bottom-0 left-0 right-0 bg-white pt-8 md:pt-10 lg:pt-12 mx-4 md:mx-6 lg:mx-8"
             style={{
               paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
               zIndex: 50,
             }}
           >
-            {/* Resumen del pago */}
-            <div className="space-y-2 md:space-y-3 lg:space-y-4">
-              {/* Pagado */}
-              {paidAmount > 0 && (
+            <div className="px-8 md:px-10 lg:px-12 space-y-4">
+              {/* Resumen del pago */}
+              <div className="space-y-2 md:space-y-3 lg:space-y-4">
+                {/* Pagado */}
+                {paidAmount > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-green-600 font-medium text-base md:text-lg lg:text-xl">
+                      Pagado:
+                    </span>
+                    <span className="text-green-600 font-medium text-base md:text-lg lg:text-xl">
+                      ${paidAmount.toFixed(2)} MXN
+                    </span>
+                  </div>
+                )}
+
+                {/* Restante por pagar */}
                 <div className="flex justify-between items-center">
-                  <span className="text-green-600 font-medium text-base md:text-lg lg:text-xl">
-                    Pagado:
+                  <span className="text-[#eab3f4] font-medium text-base md:text-lg lg:text-xl">
+                    Restante por pagar:
                   </span>
-                  <span className="text-green-600 font-medium text-base md:text-lg lg:text-xl">
-                    ${paidAmount.toFixed(2)} MXN
+                  <span className="text-[#eab3f4] font-medium text-base md:text-lg lg:text-xl">
+                    ${unpaidAmount.toFixed(2)} MXN
                   </span>
                 </div>
-              )}
-
-              {/* Restante por pagar */}
-              <div className="flex justify-between items-center">
-                <span className="text-[#eab3f4] font-medium text-base md:text-lg lg:text-xl">
-                  Restante por pagar:
-                </span>
-                <span className="text-[#eab3f4] font-medium text-base md:text-lg lg:text-xl">
-                  ${unpaidAmount.toFixed(2)} MXN
-                </span>
               </div>
-            </div>
 
-            {/* Selección de propina */}
-            <div>
-              <div className="flex items-center gap-4 mb-3">
-                <span className="text-black font-medium text-base md:text-lg lg:text-xl">
-                  Propina
-                </span>
-                {/* Tip Percentage Buttons */}
-                <div className="grid grid-cols-5 gap-2">
-                  {[0, 10, 15, 20].map((percentage) => (
-                    <button
-                      key={percentage}
-                      onClick={() => handleTipPercentage(percentage)}
-                      className={`py-1 md:py-1.5 lg:py-2 rounded-full border border-[#8e8e8e]/40 text-black transition-colors cursor-pointer ${
-                        tipPercentage === percentage
-                          ? "bg-[#eab3f4] text-white"
-                          : "bg-[#f9f9f9] hover:border-gray-400"
-                      }`}
-                    >
-                      {percentage === 0 ? "0%" : `${percentage}%`}
-                    </button>
-                  ))}
-                  {/* Custom Tip Input */}
-                  <div>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black">
-                        $
-                      </span>
-                      <input
-                        type="number"
-                        value={customTip}
-                        onChange={(e) => handleCustomTipChange(e.target.value)}
-                        placeholder="0.00"
-                        step="0.01"
-                        min="0"
-                        className="w-full pl-6 pr-1 py-1 md:py-1.5 lg:py-2 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                      />
+              {/* Selección de propina */}
+              <div>
+                <div className="flex items-center gap-4 mb-3">
+                  <span className="text-black font-medium text-base md:text-lg lg:text-xl">
+                    Propina
+                  </span>
+                  {/* Tip Percentage Buttons */}
+                  <div className="grid grid-cols-5 gap-2">
+                    {[0, 10, 15, 20].map((percentage) => (
+                      <button
+                        key={percentage}
+                        onClick={() => handleTipPercentage(percentage)}
+                        className={`py-1 md:py-1.5 lg:py-2 rounded-full border border-[#8e8e8e]/40 text-black transition-colors cursor-pointer ${
+                          tipPercentage === percentage
+                            ? "bg-[#eab3f4] text-white"
+                            : "bg-[#f9f9f9] hover:border-gray-400"
+                        }`}
+                      >
+                        {percentage === 0 ? "0%" : `${percentage}%`}
+                      </button>
+                    ))}
+                    {/* Custom Tip Input */}
+                    <div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black">
+                          $
+                        </span>
+                        <input
+                          type="number"
+                          value={customTip}
+                          onChange={(e) =>
+                            handleCustomTipChange(e.target.value)
+                          }
+                          placeholder="0.00"
+                          step="0.01"
+                          min="0"
+                          className="w-full pl-6 pr-1 py-1 md:py-1.5 lg:py-2 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {tipAmount > 0 && (
-                <div className="flex justify-end items-center mt-2 text-sm">
-                  <span className="text-[#eab3f4] font-medium text-base md:text-lg lg:text-xl">
-                    +${tipAmount.toFixed(2)} MXN
-                  </span>
-                </div>
-              )}
+                {tipAmount > 0 && (
+                  <div className="flex justify-end items-center mt-2 text-sm">
+                    <span className="text-[#eab3f4] font-medium text-base md:text-lg lg:text-xl">
+                      +${tipAmount.toFixed(2)} MXN
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Total final */}
-            <div className="border-t border-gray-200 pt-6">
-              <div className="w-full flex gap-3 justify-between">
-                <div className="flex flex-col justify-center -translate-y-2">
-                  <span className="text-gray-600 text-sm md:text-base lg:text-lg">
-                    Total a pagar
-                  </span>
-                  <div className="flex items-center justify-center w-fit text-2xl font-medium text-black text-center gap-2" style={{
-                    WebkitFontSmoothing: 'antialiased',
-                    MozOsxFontSmoothing: 'grayscale',
-                    transform: 'translateZ(0)',
-                    backfaceVisibility: 'hidden' as const
-                  }} key={paymentAmount}>
-                    ${paymentAmount.toFixed(2)}
-                    <CircleAlert
-                      className="size-4 cursor-pointer text-gray-500"
-                      strokeWidth={2.3}
-                      onClick={() => setShowTotalModal(true)}
-                    />
-                  </div>
+            {/* Alerta de mínimo de compra - select-items */}
+            {isUnderMinimum && baseAmount > 0 && (
+              <div className="bg-gradient-to-br from-red-50 to-red-100 px-4 py-2">
+                <div className="flex items-center gap-3 px-8 md:px-10 lg:px-12">
+                  <X className="size-6 text-red-500 flex-shrink-0" />
+                  <p className="text-red-700 font-medium text-base md:text-lg">
+                    ¡No has completado el mínimo de compra!
+                  </p>
                 </div>
+              </div>
+            )}
 
-                {/* Pagar Button */}
-                {(() => {
-                  const isSelectItemsInvalid = selectedItems.length === 0;
-                  const isDisabled = baseAmount <= 0 || isSelectItemsInvalid;
-
-                  return (
-                    <button
-                      onClick={handleContinueToCardSelection}
-                      disabled={isDisabled || isNavigating}
-                      className={`rounded-full cursor-pointer transition-colors h-10 md:h-12 lg:h-12 flex items-center justify-center text-base md:text-lg lg:text-xl ${
-                        isDisabled || isNavigating
-                          ? "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed text-white px-10"
-                          : "bg-gradient-to-r from-[#34808C] to-[#173E44] text-white px-20 animate-pulse-button"
-                      }`}
+            <div className="px-8 md:px-10 lg:px-12">
+              {/* Total final */}
+              <div
+                className={`border-t border-gray-200 ${isUnderMinimum && baseAmount > 0 ? "pt-4 -mt-0" : "pt-6"}`}
+              >
+                <div className="w-full flex gap-3 justify-between">
+                  <div className="flex flex-col justify-center -translate-y-2">
+                    <span className="text-gray-600 text-sm md:text-base lg:text-lg">
+                      Total a pagar
+                    </span>
+                    <div
+                      className="flex items-center justify-center w-fit text-2xl font-medium text-black text-center gap-2"
+                      style={{
+                        WebkitFontSmoothing: "antialiased",
+                        MozOsxFontSmoothing: "grayscale",
+                        transform: "translateZ(0)",
+                        backfaceVisibility: "hidden" as const,
+                      }}
+                      key={paymentAmount}
                     >
-                      {isNavigating ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                          <span>Cargando...</span>
-                        </div>
-                      ) : selectedItems.length === 0 ? (
-                        "Selecciona al menos un artículo"
-                      ) : (
-                        "Pagar"
-                      )}
-                    </button>
-                  );
-                })()}
+                      ${paymentAmount.toFixed(2)}
+                      <CircleAlert
+                        className="size-4 cursor-pointer text-gray-500"
+                        strokeWidth={2.3}
+                        onClick={() => setShowTotalModal(true)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pagar Button */}
+                  {(() => {
+                    const isSelectItemsInvalid = selectedItems.length === 0;
+                    const isDisabled =
+                      baseAmount <= 0 || isSelectItemsInvalid || isUnderMinimum;
+
+                    return (
+                      <button
+                        onClick={handleContinueToCardSelection}
+                        disabled={isDisabled || isNavigating}
+                        className={`rounded-full cursor-pointer transition-colors h-10 md:h-12 lg:h-12 flex items-center justify-center text-base md:text-lg lg:text-xl ${
+                          isDisabled || isNavigating
+                            ? "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed text-white px-10"
+                            : "bg-gradient-to-r from-[#34808C] to-[#173E44] text-white px-20 animate-pulse-button"
+                        }`}
+                      >
+                        {isNavigating ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Cargando...</span>
+                          </div>
+                        ) : isUnderMinimum && baseAmount > 0 ? (
+                          "Mínimo de compra no alcanzado"
+                        ) : selectedItems.length === 0 ? (
+                          "Selecciona al menos un artículo"
+                        ) : (
+                          "Pagar"
+                        )}
+                      </button>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
           </div>

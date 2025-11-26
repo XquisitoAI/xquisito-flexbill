@@ -192,14 +192,20 @@ export default function PaymentSuccessPage() {
     navigateWithTable("/menu");
   };
 
-  // Handle rating submission
-  const handleRatingClick = async (starRating: number) => {
+  // Handle rating selection
+  const handleRatingClick = (starRating: number) => {
     if (hasRated) {
       console.log("⚠️ User has already rated");
       return;
     }
-
     setRating(starRating);
+  };
+
+  // Handle rating submission
+  const handleSubmitRating = async () => {
+    if (hasRated || rating === 0) {
+      return;
+    }
 
     if (!restaurantId) {
       console.error("❌ No restaurant ID available");
@@ -209,7 +215,7 @@ export default function PaymentSuccessPage() {
     try {
       console.log("🔍 Submitting restaurant review:", {
         restaurant_id: parseInt(restaurantId),
-        rating: starRating,
+        rating: rating,
       });
 
       const response = await fetch(
@@ -221,7 +227,7 @@ export default function PaymentSuccessPage() {
           },
           body: JSON.stringify({
             restaurant_id: parseInt(restaurantId),
-            rating: starRating,
+            rating: rating,
           }),
         }
       );
@@ -271,38 +277,52 @@ export default function PaymentSuccessPage() {
                   ? "¡Gracias por tu calificación!"
                   : "Califica tu experiencia en el restaurante"}
               </p>
-              <div className="flex justify-center gap-1 md:gap-1.5 lg:gap-2">
-                {[1, 2, 3, 4, 5].map((starIndex) => {
-                  const currentRating = hoveredRating || rating;
-                  const isFilled = currentRating >= starIndex;
+              <div className="flex flex-col items-center gap-3 md:gap-3.5 lg:gap-4">
+                {/* Stars container */}
+                <div className="flex gap-1 md:gap-1.5 lg:gap-2">
+                  {[1, 2, 3, 4, 5].map((starIndex) => {
+                    const currentRating = hoveredRating || rating;
+                    const isFilled = currentRating >= starIndex;
 
-                  return (
-                    <div
-                      key={starIndex}
-                      className={`relative ${
-                        hasRated ? "cursor-default" : "cursor-pointer"
-                      }`}
-                      onMouseEnter={() =>
-                        !hasRated && setHoveredRating(starIndex)
-                      }
-                      onMouseLeave={() => !hasRated && setHoveredRating(0)}
-                      onClick={() => !hasRated && handleRatingClick(starIndex)}
-                    >
-                      {/* Estrella */}
-                      <svg
-                        className={`size-8 md:size-10 lg:size-12 transition-all ${
-                          isFilled ? "text-yellow-400" : "text-white"
+                    return (
+                      <div
+                        key={starIndex}
+                        className={`relative ${
+                          hasRated ? "cursor-default" : "cursor-pointer"
                         }`}
-                        fill="currentColor"
-                        stroke={isFilled ? "#facc15" : "black"}
-                        strokeWidth="1"
-                        viewBox="0 0 24 24"
+                        onMouseEnter={() =>
+                          !hasRated && setHoveredRating(starIndex)
+                        }
+                        onMouseLeave={() => !hasRated && setHoveredRating(0)}
+                        onClick={() => !hasRated && handleRatingClick(starIndex)}
                       >
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                      </svg>
-                    </div>
-                  );
-                })}
+                        {/* Estrella */}
+                        <svg
+                          className={`size-8 md:size-10 lg:size-12 transition-all ${
+                            isFilled ? "text-yellow-400" : "text-white"
+                          }`}
+                          fill="currentColor"
+                          stroke={isFilled ? "#facc15" : "black"}
+                          strokeWidth="1"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Submit button - appears when a rating is selected */}
+                {rating > 0 && !hasRated && (
+                  <button
+                    onClick={handleSubmitRating}
+                    className="px-5 md:px-6 py-1.5 md:py-2 bg-gradient-to-r from-[#34808C] to-[#173E44] hover:from-[#2a6d77] hover:to-[#12323a] text-white text-sm md:text-base font-medium rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg animate-fade-in"
+                    aria-label="Enviar calificación"
+                  >
+                    Enviar
+                  </button>
+                )}
               </div>
             </div>
 

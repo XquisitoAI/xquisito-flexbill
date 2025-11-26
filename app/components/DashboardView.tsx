@@ -15,6 +15,12 @@ export default function DashboardView() {
     "profile" | "cards" | "history" | "support"
   >("profile");
 
+  // States for Support Tab (Pepper chat)
+  const [supportMessages, setSupportMessages] = useState<
+    Array<{ role: "user" | "pepper"; content: string }>
+  >([]);
+  const [supportSessionId, setSupportSessionId] = useState<string | null>(null);
+
   const { user, isLoaded } = useUser();
   const { navigateWithTable } = useTableNavigation();
   const router = useRouter();
@@ -196,7 +202,14 @@ export default function DashboardView() {
               {activeTab === "profile" && <ProfileTab />}
               {activeTab === "cards" && <CardsTab />}
               {activeTab === "history" && <HistoryTab />}
-              {activeTab === "support" && <SupportTab />}
+              {activeTab === "support" && (
+                <SupportTab
+                  messages={supportMessages}
+                  setMessages={setSupportMessages}
+                  sessionId={supportSessionId}
+                  setSessionId={setSupportSessionId}
+                />
+              )}
             </div>
           </div>
         </div>

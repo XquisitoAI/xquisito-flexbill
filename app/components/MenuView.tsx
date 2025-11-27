@@ -4,8 +4,8 @@ import MenuHeader from "./headers/MenuHeader";
 import MenuCategory from "./MenuCategory";
 import { Search, ShoppingCart, Settings } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
-import { useUserData } from "../context/UserDataContext";
+import { useAuth } from "../context/AuthContext";
+import { useGuest } from "../context/GuestContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { useCart } from "../context/CartContext";
 import { useRestaurant } from "../context/RestaurantContext";
@@ -18,8 +18,8 @@ interface MenuViewProps {
 export default function MenuView({ tableNumber }: MenuViewProps) {
   const [filter, setFilter] = useState("Todo");
   const [searchQuery, setSearchQuery] = useState("");
-  const { user, isLoaded } = useUser();
-  const { signUpData } = useUserData();
+  const { profile, isAuthenticated } = useAuth();
+  const { isGuest, guestName } = useGuest();
   const { navigateWithTable } = useTableNavigation();
   const { state: cartState, refreshCart } = useCart();
   const { restaurant, menu, loading, error } = useRestaurant();
@@ -46,9 +46,9 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
     return categories;
   }, [menu]);
 
-  // Get gender Clerk
-  const gender = signUpData?.gender || user?.unsafeMetadata?.gender;
-  const welcomeMessage = user
+  // Get gender from Supabase profile
+  const gender = profile?.gender;
+  const welcomeMessage = isAuthenticated
     ? gender === "female"
       ? "Bienvenida"
       : "Bienvenido"
@@ -134,11 +134,11 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
             {/* Settings Icon */}
             <div
               onClick={() => {
-                if (user && isLoaded) {
+                if (isAuthenticated) {
                   navigateWithTable("/dashboard");
                 } else {
                   sessionStorage.setItem("signInFromMenu", "true");
-                  navigateWithTable("/sign-in");
+                  navigateWithTable("/sign-up");
                 }
               }}
               className="bg-white rounded-full p-1.5 md:p-2 lg:p-2.5 border border-gray-400 shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
@@ -182,7 +182,12 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
             </div>
             <h1 className="text-black text-3xl md:text-4xl lg:text-5xl font-medium mt-3 md:mt-5 mb-6 md:mb-8">
               ¡{welcomeMessage}
-              {user?.firstName ? ` ${user.firstName}` : ""}!
+              {profile?.firstName
+                ? ` ${profile.firstName}`
+                : isGuest && guestName
+                  ? ` ${guestName}`
+                  : ""}
+              !
             </h1>
           </div>
 

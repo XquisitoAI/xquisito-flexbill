@@ -1,16 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { authService } from "@/app/services/auth.service";
 import {
   User,
   Mail,
   Camera,
   Loader2,
-  Lock,
-  Eye,
-  EyeOff,
   Phone,
   X,
   LogOut,
@@ -18,69 +15,45 @@ import {
 } from "lucide-react";
 
 export default function ProfileTab() {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
   const router = useRouter();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [phone, setPhone] = useState("");
-  const [age, setAge] = useState<number | null>(null);
+  const [email, setEmail] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [gender, setGender] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
-      if (!isLoaded) {
-        setIsLoadingData(true);
-        return;
-      }
+      setIsLoadingData(true);
 
-      if (!user) {
-        // Set dummy data for non-logged users
-        setFirstName("");
-        setLastName("");
-        setPhone("");
-        setAge(null);
-        setGender("");
+      const currentUser = authService.getCurrentUser();
+
+      if (!currentUser) {
+        setIsAuthenticated(false);
         setIsLoadingData(false);
         return;
       }
 
+      setIsAuthenticated(true);
+
       try {
-        setIsLoadingData(true);
+        const response = await authService.getMyProfile();
 
-        // Actualizar clerk
-        setFirstName(user.firstName || "");
-        setLastName(user.lastName || "");
-        setPhone(user.phoneNumbers?.[0]?.phoneNumber || "");
-        setAge((user.unsafeMetadata?.age as number) || null);
-        setGender((user.unsafeMetadata?.gender as string) || "");
-
-        // Traer la info de backend mas actualizada
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/users/${user.id}`
-        );
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.user) {
-            // Actualizar datos a backend
-            setAge(result.user.age || null);
-            setGender(result.user.gender || "");
-            setPhone(
-              result.user.phone || user.phoneNumbers?.[0]?.phoneNumber || ""
-            );
-          }
+        if (response.success && response.data?.profile) {
+          const profile = response.data.profile;
+          setFirstName(profile.firstName || "");
+          setLastName(profile.lastName || "");
+          setPhone(profile.phone || "");
+          setEmail(profile.email || "");
+          setBirthDate(profile.birthDate || "");
+          setGender(profile.gender || "");
+          setPhotoUrl(profile.photoUrl || "");
         }
       } catch (error) {
         console.error("Error loading user data:", error);
@@ -90,61 +63,28 @@ export default function ProfileTab() {
     };
 
     loadUserData();
-  }, [user, isLoaded]);
+  }, []);
 
   const handleLogin = () => {
-    router.push("/sign-in");
+    router.push("/sign-up");
   };
 
   const handleUpdateProfile = async () => {
-    if (!user) return;
+    if (!isAuthenticated) return;
 
     setIsUpdating(true);
     try {
-      // Actualizar datos de clerk
-      await user.update({
-        firstName: firstName,
-        lastName: lastName,
-        unsafeMetadata: {
-          ...user.unsafeMetadata,
-          age: age,
-          gender: gender,
-        },
+      const response = await authService.updateMyProfile({
+        firstName,
+        lastName,
+        birthDate: birthDate || undefined,
+        gender: gender as "male" | "female" | "other" | undefined,
       });
 
-      // Actualizar datos a base de datos
-      const userData = {
-        clerkUserId: user.id,
-        email: user.primaryEmailAddress?.emailAddress,
-        firstName: firstName,
-        lastName: lastName,
-        age: age,
-        gender: gender,
-        phone: phone,
-      };
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        await user.reload();
-
-        setFirstName(firstName);
-        setLastName(lastName);
-        setAge(age);
-        setGender(gender);
-        setPhone(phone);
-
+      if (response.success) {
         alert("Perfil actualizado correctamente");
       } else {
-        throw new Error("Error al actualizar en el backend");
+        throw new Error(response.error || "Error al actualizar");
       }
     } catch (error) {
       console.error("Error al actualizar el perfil:", error);
@@ -155,14 +95,14 @@ export default function ProfileTab() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !e.target.files || !e.target.files[0]) return;
+    if (!isAuthenticated || !e.target.files || !e.target.files[0]) return;
 
-    const file = e.target.files[0];
     setIsUpdating(true);
 
     try {
-      await user.setProfileImage({ file });
-      alert("Foto actualizada correctamente");
+      // TODO: Implement image upload to Supabase Storage
+      // For now, just show a placeholder message
+      alert("La funcionalidad de cambiar foto estará disponible próximamente");
     } catch (error) {
       console.error("Error al actualizar la foto:", error);
       alert("Error al actualizar la foto");
@@ -171,114 +111,19 @@ export default function ProfileTab() {
     }
   };
 
-  const handleUpdatePassword = async () => {
-    if (!user) return;
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      alert("Por favor completa todos los campos de contraseña");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      alert("Las contraseñas nuevas no coinciden");
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      alert("La contraseña debe tener al menos 8 caracteres");
-      return;
-    }
-
-    setIsUpdatingPassword(true);
+  const handleLogout = async () => {
     try {
-      if (!user.passwordEnabled) {
-        alert(
-          "No puedes cambiar la contraseña porque tu cuenta fue creada con un proveedor social (Google, Facebook, etc.)"
-        );
-        setIsUpdatingPassword(false);
-        return;
-      }
-
-      try {
-        const emailAddress = user.primaryEmailAddress?.emailAddress;
-
-        if (!emailAddress) {
-          alert("No se pudo verificar tu email. Por favor intenta nuevamente.");
-          return;
-        }
-
-        await fetch("/api/verify-password", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: emailAddress,
-            password: currentPassword,
-          }),
-        });
-      } catch (verifyError) {
-        console.log("Re-authentication attempt:", verifyError);
-      }
-
-      // Actualizar password
-      await user.updatePassword({
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-        signOutOfOtherSessions: false,
-      });
-
-      alert("Contraseña actualizada correctamente");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setIsPasswordModalOpen(false);
-    } catch (error: any) {
-      console.error("Error al actualizar la contraseña:", error);
-
-      // Error messages
-      if (error.errors && error.errors[0]?.message) {
-        const errorMessage = error.errors[0].message;
-        const errorCode = error.errors[0]?.code;
-
-        if (
-          errorMessage.includes("verification") ||
-          errorCode === "form_password_incorrect"
-        ) {
-          alert(
-            "La contraseña actual es incorrecta. Por favor verifica e intenta nuevamente."
-          );
-        } else if (
-          errorMessage.includes("current_password_invalid") ||
-          errorMessage.includes("incorrect")
-        ) {
-          alert(
-            "La contraseña actual es incorrecta. Por favor verifica e intenta nuevamente."
-          );
-        } else if (errorMessage.includes("password_pwned")) {
-          alert(
-            "Esta contraseña ha sido encontrada en filtraciones de datos y no es segura. Por favor elige otra contraseña."
-          );
-        } else if (errorMessage.includes("password_too_common")) {
-          alert(
-            "Esta contraseña es muy común. Por favor elige una contraseña más segura."
-          );
-        } else {
-          alert(errorMessage);
-        }
-      } else if (error.message) {
-        alert(error.message);
-      } else {
-        alert(
-          "Error al actualizar la contraseña. Verifica tu contraseña actual e intenta nuevamente."
-        );
-      }
-    } finally {
-      setIsUpdatingPassword(false);
+      await authService.logout();
+      setIsLogoutModalOpen(false);
+      router.push("/");
+      window.location.reload();
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      alert("Error al cerrar sesión");
     }
   };
 
-  if (!isLoaded || isLoadingData) {
+  if (isLoadingData) {
     return (
       <div className="flex items-center justify-center py-12 md:py-16 lg:py-20">
         <Loader2 className="size-8 md:size-10 lg:size-12 animate-spin text-teal-600" />
@@ -286,18 +131,15 @@ export default function ProfileTab() {
     );
   }
 
-  // Check if user is not logged in
-  const isLoggedIn = !!user;
-
   return (
     <div className="w-full">
       {/* Profile Image */}
       <div className="flex flex-col items-center">
         <div className="relative group mb-4">
           <div className="size-28 md:size-32 lg:size-36 rounded-full bg-gray-200 overflow-hidden border-2 md:border-4 border-teal-600 flex items-center justify-center">
-            {isLoggedIn ? (
+            {isAuthenticated && photoUrl ? (
               <img
-                src={user.imageUrl}
+                src={photoUrl}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
@@ -311,7 +153,7 @@ export default function ProfileTab() {
               </div>
             )}
           </div>
-          {isLoggedIn && (
+          {isAuthenticated && (
             <label
               htmlFor="profile-image"
               className="absolute bottom-0 right-0 bg-teal-600 text-white p-2 md:p-2.5 lg:p-3 rounded-full cursor-pointer hover:bg-teal-700 transition-colors"
@@ -330,15 +172,24 @@ export default function ProfileTab() {
         </div>
       </div>
 
-      {/* Email */}
+      {/* Email or Phone */}
       <div className="space-y-2 mb-4 md:mb-5 lg:mb-6">
         <label className="gap-1.5 md:gap-2 flex items-center text-sm md:text-base lg:text-lg text-gray-700">
-          <Mail className="size-3.5 md:size-4 lg:size-5" />
-          Correo electrónico
+          {email ? (
+            <>
+              <Mail className="size-3.5 md:size-4 lg:size-5" />
+              Correo electrónico
+            </>
+          ) : (
+            <>
+              <Phone className="size-3.5 md:size-4 lg:size-5" />
+              Teléfono
+            </>
+          )}
         </label>
         <div className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 text-base md:text-lg lg:text-xl">
-          {isLoggedIn
-            ? user.primaryEmailAddress?.emailAddress
+          {isAuthenticated
+            ? email || phone || "No disponible"
             : "correo@ejemplo.com"}
         </div>
       </div>
@@ -356,7 +207,7 @@ export default function ProfileTab() {
             onChange={(e) => setFirstName(e.target.value)}
             placeholder="Tu nombre"
             className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-            disabled={isUpdating || !isLoggedIn}
+            disabled={isUpdating || !isAuthenticated}
           />
         </div>
 
@@ -372,48 +223,38 @@ export default function ProfileTab() {
             onChange={(e) => setLastName(e.target.value)}
             placeholder="Tu apellido"
             className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-            disabled={isUpdating || !isLoggedIn}
+            disabled={isUpdating || !isAuthenticated}
           />
         </div>
       </div>
 
-      {/* Telefono */}
-      <div className="space-y-2 mb-4 md:mb-5 lg:mb-6">
-        <label className="gap-1.5 md:gap-2 flex items-center text-sm md:text-base lg:text-lg text-gray-700">
-          <Phone className="size-3.5 md:size-4 lg:size-5" />
-          Telefono
-        </label>
-        <input
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="123 456 7890"
-          className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-          disabled={isUpdating || !isLoggedIn}
-        />
-      </div>
+      {/* Telefono (only show if logged with phone) */}
+      {phone && !email && (
+        <div className="space-y-2 mb-4 md:mb-5 lg:mb-6">
+          <label className="gap-1.5 md:gap-2 flex items-center text-sm md:text-base lg:text-lg text-gray-700">
+            <Phone className="size-3.5 md:size-4 lg:size-5" />
+            Teléfono
+          </label>
+          <div className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 text-base md:text-lg lg:text-xl">
+            {phone}
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-3 md:gap-4 lg:gap-5 mb-6 md:mb-8 lg:mb-10">
-        {/* Edad */}
+        {/* Fecha de nacimiento */}
         <div className="space-y-2 flex-1">
           <label className="gap-1.5 md:gap-2 flex items-center text-sm md:text-base lg:text-lg text-gray-700">
-            Edad
+            Fecha de nacimiento
           </label>
-          <select
-            value={age || ""}
-            onChange={(e) =>
-              setAge(e.target.value ? parseInt(e.target.value) : null)
-            }
+          <input
+            type="date"
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
+            max={new Date().toISOString().split("T")[0]}
             className="cursor-pointer w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-            disabled={isUpdating || !isLoggedIn}
-          >
-            <option value="">Tu edad</option>
-            {Array.from({ length: 83 }, (_, i) => 18 + i).map((ageOption) => (
-              <option key={ageOption} value={ageOption}>
-                {ageOption}
-              </option>
-            ))}
-          </select>
+            disabled={isUpdating || !isAuthenticated}
+          />
         </div>
 
         {/* Genero */}
@@ -425,36 +266,29 @@ export default function ProfileTab() {
             value={gender}
             onChange={(e) => setGender(e.target.value)}
             className="cursor-pointer w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-            disabled={isUpdating || !isLoggedIn}
+            disabled={isUpdating || !isAuthenticated}
           >
             <option value="">Tu género</option>
             <option value="male">Masculino</option>
             <option value="female">Femenino</option>
+            <option value="other">Otro</option>
           </select>
         </div>
       </div>
 
-      {/* Password Change Link and Logout/Login */}
-      <div className="flex items-center justify-between">
-        {isLoggedIn && (
-          <button
-            onClick={() => setIsPasswordModalOpen(true)}
-            className="text-teal-600 hover:text-teal-700 font-medium text-sm md:text-base lg:text-lg flex items-center gap-2 cursor-pointer"
-          >
-            <Lock className="size-4 md:size-5 lg:size-6" />
-            Cambiar contraseña
-          </button>
-        )}
-        {!isLoggedIn && <div></div>}
+      {/* Logout/Login */}
+      <div className="flex items-center justify-end">
         <button
-          onClick={isLoggedIn ? () => setIsLogoutModalOpen(true) : handleLogin}
+          onClick={
+            isAuthenticated ? () => setIsLogoutModalOpen(true) : handleLogin
+          }
           className={`font-medium text-sm md:text-base lg:text-lg flex items-center gap-2 cursor-pointer ${
-            isLoggedIn
+            isAuthenticated
               ? "text-red-600 hover:text-red-700"
               : "text-teal-600 hover:text-teal-700"
           }`}
         >
-          {isLoggedIn ? (
+          {isAuthenticated ? (
             <>
               <LogOut className="size-4 md:size-5 lg:size-6" />
               Cerrar sesión
@@ -469,7 +303,7 @@ export default function ProfileTab() {
       </div>
 
       {/* Update Button */}
-      {isLoggedIn && (
+      {isAuthenticated && (
         <button
           onClick={handleUpdateProfile}
           disabled={isUpdating}
@@ -484,141 +318,6 @@ export default function ProfileTab() {
             "Guardar cambios"
           )}
         </button>
-      )}
-
-      {/* Password Modal */}
-      {isPasswordModalOpen && (
-        <div
-          className="fixed inset-0 flex items-end justify-center"
-          style={{ zIndex: 99999 }}
-        >
-          {/* Fondo */}
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setIsPasswordModalOpen(false)}
-          ></div>
-
-          <div className="relative bg-white rounded-t-4xl w-full mx-4 md:mx-6 lg:mx-8 p-6 md:p-8 lg:p-10">
-            {/* Close Button */}
-            <button
-              onClick={() => setIsPasswordModalOpen(false)}
-              className="absolute top-4 md:top-6 lg:top-8 right-4 md:right-6 lg:right-8 text-gray-400 hover:text-gray-600"
-            >
-              <X className="size-5 md:size-6 lg:size-7" />
-            </button>
-
-            {/* Modal Title */}
-            <h3 className="text-xl md:text-2xl lg:text-3xl font-semibold text-gray-800 mb-6 md:mb-8 lg:mb-10">
-              Cambiar contraseña
-            </h3>
-
-            {/* Current Password */}
-            <div className="space-y-2 mb-4 md:mb-5 lg:mb-6">
-              <label className="gap-1.5 md:gap-2 flex items-center text-sm md:text-base lg:text-lg text-gray-700">
-                <Lock className="size-3.5 md:size-4 lg:size-5" />
-                Contraseña actual
-              </label>
-              <div className="relative">
-                <input
-                  type={showCurrentPassword ? "text" : "password"}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Ingresa tu contraseña actual"
-                  className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
-                  disabled={isUpdatingPassword}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute right-3 md:right-4 lg:right-5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showCurrentPassword ? (
-                    <EyeOff className="size-5 md:size-6 lg:size-7" />
-                  ) : (
-                    <Eye className="size-5 md:size-6 lg:size-7" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* New Password */}
-            <div className="space-y-2 mb-4 md:mb-5 lg:mb-6">
-              <label className="gap-1.5 md:gap-2 flex items-center text-sm md:text-base lg:text-lg text-gray-700">
-                <Lock className="size-3.5 md:size-4 lg:size-5" />
-                Nueva contraseña
-              </label>
-              <div className="relative">
-                <input
-                  type={showNewPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Ingresa tu nueva contraseña"
-                  className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
-                  disabled={isUpdatingPassword}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 md:right-4 lg:right-5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showNewPassword ? (
-                    <EyeOff className="size-5 md:size-6 lg:size-7" />
-                  ) : (
-                    <Eye className="size-5 md:size-6 lg:size-7" />
-                  )}
-                </button>
-              </div>
-              <p className="text-xs md:text-sm lg:text-base text-gray-500 -translate-y-1">
-                Debe tener al menos 8 caracteres
-              </p>
-            </div>
-
-            {/* Confirm Password */}
-            <div className="space-y-2">
-              <label className="gap-1.5 md:gap-2 flex items-center text-sm md:text-base lg:text-lg text-gray-700">
-                <Lock className="size-3.5 md:size-4 lg:size-5" />
-                Confirmar nueva contraseña
-              </label>
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirma tu nueva contraseña"
-                  className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
-                  disabled={isUpdatingPassword}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 md:right-4 lg:right-5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="size-5 md:size-6 lg:size-7" />
-                  ) : (
-                    <Eye className="size-5 md:size-6 lg:size-7" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Update Password Button */}
-            <button
-              onClick={handleUpdatePassword}
-              disabled={isUpdatingPassword}
-              className="mt-6 md:mt-8 lg:mt-10 bg-black hover:bg-stone-950 w-full text-white py-3 md:py-4 lg:py-5 text-base md:text-lg lg:text-xl rounded-full cursor-pointer transition-colors disabled:bg-stone-600 disabled:cursor-not-allowed"
-            >
-              {isUpdatingPassword ? (
-                <div className="flex items-center justify-center gap-1 md:gap-2">
-                  <Loader2 className="size-5 md:size-6 lg:size-7 animate-spin" />
-                  Actualizando contraseña...
-                </div>
-              ) : (
-                "Cambiar contraseña"
-              )}
-            </button>
-          </div>
-        </div>
       )}
 
       {/* Logout Confirmation Modal */}
@@ -661,7 +360,7 @@ export default function ProfileTab() {
                 Cancelar
               </button>
               <button
-                onClick={() => signOut()}
+                onClick={handleLogout}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 md:py-3 text-base md:text-lg rounded-full cursor-pointer transition-colors"
               >
                 Cerrar sesión

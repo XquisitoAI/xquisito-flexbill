@@ -1,0 +1,162 @@
+"use client";
+
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import {
+  authService,
+  type AuthResponse,
+  type ProfileData,
+} from "../services/auth.service";
+
+interface User {
+  id: string;
+  phone?: string;
+  email?: string;
+  accountType: string;
+}
+
+interface Profile {
+  id: string;
+  email?: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string;
+  gender?: string;
+  photoUrl?: string;
+  accountType: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  profile: Profile | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  sendOTP: (phone: string) => Promise<AuthResponse>;
+  verifyOTP: (phone: string, token: string) => Promise<AuthResponse>;
+  createOrUpdateProfile: (profileData: ProfileData) => Promise<AuthResponse>;
+  updateProfile: (updates: Partial<ProfileData>) => Promise<AuthResponse>;
+  logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Cargar usuario del localStorage al montar
+  useEffect(() => {
+    const loadUser = () => {
+      const currentUser = authService.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+        // Cargar perfil
+        loadProfile();
+      }
+      setIsLoading(false);
+    };
+
+    loadUser();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const response = await authService.getMyProfile();
+      if (response.success && response.data?.profile) {
+        setProfile(response.data.profile);
+      }
+    } catch (error) {
+      console.error("Error loading profile:", error);
+    }
+  };
+
+  const sendOTP = async (phone: string): Promise<AuthResponse> => {
+    const response = await authService.sendPhoneOTP(phone);
+    return response;
+  };
+
+  const verifyOTP = async (
+    phone: string,
+    token: string
+  ): Promise<AuthResponse> => {
+    const response = await authService.verifyPhoneOTP(phone, token);
+
+    if (response.success && response.data) {
+      setUser(response.data.user);
+      if (response.data.profile) {
+        setProfile(response.data.profile);
+      }
+    }
+
+    return response;
+  };
+
+  const createOrUpdateProfile = async (
+    profileData: ProfileData
+  ): Promise<AuthResponse> => {
+    const response = await authService.createOrUpdateProfile(profileData);
+
+    if (response.success && response.data?.profile) {
+      setProfile(response.data.profile);
+    }
+
+    return response;
+  };
+
+  const updateProfile = async (
+    updates: Partial<ProfileData>
+  ): Promise<AuthResponse> => {
+    const response = await authService.updateMyProfile(updates);
+
+    if (response.success && response.data?.profile) {
+      setProfile(response.data.profile);
+    }
+
+    return response;
+  };
+
+  const logout = async () => {
+    await authService.logout();
+    setUser(null);
+    setProfile(null);
+  };
+
+  const refreshProfile = async () => {
+    await loadProfile();
+  };
+
+  const value = {
+    user,
+    profile,
+    isAuthenticated: !!user,
+    isLoading,
+    sendOTP,
+    verifyOTP,
+    createOrUpdateProfile,
+    updateProfile,
+    logout,
+    refreshProfile,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error(
+      "useSupabaseAuth must be used within a SupabaseAuthProvider"
+    );
+  }
+  return context;
+}

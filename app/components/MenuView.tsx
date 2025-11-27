@@ -138,7 +138,7 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
                   navigateWithTable("/dashboard");
                 } else {
                   sessionStorage.setItem("signInFromMenu", "true");
-                  navigateWithTable("/sign-up");
+                  navigateWithTable("/auth");
                 }
               }}
               className="bg-white rounded-full p-1.5 md:p-2 lg:p-2.5 border border-gray-400 shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"

@@ -5,20 +5,30 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { ArrowLeft, Phone, User } from "lucide-react";
 import { authService } from "@/app/services/auth.service";
 import { useRestaurant } from "@/app/context/RestaurantContext";
+import { useAuth } from "@/app/context/AuthContext";
+import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 
 type Step = "phone" | "verify" | "profile";
 
-export default function SignUpPage() {
+export default function AuthPage() {
   const router = useRouter();
+  const { navigateWithTable } = useTableNavigation();
   const params = useParams();
   const searchParams = useSearchParams();
   const { setRestaurantId } = useRestaurant();
+  const {
+    verifyOTP,
+    createOrUpdateProfile: updateProfile,
+    refreshProfile,
+  } = useAuth();
 
   const restaurantId = params?.restaurantId as string;
   const tableNumber = searchParams.get("table");
 
   const [step, setStep] = useState<Step>("phone");
-  const [phone, setPhone] = useState("+52");
+  const [countryCode, setCountryCode] = useState("+52");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -53,15 +63,11 @@ export default function SignUpPage() {
     setError("");
     setLoading(true);
 
-    // Validar formato de teléfono
-    if (!phone.startsWith("+52") || phone.length < 13) {
-      setError("Por favor ingresa un número de teléfono válido mexicano");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const response = await authService.sendPhoneOTP(phone);
+      const fullPhone = countryCode + phoneNumber;
+      setPhone(fullPhone);
+
+      const response = await authService.sendOTPCode(fullPhone);
 
       if (response.success) {
         setStep("verify");
@@ -88,7 +94,7 @@ export default function SignUpPage() {
     }
 
     try {
-      const response = await authService.verifyPhoneOTP(phone, otp);
+      const response = await verifyOTP(phone, otp);
 
       if (response.success) {
         // Check if profile exists
@@ -127,7 +133,7 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      const response = await authService.sendPhoneOTP(phone);
+      const response = await authService.sendOTPCode(phone);
 
       if (response.success) {
         setCountdown(60);
@@ -147,7 +153,7 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      const response = await authService.createOrUpdateProfile({
+      const response = await updateProfile({
         firstName,
         lastName,
         birthDate: birthDate || undefined,
@@ -155,12 +161,11 @@ export default function SignUpPage() {
       });
 
       if (response.success) {
+        // Refresh profile data to get the updated information
+        await refreshProfile();
+
         // Redirect to menu page with table number
-        if (tableNumber) {
-          router.push(`/${restaurantId}/menu?table=${tableNumber}`);
-        } else {
-          router.push(`/${restaurantId}`);
-        }
+        navigateWithTable("/menu");
       } else {
         setError(response.error || "Error al guardar el perfil");
       }
@@ -226,22 +231,57 @@ export default function SignUpPage() {
         {/* Phone Input Step */}
         {step === "phone" && (
           <form onSubmit={handleSendOTP} className="space-y-4">
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+52 1234567890"
-                className="w-full pl-10 pr-3 py-3 text-gray-600 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0a8b9b]"
-                required
-                disabled={loading}
-              />
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                {/* Country Code Selector */}
+                <div className="relative">
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="w-20 pl-3 pr-8 py-3 text-gray-600 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0a8b9b] focus:border-transparent appearance-none"
+                    disabled={loading}
+                  >
+                    <option value="+52">🇲🇽 +52</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+34">🇪🇸 +34</option>
+                    <option value="+54">🇦🇷 +54</option>
+                    <option value="+57">🇨🇴 +57</option>
+                    <option value="+58">🇻🇪 +58</option>
+                  </select>
+                </div>
+
+                {/* Phone Number Input */}
+                <div className="relative flex-1">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
+                  <input
+                    required
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => {
+                      // Only allow numbers
+                      const value = e.target.value.replace(/\D/g, "");
+                      setPhoneNumber(value);
+                    }}
+                    className="w-full pl-10 pr-3 py-3 text-gray-600 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0a8b9b] focus:border-transparent"
+                    placeholder="Número de teléfono"
+                    disabled={loading}
+                    maxLength={10}
+                  />
+                </div>
+              </div>
+              <p className="text-gray-300 text-xs">
+                Ejemplo:{" "}
+                {countryCode === "+52"
+                  ? "5512345678"
+                  : countryCode === "+1"
+                    ? "2125551234"
+                    : "123456789"}
+              </p>
             </div>
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !phoneNumber || phoneNumber.length < 8}
               className="w-full bg-black hover:bg-stone-950 text-white py-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Enviando..." : "Enviar código"}

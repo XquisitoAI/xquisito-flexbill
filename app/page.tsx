@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, use, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { authService } from "./services/auth.service";
+import { useAuth } from "./context/AuthContext";
 import Loader from "./components/UI/Loader";
 
 // Restaurant ID por defecto para testing
@@ -13,14 +13,16 @@ const DEFAULT_TABLE = 20;
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { profile } = useAuth();
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Check if user is authenticated with Supabase
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    setIsSignedIn(!!currentUser);
-    setIsLoaded(true);
+    if (profile) {
+      setIsSignedIn(true);
+      setIsLoaded(true);
+    }
   }, []);
 
   useEffect(() => {

@@ -175,22 +175,11 @@ export default function ProfileTab() {
       {/* Email or Phone */}
       <div className="space-y-2 mb-4 md:mb-5 lg:mb-6">
         <label className="gap-1.5 md:gap-2 flex items-center text-sm md:text-base lg:text-lg text-gray-700">
-          {email ? (
-            <>
-              <Mail className="size-3.5 md:size-4 lg:size-5" />
-              Correo electrónico
-            </>
-          ) : (
-            <>
-              <Phone className="size-3.5 md:size-4 lg:size-5" />
-              Teléfono
-            </>
-          )}
+          <Phone className="size-3.5 md:size-4 lg:size-5" />
+          Teléfono
         </label>
         <div className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 text-base md:text-lg lg:text-xl">
-          {isAuthenticated
-            ? email || phone || "No disponible"
-            : "correo@ejemplo.com"}
+          {phone}
         </div>
       </div>
 
@@ -227,19 +216,6 @@ export default function ProfileTab() {
           />
         </div>
       </div>
-
-      {/* Telefono (only show if logged with phone) */}
-      {phone && !email && (
-        <div className="space-y-2 mb-4 md:mb-5 lg:mb-6">
-          <label className="gap-1.5 md:gap-2 flex items-center text-sm md:text-base lg:text-lg text-gray-700">
-            <Phone className="size-3.5 md:size-4 lg:size-5" />
-            Teléfono
-          </label>
-          <div className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 text-base md:text-lg lg:text-xl">
-            {phone}
-          </div>
-        </div>
-      )}
 
       <div className="flex gap-3 md:gap-4 lg:gap-5 mb-6 md:mb-8 lg:mb-10">
         {/* Fecha de nacimiento */}

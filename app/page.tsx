@@ -1,9 +1,8 @@
 "use client";
 
-import { Suspense, use, useState } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { useAuth } from "./context/AuthContext";
 import Loader from "./components/UI/Loader";
 
 // Restaurant ID por defecto para testing
@@ -13,102 +12,27 @@ const DEFAULT_TABLE = 20;
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { profile } = useAuth();
-  const [isSignedIn, setIsSignedIn] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // Check if user is authenticated with Supabase
-  useEffect(() => {
-    if (profile) {
-      setIsSignedIn(true);
-      setIsLoaded(true);
-    }
-  }, []);
 
   useEffect(() => {
-    if (!isLoaded) return;
-
-    // Check if user just signed in/up and has context
-    const storedTable = sessionStorage.getItem("pendingTableRedirect");
-    const storedRestaurant = sessionStorage.getItem("pendingRestaurantId");
-    const isFromPaymentFlow = sessionStorage.getItem("signupFromPaymentFlow");
-    const isFromPaymentSuccess = sessionStorage.getItem(
-      "signupFromPaymentSuccess"
-    );
-    const isFromMenu = sessionStorage.getItem("signInFromMenu");
-    const isFromOrder = sessionStorage.getItem("signupFromOrder");
-
-    console.log("🔍 Root page debugging:", {
-      isLoaded,
-      isSignedIn,
-      storedTable,
-      storedRestaurant,
-      isFromPaymentFlow,
-      isFromPaymentSuccess,
-      isFromMenu,
-      isFromOrder,
-      currentPath: window.location.pathname,
-    });
-
-    // Determinar restaurantId
-    const restaurantParam = searchParams.get("restaurant");
-    const restaurantId =
-      restaurantParam || storedRestaurant || DEFAULT_RESTAURANT_ID;
-
-    if (isSignedIn && storedTable && isFromOrder) {
-      // User signed in/up from order (OrderStatus), redirect to payment-options
-      sessionStorage.removeItem("signupFromOrder");
-      sessionStorage.removeItem("pendingTableRedirect");
-      sessionStorage.removeItem("pendingRestaurantId");
-      router.replace(`/${restaurantId}/payment-options?table=${storedTable}`);
-      return;
-    }
-
-    if (isSignedIn && storedTable && isFromMenu) {
-      // User signed in from MenuView settings, redirect to dashboard with table
-      console.log("✅ Redirecting to dashboard with table:", storedTable);
-      sessionStorage.removeItem("signInFromMenu");
-      sessionStorage.removeItem("pendingTableRedirect");
-      sessionStorage.removeItem("pendingRestaurantId");
-      router.replace(`/${restaurantId}/dashboard?table=${storedTable}`);
-      return;
-    }
-
-    if (isSignedIn && storedTable && isFromPaymentFlow) {
-      // User signed up during payment flow, redirect to payment-options with table
-      console.log("✅ Redirecting to payment-options with table:", storedTable);
-      sessionStorage.removeItem("pendingTableRedirect");
-      sessionStorage.removeItem("signupFromPaymentFlow");
-      sessionStorage.removeItem("pendingRestaurantId");
-      router.replace(`/${restaurantId}/payment-options?table=${storedTable}`);
-      return;
-    }
-
-    if (isSignedIn && isFromPaymentSuccess) {
-      // User signed up from payment-success, redirect to dashboard
-      console.log("✅ Redirecting to dashboard from payment-success");
-      sessionStorage.removeItem("signupFromPaymentSuccess");
-      sessionStorage.removeItem("pendingRestaurantId");
-      router.replace(`/${restaurantId}/dashboard`);
-      return;
-    }
-
-    // Check for table parameter in current URL
+    // Check for table parameter in URL
     const tableParam = searchParams.get("table");
-    if (tableParam) {
-      console.log(
-        `✅ Redirecting to /${restaurantId}/menu?table=${tableParam}`
-      );
-      router.replace(`/${restaurantId}/menu?table=${tableParam}`);
-      return;
-    }
+    const restaurantParam = searchParams.get("restaurant");
+    const restaurantId = restaurantParam || DEFAULT_RESTAURANT_ID;
 
-    // Default redirect to restaurant 3, table 12 for demo
-    console.log(
-      `✅ Default redirect to /${DEFAULT_RESTAURANT_ID}/menu?table=${DEFAULT_TABLE}`
-    );
-    router.replace(`/${DEFAULT_RESTAURANT_ID}/menu?table=${DEFAULT_TABLE}`);
-  }, [router, searchParams, isSignedIn, isLoaded]);
+    console.log('🏠 HomePage redirect:', { tableParam, restaurantParam, restaurantId });
+
+    if (tableParam) {
+      // Redirect to menu with table parameter
+      const redirectUrl = `/${restaurantId}/menu?table=${tableParam}`;
+      console.log('✅ Redirecting to:', redirectUrl);
+      router.replace(redirectUrl);
+    } else {
+      // Default redirect to restaurant menu with default table
+      const redirectUrl = `/${DEFAULT_RESTAURANT_ID}/menu?table=${DEFAULT_TABLE}`;
+      console.log('✅ Default redirecting to:', redirectUrl);
+      router.replace(redirectUrl);
+    }
+  }, [router, searchParams]);
 
   return (
     <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">

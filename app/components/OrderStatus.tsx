@@ -3,7 +3,7 @@
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { useGuest } from "../context/GuestContext";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "../context/AuthContext";
 import { useState, useEffect } from "react";
 import { getRestaurantData } from "../utils/restaurantData";
 import { Loader2, Eye, EyeClosed, Loader } from "lucide-react";
@@ -13,7 +13,7 @@ export default function OrderStatus() {
   const { state, loadTableData } = useTable();
   const { goBack, navigateWithTable } = useTableNavigation();
   const { setAsGuest } = useGuest();
-  const { user, isLoaded } = useUser();
+  const { isAuthenticated, isLoading } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [showPaidOrders, setShowPaidOrders] = useState(false);
@@ -27,11 +27,11 @@ export default function OrderStatus() {
   const handleCheckOut = async () => {
     setIsProcessingPayment(true);
     try {
-      if (isLoaded && user) {
+      if (!isLoading && isAuthenticated) {
         // User is authenticated, redirect directly to payment options
         navigateWithTable("/payment-options");
       } else {
-        // User is guest, redirect to auth selection page
+        // User is guest, redirect to auth page
         sessionStorage.setItem("signupFromOrder", "true");
         navigateWithTable("/auth-selection");
       }

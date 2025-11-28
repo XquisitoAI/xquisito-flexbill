@@ -48,14 +48,14 @@ export interface CartTotals {
 }
 
 class CartApiService {
-  private clerkUserId: string | null = null;
+  private supabaseUserId: string | null = null;
   private restaurantId: number | null = null;
 
   /**
-   * Establecer el clerk_user_id manualmente (llamar desde el componente con useUser)
+   * Establecer el supabase_user_id manualmente (llamar desde el componente con useAuth)
    */
-  public setClerkUserId(userId: string | null) {
-    this.clerkUserId = userId;
+  public setSupabaseUserId(userId: string | null) {
+    this.supabaseUserId = userId;
   }
 
   /**
@@ -112,16 +112,16 @@ class CartApiService {
   }
 
   /**
-   * Obtener identificador de usuario (clerk_user_id o guest_id)
-   * Prioriza clerk_user_id si existe
+   * Obtener identificador de usuario (user_id o guest_id)
+   * Prioriza user_id si existe
    */
-  private getUserIdentifier(): { clerk_user_id?: string; guest_id?: string } {
-    // Primero intentar usar el clerkUserId establecido manualmente
-    if (this.clerkUserId) {
-      return { clerk_user_id: this.clerkUserId };
+  private getUserIdentifier(): { user_id?: string; guest_id?: string } {
+    // Primero intentar usar el supabaseUserId establecido manualmente
+    if (this.supabaseUserId) {
+      return { user_id: this.supabaseUserId };
     }
 
-    // Si no hay usuario de Clerk, usar guest_id
+    // Si no hay usuario autenticado, usar guest_id
     return { guest_id: this.getGuestId() };
   }
 

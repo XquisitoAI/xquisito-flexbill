@@ -58,6 +58,40 @@ export default function AuthPage() {
     }
   }, [countdown]);
 
+  // Helper function to handle post-auth redirects
+  const handleAuthRedirect = () => {
+    const isFromPaymentFlow = sessionStorage.getItem("signupFromPaymentFlow");
+    const isFromPaymentSuccess = sessionStorage.getItem(
+      "signupFromPaymentSuccess"
+    );
+    const isFromMenu = sessionStorage.getItem("signInFromMenu");
+    const isFromOrder = sessionStorage.getItem("signupFromOrder");
+
+    // Clear all session flags
+    sessionStorage.removeItem("pendingTableRedirect");
+    sessionStorage.removeItem("signupFromPaymentFlow");
+    sessionStorage.removeItem("signupFromPaymentSuccess");
+    sessionStorage.removeItem("signInFromMenu");
+    sessionStorage.removeItem("signupFromOrder");
+
+    if (isFromOrder && tableNumber) {
+      // User signed in/up from order, redirect to payment-options
+      navigateWithTable("/payment-options");
+    } else if (isFromMenu && tableNumber) {
+      // User signed in from MenuView settings, redirect to dashboard
+      navigateWithTable("/dashboard");
+    } else if (isFromPaymentFlow && tableNumber) {
+      // User signed up during payment flow, redirect to payment-options
+      navigateWithTable("/payment-options");
+    } else if (isFromPaymentSuccess) {
+      // User signed up from payment-success, redirect to dashboard
+      navigateWithTable("/dashboard");
+    } else {
+      // Default redirect to menu
+      navigateWithTable("/menu");
+    }
+  };
+
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -101,13 +135,10 @@ export default function AuthPage() {
         const profileResponse = await authService.getMyProfile();
         if (profileResponse.success && profileResponse.data?.profile) {
           const profile = profileResponse.data.profile;
-          // If profile has firstName, redirect to menu
+          // If profile has firstName, redirect based on context
           if (profile.firstName) {
-            if (tableNumber) {
-              router.push(`/${restaurantId}/menu?table=${tableNumber}`);
-            } else {
-              router.push(`/${restaurantId}`);
-            }
+            await refreshProfile();
+            handleAuthRedirect();
           } else {
             // Profile exists but incomplete, go to profile step
             setStep("profile");
@@ -164,8 +195,8 @@ export default function AuthPage() {
         // Refresh profile data to get the updated information
         await refreshProfile();
 
-        // Redirect to menu page with table number
-        navigateWithTable("/menu");
+        // Redirect based on context
+        handleAuthRedirect();
       } else {
         setError(response.error || "Error al guardar el perfil");
       }

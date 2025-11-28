@@ -4,7 +4,7 @@ import { Restaurant } from "../../interfaces/restaurante";
 import { useTable } from "../../context/TableContext";
 import { useTableNavigation } from "../../hooks/useTableNavigation";
 import { usePathname, useRouter } from "next/navigation";
-import { ShoppingCart, Receipt, ChevronLeft, X } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useUser } from "@clerk/nextjs";
 import { apiService } from "../../utils/api";
@@ -36,11 +36,11 @@ export default function MenuHeaderBack({
   const { user, isLoaded } = useUser();
 
   const handleBack = () => {
-    router.back();
-  };
-
-  const handleCartClick = () => {
-    navigateWithTable("/cart");
+    if (pathname?.includes("payment-options")) {
+      navigateWithTable("/order");
+    } else {
+      router.back();
+    }
   };
 
   // Extraer user_ids únicos y memoizarlos

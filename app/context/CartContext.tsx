@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { MenuItemData } from '../interfaces/menuItemData';
 import { cartApi, CartItem as ApiCartItem } from '../services/cartApi';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from './AuthContext';
 import { useRestaurant } from './RestaurantContext';
 
 // Interfaz para un item del carrito (frontend)
@@ -118,15 +118,15 @@ const CartContext = createContext<CartContextType | null>(null);
 // Provider del carrito
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
-  const { user, isLoaded } = useUser();
+  const { user, isLoading } = useAuth();
   const { restaurantId } = useRestaurant();
 
-  // Establecer clerk_user_id y restaurant_id en cartApi cuando cambien
+  // Establecer supabase_user_id y restaurant_id en cartApi cuando cambien
   useEffect(() => {
-    if (isLoaded) {
-      cartApi.setClerkUserId(user?.id || null);
+    if (!isLoading) {
+      cartApi.setSupabaseUserId(user?.id || null);
     }
-  }, [user, isLoaded]);
+  }, [user, isLoading]);
 
   useEffect(() => {
     cartApi.setRestaurantId(restaurantId);

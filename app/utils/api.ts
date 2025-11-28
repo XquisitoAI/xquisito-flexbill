@@ -42,14 +42,16 @@ class ApiService {
     this.baseURL = API_BASE_URL;
   }
 
-  // Set authentication token for Clerk users
+  // Set authentication token for authenticated users
   setAuthToken(token: string) {
     this.authToken = token;
+    console.log("🔑 ApiService - Auth token set:", token ? token.substring(0, 20) + "..." : "undefined");
   }
 
   // Clear authentication token
   clearAuthToken() {
     this.authToken = undefined;
+    console.log("🔑 ApiService - Auth token cleared");
   }
 
   private async makeRequest<T = any>(
@@ -65,11 +67,19 @@ class ApiService {
         ...(options.headers as Record<string, string>),
       };
 
-      // Add authentication token for Clerk users
+      // Add authentication token for authenticated users
       const tokenToUse = authToken || this.authToken;
+      console.log("🔍 makeRequest - Token check:", {
+        endpoint,
+        hasTokenParam: !!authToken,
+        hasInstanceToken: !!this.authToken,
+        tokenToUse: tokenToUse ? tokenToUse.substring(0, 20) + "..." : "none"
+      });
+
       if (tokenToUse) {
         // For registered users, use auth token and skip guest headers
         headers["Authorization"] = `Bearer ${tokenToUse}`;
+        console.log("🔑 Adding Authorization header for authenticated user");
       } else {
         // For guests only, add guest identification headers
         const guestId = this.getGuestId();
@@ -84,6 +94,12 @@ class ApiService {
           headers["x-table-number"] = tableNumber;
         }
       }
+
+      console.log("🔍 makeRequest - Final headers:", {
+        Authorization: headers["Authorization"] ? "Bearer ***" : "missing",
+        "x-guest-id": headers["x-guest-id"] || "missing",
+        endpoint
+      });
 
       const response = await fetch(url, {
         ...options,
@@ -512,6 +528,9 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
+
+// Debug logging
+console.log("🔧 ApiService instance created:", apiService);
 
 // Utility functions for payment data validation
 export const validateCardNumber = (cardNumber: string): boolean => {

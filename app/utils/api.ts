@@ -268,12 +268,22 @@ class ApiService {
     return this.getRestaurantId();
   }
 
-  // Method to clear guest session
+  // Method to clear guest session (guest-specific data only)
   clearGuestSession(): void {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("xquisito-guest-id");
+      // Note: Table number and restaurant ID are preserved for authenticated users
+      // They are only cleared when user explicitly logs out
+    }
+  }
+
+  // Method to clear all session data (for logout)
+  clearAllSessionData(): void {
     if (typeof window !== "undefined") {
       localStorage.removeItem("xquisito-guest-id");
       localStorage.removeItem("xquisito-table-number");
       localStorage.removeItem("xquisito-restaurant-id");
+      localStorage.removeItem("xquisito-guest-name");
     }
   }
 

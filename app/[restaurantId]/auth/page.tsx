@@ -104,6 +104,7 @@ export default function AuthPage() {
           // If profile has firstName, redirect to menu
           if (profile.firstName) {
             if (tableNumber) {
+              await refreshProfile();
               router.push(`/${restaurantId}/menu?table=${tableNumber}`);
             } else {
               router.push(`/${restaurantId}`);

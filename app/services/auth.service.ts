@@ -338,7 +338,17 @@ class AuthService {
   // Obtener usuario actual del localStorage
   getCurrentUser(): any | null {
     const userStr = localStorage.getItem("xquisito_user");
-    return userStr ? JSON.parse(userStr) : null;
+    const accessToken = localStorage.getItem("xquisito_access_token");
+
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      return {
+        ...user,
+        token: accessToken // Include token for ApiService
+      };
+    }
+
+    return null;
   }
 
   /**

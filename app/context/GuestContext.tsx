@@ -11,6 +11,7 @@ import React, {
 import { apiService } from "../utils/api";
 import { useSearchParams } from "next/navigation";
 import { authService } from "../services/auth.service";
+import { useAuth } from "./AuthContext";
 
 interface GuestContextType {
   isGuest: boolean;
@@ -35,121 +36,123 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
   const [tableNumber, setTableNumber] = useState<string | null>(null);
   const [guestName, setGuestName] = useState<string | null>(null);
   const [hasLinkedOrders, setHasLinkedOrders] = useState<boolean>(false);
-  const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const searchParams = useSearchParams();
 
-  // Check if user is authenticated with Supabase
-  const [user, setUser] = useState<any>(null);
+  // Use AuthContext directly instead of maintaining separate user state
+  const { user, isLoading: authLoading } = useAuth();
+  const isLoaded = !authLoading;
 
+  // Consolidated effect: Handle authentication state and guest/table context
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    setUser(currentUser);
-    setIsLoaded(true);
-  }, []);
+    if (!isLoaded) return; // Wait for auth to load
 
-  // Link guest orders when user authenticates
-  useEffect(() => {
-    if (!isLoaded || !user || hasLinkedOrders) return;
-
+    const tableParam = searchParams?.get("table");
     const storedGuestId = localStorage.getItem("xquisito-guest-id");
     const storedTableNumber = localStorage.getItem("xquisito-table-number");
     const storedRestaurantId = localStorage.getItem("xquisito-restaurant-id");
 
-    if (storedGuestId && user?.id) {
-      console.log("🔗 Linking guest orders to authenticated user:", {
-        guestId: storedGuestId,
-        userId: user.id,
-        tableNumber: storedTableNumber,
-        restaurantId: storedRestaurantId,
-      });
-
-      apiService
-        .linkGuestOrdersToUser(
-          storedGuestId,
-          user.id,
-          storedTableNumber || undefined,
-          storedRestaurantId || undefined
-        )
-        .then((response) => {
-          if (response.success) {
-            console.log("✅ Guest orders linked successfully:", response.data);
-            setHasLinkedOrders(true);
-          } else {
-            console.error("❌ Failed to link guest orders:", response.error);
-          }
-        })
-        .catch((error) => {
-          console.error("❌ Error linking guest orders:", error);
-        });
-    }
-  }, [isLoaded, user, hasLinkedOrders]);
-
-  // Smart initialization: Auto-detect guest vs registered user context
-  useEffect(() => {
-    if (!isLoaded) return; // Wait for Clerk to load
-
-    const tableParam = searchParams?.get("table");
-
     if (user) {
-      // User is registered - clear any guest session
+      // PRIORITY 1: User is authenticated
+      console.log("🔐 Authenticated user detected - managing session transition");
+
+      // Step 1: Link guest orders if they exist and haven't been linked yet
+      if (storedGuestId && user?.id && !hasLinkedOrders) {
+        console.log("🔗 Linking guest orders to authenticated user:", {
+          guestId: storedGuestId,
+          userId: user.id,
+          tableNumber: storedTableNumber,
+          restaurantId: storedRestaurantId,
+        });
+
+        apiService
+          .linkGuestOrdersToUser(
+            storedGuestId,
+            user.id,
+            storedTableNumber || undefined,
+            storedRestaurantId || undefined
+          )
+          .then((response) => {
+            if (response.success) {
+              console.log("✅ Guest orders linked successfully:", response.data);
+              setHasLinkedOrders(true);
+            } else {
+              console.error("❌ Failed to link guest orders:", response.error);
+            }
+          })
+          .catch((error) => {
+            console.error("❌ Error linking guest orders:", error);
+          });
+      }
+
+      // Step 2: Clear guest session but preserve table context
       if (isGuest) {
-        console.log("🔐 Registered user detected - clearing guest session");
+        console.log("🗑️ Clearing guest session for authenticated user");
         clearGuestSession();
       }
-    } else {
-      // No registered user - check if we should be guest
 
-      const storedGuestId = localStorage.getItem("xquisito-guest-id");
-      const storedTableNumber = localStorage.getItem("xquisito-table-number");
-
-      // Priority 1: If URL has table parameter, use it (even if restoring session)
+      // Step 3: Set table context for authenticated user
       if (tableParam) {
-        console.log(
-          "👤 Table parameter detected:",
-          tableParam,
-          "- Setting up guest session"
-        );
-
-        // Use existing guest ID if available, or create new one
-        const guestIdToUse = storedGuestId || generateGuestId();
-
-        // Store to localStorage FIRST to ensure persistence
         localStorage.setItem("xquisito-table-number", tableParam);
-        localStorage.setItem("xquisito-guest-id", guestIdToUse);
-
-        setIsGuest(true);
-        setGuestId(guestIdToUse);
-        setTableNumber(tableParam);
         apiService.setTableNumber(tableParam);
-        console.log("👤 Guest session configured:", {
-          guestId: guestIdToUse,
-          tableNumber: tableParam,
-          wasRestored: !!storedGuestId,
-        });
-        return;
+        setTableNumber(tableParam);
+        console.log("📍 Table context preserved for authenticated user:", tableParam);
       }
 
-      // Priority 2: Restore existing guest session (only if no table param)
-      if (storedGuestId && storedTableNumber) {
-        const storedGuestName = localStorage.getItem("xquisito-guest-name");
-        setIsGuest(true);
-        setGuestId(storedGuestId);
-        setTableNumber(storedTableNumber);
-        setGuestName(storedGuestName);
-        console.log("🔄 Restored guest session:", {
-          guestId: storedGuestId,
-          tableNumber: storedTableNumber,
-          guestName: storedGuestName,
-        });
-        return;
-      }
+      // Ensure we're not in guest mode
+      setIsGuest(false);
+      setGuestId(null);
 
-      // Priority 3: No table param and no valid stored session - stay as non-guest
-      console.log(
-        "ℹ️ No table parameter and no valid guest session - staying as non-guest"
-      );
+      return; // Exit early for authenticated users
     }
-  }, [isLoaded, user, searchParams]);
+
+    // PRIORITY 2: No authenticated user - handle guest session
+    // Priority 2a: If URL has table parameter, set up guest session
+    if (tableParam) {
+      console.log(
+        "👤 Table parameter detected:",
+        tableParam,
+        "- Setting up guest session"
+      );
+
+      // Use existing guest ID if available, or create new one
+      const guestIdToUse = storedGuestId || generateGuestId();
+
+      // Store to localStorage FIRST to ensure persistence
+      localStorage.setItem("xquisito-table-number", tableParam);
+      localStorage.setItem("xquisito-guest-id", guestIdToUse);
+
+      setIsGuest(true);
+      setGuestId(guestIdToUse);
+      setTableNumber(tableParam);
+      apiService.setTableNumber(tableParam);
+      console.log("👤 Guest session configured:", {
+        guestId: guestIdToUse,
+        tableNumber: tableParam,
+        wasRestored: !!storedGuestId,
+      });
+      return;
+    }
+
+    // Priority 2b: Restore existing guest session (only if no table param)
+    if (storedGuestId && storedTableNumber) {
+      const storedGuestName = localStorage.getItem("xquisito-guest-name");
+      setIsGuest(true);
+      setGuestId(storedGuestId);
+      setTableNumber(storedTableNumber);
+      setGuestName(storedGuestName);
+      console.log("🔄 Restored guest session:", {
+        guestId: storedGuestId,
+        tableNumber: storedTableNumber,
+        guestName: storedGuestName,
+      });
+      return;
+    }
+
+    // Priority 3: No table param and no valid stored session - stay as non-guest
+    console.log(
+      "ℹ️ No table parameter and no valid guest session - staying as non-guest"
+    );
+  }, [isLoaded, user, searchParams, hasLinkedOrders]);
 
   const setAsGuest = (newTableNumber?: string) => {
     // Generate guest ID through apiService (which handles localStorage)
@@ -174,19 +177,36 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
   };
 
   const setAsAuthenticated = (userId: string) => {
+    // Get auth token and set it in ApiService
+    const currentUser = authService.getCurrentUser();
+    if (currentUser?.token) {
+      apiService.setAuthToken(currentUser.token);
+      console.log("🔑 Auth token set in ApiService for user:", userId);
+    }
+
     // Clear guest session when user authenticates
     clearGuestSession();
     console.log("🔐 Set as authenticated user:", userId);
   };
 
   const clearGuestSession = () => {
-    apiService.clearGuestSession();
+    // Clear only guest-specific data, preserve table context for authenticated users
+    localStorage.removeItem("xquisito-guest-id");
+    localStorage.removeItem("xquisito-guest-name");
+
+    // Only clear table context if user is not authenticated
+    if (!user) {
+      localStorage.removeItem("xquisito-table-number");
+      localStorage.removeItem("xquisito-restaurant-id");
+      setTableNumber(null);
+    }
+
+    // Immediately clear guest state
     setIsGuest(false);
     setGuestId(null);
-    setTableNumber(null);
     setGuestName(null);
-    localStorage.removeItem("xquisito-guest-name");
-    console.log("🗑️ Guest session cleared");
+
+    console.log("🗑️ Guest session cleared, table context preserved for authenticated user");
   };
 
   const setGuestNameHandler = (name: string) => {

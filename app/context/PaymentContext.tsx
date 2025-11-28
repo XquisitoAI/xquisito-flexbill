@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiService, PaymentMethod } from '../utils/api';
 import { useGuest } from './GuestContext';
-import { useUser, useAuth } from '@clerk/nextjs';
+import { useAuth } from './AuthContext';
 
 interface PaymentContextType {
   paymentMethods: PaymentMethod[];
@@ -26,29 +26,23 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { isGuest, guestId, setAsAuthenticated } = useGuest();
-  const { user, isLoaded } = useUser();
-  const { getToken } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const hasPaymentMethods = paymentMethods.length > 0;
 
   const refreshPaymentMethods = async () => {
-    // Only fetch if user is authenticated (either registered user or guest)
-    if (!isLoaded) {
+    // Only fetch if auth is loaded (either registered user or guest)
+    if (authLoading) {
       setPaymentMethods([]);
       return;
     }
 
     // For registered users - prioritize user over guest session
-    if (user) {
+    if (isAuthenticated && user) {
       console.log('🔐 Fetching payment methods for registered user:', user.id);
       setIsLoading(true);
       try {
-        // Get Clerk auth token
-        const token = await getToken();
-        if (token) {
-          apiService.setAuthToken(token);
-        }
-
+        // Auth token should already be set in apiService by AuthContext
         const response = await apiService.getPaymentMethods();
         if (response.success && response.data?.paymentMethods) {
           setPaymentMethods(response.data.paymentMethods);
@@ -165,15 +159,15 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
 
   // Load payment methods when user context changes
   useEffect(() => {
-    if (isLoaded) {
+    if (!authLoading) {
       // If user is authenticated, clear any guest session
-      if (user && isGuest) {
+      if (isAuthenticated && user && isGuest) {
         console.log('🔐 User authenticated - clearing guest session');
         setAsAuthenticated(user.id);
       }
 
       console.log('🔄 PaymentContext - Context changed:', {
-        isLoaded,
+        isLoaded: !authLoading,
         hasUser: !!user,
         userId: user?.id,
         isGuest,
@@ -181,7 +175,7 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
       });
       refreshPaymentMethods();
     }
-  }, [isLoaded, user?.id, isGuest, guestId, setAsAuthenticated]);
+  }, [authLoading, isAuthenticated, user?.id, isGuest, guestId, setAsAuthenticated]);
 
   const value: PaymentContextType = {
     paymentMethods,

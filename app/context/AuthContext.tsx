@@ -12,6 +12,7 @@ import {
   type AuthResponse,
   type ProfileData,
 } from "../services/auth.service";
+import { apiService } from "../utils/api";
 
 interface User {
   id: string;
@@ -60,6 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const currentUser = authService.getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
+        // Set auth token in ApiService
+        if (currentUser.token) {
+          apiService.setAuthToken(currentUser.token);
+          console.log("🔑 Auth token restored in ApiService from localStorage");
+        }
         // Cargar perfil
         loadProfile();
       }
@@ -92,10 +98,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await authService.verifyPhoneOTP(phone, token);
 
     if (response.success && response.data) {
-      setUser(response.data.user);
+      // Add token to user object for context consistency
+      const userWithToken = {
+        ...response.data.user,
+        token: response.data.session.access_token
+      };
+
+      setUser(userWithToken);
       if (response.data.profile) {
         setProfile(response.data.profile);
       }
+
+      // Set auth token in ApiService immediately
+      apiService.setAuthToken(response.data.session.access_token);
+      console.log("🔑 Auth token set in ApiService after OTP verification");
     }
 
     return response;
@@ -127,6 +143,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await authService.logout();
+    // Clear auth token from ApiService
+    apiService.clearAuthToken();
+    // Clear all session data including table context
+    apiService.clearAllSessionData();
+    console.log("🔐 Complete logout: auth token and session data cleared");
     setUser(null);
     setProfile(null);
   };

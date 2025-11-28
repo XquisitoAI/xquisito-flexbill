@@ -8,21 +8,21 @@ import { useTableNavigation } from "../hooks/useTableNavigation";
 import { getRestaurantData } from "../utils/restaurantData";
 import MenuHeaderBack from "./headers/MenuHeaderBack";
 import OrderAnimation from "./UI/OrderAnimation";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "../context/AuthContext";
 
 export default function CartView() {
   const { state: cartState, updateQuantity, clearCart } = useCart();
   const { state: tableState, submitOrder } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const restaurantData = getRestaurantData();
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { user, isAuthenticated, isLoading, profile } = useAuth();
   const [showOrderAnimation, setShowOrderAnimation] = useState(false);
   const [orderedItems, setOrderedItems] = useState<CartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleOrder = async () => {
     // Si el usuario está loggeado, hacer la orden directamente con animación
-    if (isLoaded && isSignedIn && user) {
+    if (!isLoading && isAuthenticated && user) {
       setIsSubmitting(true);
       try {
         // Guardar items antes de que se limpie el carrito
@@ -30,9 +30,13 @@ export default function CartView() {
         setOrderedItems(itemsToOrder);
         // Mostrar animación de orden INMEDIATAMENTE
         setShowOrderAnimation(true);
-        // Enviar la orden a la API en segundo plano usando el nombre completo de Clerk
-        const userName =
-          user.fullName || user.firstName || user.username || "Usuario";
+        // Enviar la orden a la API en segundo plano usando el perfil del usuario
+        const userName = profile?.firstName
+          ? `${profile.firstName} ${profile.lastName || ''}`.trim()
+          : `Usuario ${user.id.substring(0, 8)}`;
+
+        console.log("🛍️ Submitting order for authenticated user:", userName);
+
         // IMPORTANTE: Pasar los items del carrito a submitOrder
         await submitOrder(userName, itemsToOrder);
         // Limpiar el carrito de la base de datos después de la orden exitosa
@@ -46,6 +50,7 @@ export default function CartView() {
       }
     } else {
       // Si NO está loggeado, navegar a la vista de usuario para capturar su nombre
+      console.log("📱 User not authenticated, redirecting to /user");
       navigateWithTable("/user");
     }
   };
@@ -238,7 +243,7 @@ export default function CartView() {
       {showOrderAnimation && (
         <OrderAnimation
           userName={
-            user?.fullName || user?.firstName || user?.username || "Usuario"
+            profile?.firstName || "Usuario"
           }
           orderedItems={orderedItems}
           onContinue={handleContinueFromAnimation}

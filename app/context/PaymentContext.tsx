@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { apiService, PaymentMethod } from '../utils/api';
 import { useGuest } from './GuestContext';
 import { useAuth } from './AuthContext';
+import { authService } from '../services/auth.service';
 
 interface PaymentContextType {
   paymentMethods: PaymentMethod[];
@@ -40,9 +41,26 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
     // For registered users - prioritize user over guest session
     if (isAuthenticated && user) {
       console.log('🔐 Fetching payment methods for registered user:', user.id);
+
+      // Get current user with token from authService
+      const currentUser = authService.getCurrentUser();
+      const userToken = currentUser?.token;
+
+      console.log('🔑 User token available:', !!userToken);
+
+      // Wait for token to be available
+      if (!userToken) {
+        console.log('⏳ Token not yet available, skipping payment methods request');
+        setPaymentMethods([]);
+        return;
+      }
+
       setIsLoading(true);
       try {
-        // Auth token should already be set in apiService by AuthContext
+        // Ensure auth token is set in apiService
+        apiService.setAuthToken(userToken);
+        console.log('🔑 Auth token set in apiService before payment request');
+
         const response = await apiService.getPaymentMethods();
         if (response.success && response.data?.paymentMethods) {
           setPaymentMethods(response.data.paymentMethods);
@@ -173,7 +191,11 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
         isGuest,
         guestId
       });
-      refreshPaymentMethods();
+
+      // Delay refreshPaymentMethods to ensure token is set
+      setTimeout(() => {
+        refreshPaymentMethods();
+      }, 100); // Small delay to ensure token is configured
     }
   }, [authLoading, isAuthenticated, user?.id, isGuest, guestId, setAsAuthenticated]);
 

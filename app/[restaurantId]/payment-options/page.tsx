@@ -2,24 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
 import { useTable } from "../../context/TableContext";
 import { useTableNavigation } from "../../hooks/useTableNavigation";
-import { useUserData } from "../../context/UserDataContext";
-import { useUserSync } from "../../hooks/useUserSync";
 import { useRestaurant } from "../../context/RestaurantContext";
 import { getRestaurantData } from "../../utils/restaurantData";
 import { getSavedUrlParams, clearSavedUrlParams } from "../../utils/urlParams";
 import MenuHeaderBack from "../../components/headers/MenuHeaderBack";
 import { apiService } from "../../utils/api";
-import {
-  ChevronRight,
-  DollarSign,
-  ListTodo,
-  Loader2,
-  ReceiptText,
-  Users,
-} from "lucide-react";
+import { ChevronRight, DollarSign, ReceiptText } from "lucide-react";
 import Loader from "../../components/UI/Loader";
 
 export default function PaymentOptionsPage() {
@@ -34,7 +24,6 @@ export default function PaymentOptionsPage() {
     }
   }, [restaurantId, setRestaurantId]);
 
-  const { user } = useUser();
   const { state, dispatch, loadTableData, loadActiveUsers } = useTable();
   const { navigateWithTable } = useTableNavigation();
 
@@ -54,11 +43,6 @@ export default function PaymentOptionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [splitStatus, setSplitStatus] = useState<any>(null);
 
-  // Auto-sync user to backend if authenticated
-  const { signUpData } = useUserData();
-  const { saveUserToBackend, isSyncing, syncStatus, isUserSynced } =
-    useUserSync(signUpData);
-
   useEffect(() => {
     const savedParams = getSavedUrlParams();
     if (savedParams) {
@@ -66,14 +50,6 @@ export default function PaymentOptionsPage() {
       clearSavedUrlParams();
     }
   }, [router]);
-
-  // Auto-sync authenticated users to backend
-  useEffect(() => {
-    if (user && !isUserSynced && !isSyncing && syncStatus !== "success") {
-      console.log("🔄 Payment Options: Auto-syncing new user to backend");
-      saveUserToBackend();
-    }
-  }, [user, isUserSynced, isSyncing, syncStatus, saveUserToBackend]);
 
   const loadSplitStatus = async () => {
     if (!state.tableNumber) return;
@@ -365,18 +341,6 @@ export default function PaymentOptionsPage() {
 
   if (isLoading) {
     return <Loader />;
-  }
-
-  // Show loading while syncing new user
-  if (user && isSyncing) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col items-center justify-center">
-        <Loader2 className="size-12 md:size-14 lg:size-16 text-white animate-spin" />
-        <p className="text-white mt-4 md:mt-5 lg:mt-6 text-base md:text-lg lg:text-xl">
-          Configurando tu cuenta...
-        </p>
-      </div>
-    );
   }
 
   return (

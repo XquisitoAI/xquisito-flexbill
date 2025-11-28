@@ -96,19 +96,14 @@ class CartApiService {
 
   /**
    * Obtener guest_id desde GuestContext/localStorage
-   * Usa el mismo formato que GuestContext: 'xquisito-guest-id'
+   * Solo lee el guest_id existente - NO genera uno nuevo
+   * La generación se maneja exclusivamente en GuestContext después de que auth cargue
    */
   private getGuestId(): string {
     if (typeof window === "undefined") return "";
 
-    // Usar el mismo key que GuestContext
-    let guestId = localStorage.getItem("xquisito-guest-id");
-    if (!guestId) {
-      // Generar guest ID en el mismo formato que GuestContext
-      guestId = `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem("xquisito-guest-id", guestId);
-    }
-    return guestId;
+    // Solo leer del localStorage - NO generar nuevo ID
+    return localStorage.getItem("xquisito-guest-id") || "";
   }
 
   /**

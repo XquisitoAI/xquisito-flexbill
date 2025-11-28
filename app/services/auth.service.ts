@@ -344,7 +344,7 @@ class AuthService {
       const user = JSON.parse(userStr);
       return {
         ...user,
-        token: accessToken // Include token for ApiService
+        token: accessToken, // Include token for ApiService
       };
     }
 

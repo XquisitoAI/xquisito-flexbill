@@ -1,13 +1,13 @@
 "use client";
 
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { useTable } from "../../context/TableContext";
 import { useTableNavigation } from "../../hooks/useTableNavigation";
 import { useRestaurant } from "../../context/RestaurantContext";
 import { getRestaurantData } from "../../utils/restaurantData";
 import MenuHeaderBack from "../../components/headers/MenuHeaderBack";
-import { Check, CircleAlert, Loader2, X } from "lucide-react";
+import { CircleAlert, Loader2, X } from "lucide-react";
 import { apiService } from "../../utils/api";
 import Loader from "../../components/UI/Loader";
 import { calculateCommissions } from "../../utils/commissionCalculator";

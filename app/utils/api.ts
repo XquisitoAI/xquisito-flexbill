@@ -203,17 +203,10 @@ class ApiService {
 
   // Helper methods for guest identification
   private getGuestId(): string | null {
-    // Try to get existing guest ID from localStorage first
+    // Only get existing guest ID from localStorage - DO NOT generate a new one
+    // Guest ID generation is handled exclusively by GuestContext after auth loads
     if (typeof window !== "undefined") {
-      let guestId = localStorage.getItem("xquisito-guest-id");
-
-      if (!guestId) {
-        // Generate new guest ID
-        guestId = `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        localStorage.setItem("xquisito-guest-id", guestId);
-      }
-
-      return guestId;
+      return localStorage.getItem("xquisito-guest-id");
     }
     return null;
   }

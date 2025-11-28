@@ -44,12 +44,21 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
 
   // Consolidated effect: Handle authentication state and guest/table context
   useEffect(() => {
-    if (!isLoaded) return; // Wait for auth to load
+    if (!isLoaded) {
+      console.log("⏳ GuestContext: Waiting for auth to load before handling guest session");
+      return; // CRITICAL: Wait for auth to load - THIS PREVENTS RACE CONDITIONS
+    }
 
     const tableParam = searchParams?.get("table");
     const storedGuestId = localStorage.getItem("xquisito-guest-id");
     const storedTableNumber = localStorage.getItem("xquisito-table-number");
     const storedRestaurantId = localStorage.getItem("xquisito-restaurant-id");
+
+    console.log("🔍 GuestContext: Auth loaded, processing session", {
+      hasUser: !!user,
+      hasTableParam: !!tableParam,
+      hasStoredGuest: !!storedGuestId,
+    });
 
     if (user) {
       // PRIORITY 1: User is authenticated

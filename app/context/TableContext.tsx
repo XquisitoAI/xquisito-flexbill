@@ -20,39 +20,8 @@ import {
 interface NestedDataResponse<T> {
   data: T;
 }
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "./AuthContext";
 import { useRestaurant } from "./RestaurantContext";
-
-// ===============================================
-// PREVIOUS IMPLEMENTATION (COMMENTED OUT)
-// ===============================================
-
-/*
-// Interfaz para un item del carrito
-export interface CartItem extends MenuItemData {
-  quantity: number;
-}
-
-// Usar la interfaz UserOrder de la API
-
-// Estado de la mesa
-interface TableState {
-  tableNumber: string;
-  orders: UserOrder[];
-  paidOrders: UserOrder[];
-  currentUserName: string;
-  currentUserItems: CartItem[];
-  currentUserTotalItems: number;
-  currentUserTotalPrice: number;
-  isLoading: boolean;
-  error: string | null;
-  tableClosed: boolean;
-}
-*/
-
-// ===============================================
-// NEW IMPLEMENTATION - DISH-BASED SYSTEM
-// ===============================================
 
 // Interfaz para un item del carrito (mantiene la misma funcionalidad)
 export interface CartItem extends MenuItemData {
@@ -85,31 +54,6 @@ interface TableState {
   isSplitBillActive: boolean;
 }
 
-/*
-// Acciones del contexto de mesa
-type TableAction =
-  | { type: "SET_TABLE_NUMBER"; payload: string }
-  | { type: "ADD_ITEM_TO_CURRENT_USER"; payload: MenuItemData }
-  | { type: "REMOVE_ITEM_FROM_CURRENT_USER"; payload: number }
-  | {
-      type: "UPDATE_QUANTITY_CURRENT_USER";
-      payload: {
-        id: number;
-        quantity: number;
-        customFields?: CartItem['customFields'];
-      };
-    }
-  | { type: "SET_CURRENT_USER_NAME"; payload: string }
-  | { type: "SUBMIT_CURRENT_USER_ORDER" }
-  | { type: "CLEAR_CURRENT_USER_CART" }
-  | { type: "SET_LOADING"; payload: boolean }
-  | { type: "SET_ERROR"; payload: string | null }
-  | { type: "SET_ORDERS"; payload: UserOrder[] }
-  | { type: "SET_PAID_ORDERS"; payload: UserOrder[] }
-  | { type: "SET_TABLE_CLOSED"; payload: boolean }
-  | { type: "CLEAR_ORDERS" };
-*/
-
 // Nuevas acciones para el sistema de platillos
 type TableAction =
   | { type: "SET_TABLE_NUMBER"; payload: string }
@@ -127,7 +71,10 @@ type TableAction =
   | { type: "CLEAR_CURRENT_USER_CART" }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }
-  | { type: "SET_TABLE_SUMMARY"; payload: ApiResponse<NestedDataResponse<TableSummary>> | null }
+  | {
+      type: "SET_TABLE_SUMMARY";
+      payload: ApiResponse<NestedDataResponse<TableSummary>> | null;
+    }
   | { type: "SET_DISH_ORDERS"; payload: DishOrder[] }
   | { type: "SET_ACTIVE_USERS"; payload: ActiveUser[] }
   | { type: "SET_SPLIT_PAYMENTS"; payload: SplitPayment[] }
@@ -140,22 +87,6 @@ type TableAction =
       type: "UPDATE_DISH_PAYMENT_STATUS";
       payload: { dishId: string; paymentStatus: DishOrder["payment_status"] };
     };
-
-/*
-// Estado inicial
-const initialState: TableState = {
-  tableNumber: "",
-  orders: [],
-  paidOrders: [],
-  currentUserName: "",
-  currentUserItems: [],
-  currentUserTotalItems: 0,
-  currentUserTotalPrice: 0,
-  isLoading: false,
-  error: null,
-  tableClosed: false,
-};
-*/
 
 // Nuevo estado inicial
 const initialState: TableState = {
@@ -172,18 +103,6 @@ const initialState: TableState = {
   error: null,
   isSplitBillActive: false,
 };
-
-/*
-// Función para calcular totales
-const calculateTotals = (items: CartItem[]) => {
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  return { totalItems, totalPrice };
-};
-*/
 
 // Función para calcular totales (incluye extraPrice)
 const calculateTotals = (items: CartItem[]) => {
@@ -406,22 +325,6 @@ function tableReducer(state: TableState, action: TableAction): TableState {
   }
 }
 
-/*
-// Contexto de la mesa
-const TableContext = createContext<{
-  state: TableState;
-  dispatch: React.Dispatch<TableAction>;
-  submitOrder: (userName?: string) => Promise<void>;
-  refreshOrders: () => Promise<void>;
-  loadTableOrders: () => Promise<void>;
-  loadPaidOrders: () => Promise<void>;
-  markOrdersAsPaid: (
-    orderIds?: string[],
-    userNames?: string[]
-  ) => Promise<void>;
-} | null>(null);
-*/
-
 // Nuevo contexto de la mesa
 const TableContext = createContext<{
   state: TableState;
@@ -452,24 +355,10 @@ const TableContext = createContext<{
   ) => Promise<void>;
 } | null>(null);
 
-/*
-// Provider del contexto de mesa
-export function TableProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(tableReducer, initialState);
-
-  // Cargar órdenes cuando se establece el número de mesa
-  useEffect(() => {
-    if (state.tableNumber) {
-      loadTableOrders();
-      loadPaidOrders();
-    }
-  }, [state.tableNumber]);
-*/
-
 // Nuevo Provider del contexto de mesa
 export function TableProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(tableReducer, initialState);
-  const { user, isLoaded } = useUser();
+  const { user, profile, isLoading } = useAuth();
   const { restaurantId } = useRestaurant();
 
   // Ref para evitar cargas duplicadas
@@ -516,7 +405,10 @@ export function TableProvider({ children }: { children: ReactNode }) {
     if (!state.tableNumber || !restaurantId) return;
 
     try {
-      const response = await apiService.getTableSummary(restaurantId.toString(), state.tableNumber);
+      const response = await apiService.getTableSummary(
+        restaurantId.toString(),
+        state.tableNumber
+      );
 
       if (response.success && response.data) {
         dispatch({ type: "SET_TABLE_SUMMARY", payload: response });
@@ -536,7 +428,10 @@ export function TableProvider({ children }: { children: ReactNode }) {
     if (!state.tableNumber || !restaurantId) return;
 
     try {
-      const response = await apiService.getTableOrders(restaurantId.toString(), state.tableNumber);
+      const response = await apiService.getTableOrders(
+        restaurantId.toString(),
+        state.tableNumber
+      );
 
       if (response.success && Array.isArray(response?.data?.data)) {
         const dishOrders = response.data.data;
@@ -557,7 +452,10 @@ export function TableProvider({ children }: { children: ReactNode }) {
     if (!state.tableNumber || !restaurantId) return;
 
     try {
-      const response = await apiService.getActiveUsers(restaurantId.toString(), state.tableNumber);
+      const response = await apiService.getActiveUsers(
+        restaurantId.toString(),
+        state.tableNumber
+      );
 
       if (response.success && response.data) {
         dispatch({ type: "SET_ACTIVE_USERS", payload: response.data });
@@ -653,16 +551,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
           const guestNames = formattedUsers.map((u: any) => u.guestName);
 
           const totalUsers = formattedUsers.length;
-          // Separar usuarios autenticados de invitados
-          /*const activeUserIds = activeUsers
-            .filter((user: any) => user.user_id)
-            .map((user: any) => user.user_id);
-
-          const activeGuestNames = activeUsers
-            .filter((user: any) => !user.user_id && user.guest_name)
-            .map((user: any) => user.guest_name);
-
-          const totalUsers = activeUserIds.length + activeGuestNames.length;*/
 
           if (totalUsers > 1) {
             await initializeSplitBill(
@@ -686,15 +574,11 @@ export function TableProvider({ children }: { children: ReactNode }) {
     // Usar cartItems pasados como parámetro, o fallback a state.currentUserItems (legacy)
     const itemsToOrder = cartItems || state.currentUserItems;
 
-    if (
-      !state.tableNumber ||
-      !finalUserName ||
-      itemsToOrder.length === 0
-    ) {
+    if (!state.tableNumber || !finalUserName || itemsToOrder.length === 0) {
       console.log("❌ submitOrder - Validación falló:", {
         tableNumber: state.tableNumber,
         userName: finalUserName,
-        itemsCount: itemsToOrder.length
+        itemsCount: itemsToOrder.length,
       });
       return;
     }
@@ -703,14 +587,14 @@ export function TableProvider({ children }: { children: ReactNode }) {
       tableNumber: state.tableNumber,
       userName: finalUserName,
       itemsCount: itemsToOrder.length,
-      items: itemsToOrder
+      items: itemsToOrder,
     });
 
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
       // Determinar si el usuario está autenticado
-      const isAuthenticated = isLoaded && user;
+      const isAuthenticated = !isLoading && user;
       const userId = isAuthenticated ? user.id : null;
 
       // Solo usar guestId si NO está autenticado
@@ -719,9 +603,11 @@ export function TableProvider({ children }: { children: ReactNode }) {
           ? localStorage.getItem("xquisito-guest-id")
           : null;
 
-      // Usar nombre real de Clerk si está autenticado, sino el proporcionado
+      // Usar nombre real del perfil si está autenticado, sino el proporcionado
       const displayName = isAuthenticated
-        ? user.fullName || user.firstName || finalUserName
+        ? profile?.firstName && profile?.lastName
+          ? `${profile.firstName} ${profile.lastName}`
+          : profile?.firstName || finalUserName
         : finalUserName;
 
       // Guardar nombre para vinculación posterior (solo si no está autenticado)
@@ -829,12 +715,14 @@ export function TableProvider({ children }: { children: ReactNode }) {
 
       if (!finalUserId && !finalGuestName) {
         // Determinar si el usuario está autenticado
-        const isAuthenticated = isLoaded && user;
+        const isAuthenticated = !isLoading && user;
 
         if (isAuthenticated) {
           finalUserId = user.id;
           finalGuestName =
-            user.fullName || user.firstName || state.currentUserName;
+            profile?.firstName && profile?.lastName
+              ? `${profile.firstName} ${profile.lastName}`
+              : profile?.firstName || state.currentUserName;
         } else {
           // Usuario invitado
           finalGuestName = state.currentUserName;
@@ -1007,114 +895,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
       {children}
     </TableContext.Provider>
   );
-
-  /*
-  const loadPaidOrders = async () => {
-    if (!state.tableNumber) return;
-
-    try {
-      const response = await tableApi.getPaidTableOrders(
-        parseInt(state.tableNumber)
-      );
-
-      if (response.success && response.data) {
-        dispatch({ type: "SET_PAID_ORDERS", payload: response.data });
-      } else {
-        console.error("Failed to load paid orders:", response.error);
-      }
-    } catch (error) {
-      console.error("Error loading paid orders:", error);
-    }
-  };
-
-  const refreshOrders = async () => {
-    await loadTableOrders();
-    await loadPaidOrders();
-  };
-
-  const markOrdersAsPaid = async (
-    orderIds?: string[],
-    userNames?: string[]
-  ) => {
-    if (!state.tableNumber) {
-      return;
-    }
-
-    dispatch({ type: "SET_LOADING", payload: true });
-
-    try {
-      let specificOrderIds = orderIds;
-
-      // Si se proporcionan nombres de usuario pero no IDs específicos,
-      // obtener los IDs de las órdenes de esos usuarios
-      if (!specificOrderIds && userNames && userNames.length > 0) {
-        console.log(
-          "🎯 markOrdersAsPaid: Filtering orders for specific users:",
-          userNames
-        );
-
-        specificOrderIds = state.orders
-          .filter((order) => userNames.includes(order.user_name))
-          .map((order) => order.id);
-
-        console.log(
-          `📋 Found ${specificOrderIds.length} orders to mark as paid for users: ${userNames.join(", ")}`
-        );
-      } else if (!specificOrderIds) {
-        console.log(
-          "🌍 markOrdersAsPaid: Marking ALL orders as paid for table"
-        );
-      }
-
-      const response = await tableApi.markOrdersAsPaid(
-        parseInt(state.tableNumber),
-        specificOrderIds
-      );
-
-      if (response.success) {
-        console.log(
-          `✅ ${response.data?.count || 0} orders marked as paid successfully`
-        );
-
-        // Verificar si la mesa se cerró
-        if (response.data?.tableClosed) {
-          console.log(
-            "🏁 Mesa cerrada completamente:",
-            response.data.closeMessage
-          );
-          dispatch({ type: "SET_TABLE_CLOSED", payload: true });
-        } else {
-          // Recargar órdenes para actualizar la vista
-          await loadTableOrders();
-          await loadPaidOrders();
-        }
-      } else {
-        dispatch({
-          type: "SET_ERROR",
-          payload: response.error || "Failed to mark orders as paid",
-        });
-      }
-    } catch (error) {
-      dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
-    }
-  };
-
-  return (
-    <TableContext.Provider
-      value={{
-        state,
-        dispatch,
-        submitOrder,
-        refreshOrders,
-        loadTableOrders,
-        loadPaidOrders,
-        markOrdersAsPaid,
-      }}
-    >
-      {children}
-    </TableContext.Provider>
-  );
-  */
 }
 
 // Hook personalizado para usar el contexto de mesa

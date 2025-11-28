@@ -9,7 +9,7 @@ import {
   SetStateAction,
 } from "react";
 import { useRestaurant } from "../../context/RestaurantContext";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "../../context/AuthContext";
 import { useTable } from "../../context/TableContext";
 
 // Función para comunicarse con el agente a través del backend
@@ -96,7 +96,7 @@ export default function SupportTab({
 
   // Obtener contextos
   const { restaurantId, restaurant } = useRestaurant();
-  const { user } = useUser();
+  const { user, profile } = useAuth();
   const { state } = useTable();
 
   // Auto-scroll cuando cambian los mensajes (solo cuando hay nuevos mensajes)
@@ -123,7 +123,9 @@ export default function SupportTab({
       try {
         // Construir el mensaje con el contexto completo
         const userId = user?.id || null;
-        const userName = user?.fullName || user?.firstName || null;
+        const userName = profile?.firstName && profile?.lastName
+          ? `${profile.firstName} ${profile.lastName}`
+          : profile?.firstName || null;
         const tableNumber = state.tableNumber || null;
 
         const contextualMessage = `[CONTEXT: support_dashboard, restaurant_id=${restaurantId || "null"}, restaurant_name="${restaurant?.name || "unknown"}", table_number=${tableNumber || "null"}, user_id=${userId || "null"}, user_name="${userName || "unknown"}"]

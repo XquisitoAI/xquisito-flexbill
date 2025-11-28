@@ -1,15 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import Script from "next/script";
 import "./globals.css";
 import { CartProvider } from "./context/CartContext";
 import { TableProvider } from "./context/TableContext";
 import { GuestProvider } from "./context/GuestContext";
 import { PaymentProvider } from "./context/PaymentContext";
-import { UserDataProvider } from "./context/UserDataContext";
 import { RestaurantProvider } from "./context/RestaurantContext";
 import { ClerkProvider } from "@clerk/nextjs";
-import { esMX } from "@clerk/localizations";
 import ClerkSessionProvider from "./components/ClerkSessionProvider";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -122,11 +119,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider
-      localization={esMX}
-      signUpFallbackRedirectUrl="/"
-      signInFallbackRedirectUrl="/"
-    >
+    <ClerkProvider signUpFallbackRedirectUrl="/" signInFallbackRedirectUrl="/">
       <html lang="es">
         <head></head>
         <body
@@ -139,9 +132,7 @@ export default function RootLayout({
                 <CartProvider>
                   <TableProvider>
                     <GuestProvider>
-                      <PaymentProvider>
-                        <UserDataProvider>{children}</UserDataProvider>
-                      </PaymentProvider>
+                      <PaymentProvider>{children}</PaymentProvider>
                     </GuestProvider>
                   </TableProvider>
                 </CartProvider>

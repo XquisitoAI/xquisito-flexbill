@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useTable } from "../../context/TableContext";
 import { useTableNavigation } from "../../hooks/useTableNavigation";
 import { useGuest, useIsGuest } from "../../context/GuestContext";
@@ -8,7 +8,7 @@ import { usePayment } from "../../context/PaymentContext";
 import { useRestaurant } from "../../context/RestaurantContext";
 import { getRestaurantData } from "../../utils/restaurantData";
 import { useEffect, useState, useCallback } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "../../context/AuthContext";
 import { useEcartPay } from "../../hooks/useEcartPay";
 import MenuHeaderBack from "../../components/headers/MenuHeaderBack";
 import { apiService } from "../../utils/api";
@@ -49,7 +49,7 @@ export default function CardSelectionPage() {
   const { guestId, tableNumber, setAsAuthenticated } = useGuest();
   const { hasPaymentMethods, paymentMethods, deletePaymentMethod } =
     usePayment();
-  const { user, isLoaded } = useUser();
+  const { user, profile, isLoading } = useAuth();
 
   // Tarjeta por defecto del sistema para todos los usuarios
 
@@ -118,8 +118,9 @@ export default function CardSelectionPage() {
   const effectiveName =
     userName ||
     state.currentUserName ||
-    user?.fullName ||
-    user?.firstName ||
+    (profile?.firstName && profile?.lastName
+      ? `${profile.firstName} ${profile.lastName}`
+      : profile?.firstName || "") ||
     "";
 
   const [name, setName] = useState(effectiveName);
@@ -142,18 +143,19 @@ export default function CardSelectionPage() {
   const [showTotalModal, setShowTotalModal] = useState(false);
 
   useEffect(() => {
-    if (isLoaded && user) {
+    if (!isLoading && user) {
       setAsAuthenticated(user.id);
     }
-  }, [isLoaded, user, setAsAuthenticated]);
+  }, [isLoading, user, setAsAuthenticated]);
 
   useEffect(() => {
     // Actualizar nombre cuando cambie effectiveName
     const newName =
       userName ||
       state.currentUserName ||
-      user?.fullName ||
-      user?.firstName ||
+      (profile?.firstName && profile?.lastName
+        ? `${profile.firstName} ${profile.lastName}`
+        : profile?.firstName || "") ||
       "";
     if (newName && newName !== name) {
       setName(newName);

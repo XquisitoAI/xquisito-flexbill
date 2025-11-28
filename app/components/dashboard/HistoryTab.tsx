@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/app/context/AuthContext";
 import { Loader2, ChevronRight, X, Calendar, Utensils } from "lucide-react";
 import { getCardTypeIcon } from "@/app/utils/cardIcons";
 
@@ -33,7 +33,7 @@ interface OrderHistoryItem {
 }
 
 export default function HistoryTab() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const [orders, setOrders] = useState<OrderHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

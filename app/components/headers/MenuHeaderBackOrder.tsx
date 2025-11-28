@@ -6,7 +6,7 @@ import { useTableNavigation } from "../../hooks/useTableNavigation";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeft, X } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "../../context/AuthContext";
 import { apiService } from "../../utils/api";
 
 interface MenuHeaderProps {
@@ -33,7 +33,7 @@ export default function MenuHeaderBackOrder({
   const [usersImages, setUsersImages] = useState<Record<string, UserImageData>>(
     {}
   );
-  const { user, isLoaded } = useUser();
+  const { user, profile, isLoading } = useAuth();
 
   const handleBack = () => {
     navigateWithTable("/menu");
@@ -134,9 +134,11 @@ export default function MenuHeaderBackOrder({
     guest_name: string;
     user_id: string | null;
   }) => {
-    // Si es el usuario actual, usar datos de Clerk directamente
-    if (isCurrentUser(participant) && user) {
-      return user.fullName || user.firstName || participant.guest_name;
+    // Si es el usuario actual, usar datos de profile directamente
+    if (isCurrentUser(participant) && profile) {
+      return profile.firstName && profile.lastName
+        ? `${profile.firstName} ${profile.lastName}`
+        : profile.firstName || participant.guest_name;
     }
 
     // Si tiene user_id y tenemos sus datos cargados, usar el nombre real
@@ -215,7 +217,7 @@ export default function MenuHeaderBackOrder({
         </div>
 
         {/* Participantes */}
-        {!isLoaded ? (
+        {isLoading ? (
           // Loading
           <div className="flex items-center space-x-1">
             <div className="size-10 md:size-12 lg:size-14 bg-gray-300 animate-pulse rounded-full border border-white shadow-sm"></div>
@@ -234,8 +236,8 @@ export default function MenuHeaderBackOrder({
               const isCurrent = isCurrentUser(participant);
               const displayName = getDisplayName(participant);
               const userImage =
-                isCurrent && user?.imageUrl
-                  ? user.imageUrl
+                isCurrent && profile?.photoUrl
+                  ? profile.photoUrl
                   : getUserImage(participant);
               const hasImage = !!userImage;
 
@@ -301,8 +303,8 @@ export default function MenuHeaderBackOrder({
                 const isCurrent = isCurrentUser(participant);
                 const displayName = getDisplayName(participant);
                 const userImage =
-                  isCurrent && user?.imageUrl
-                    ? user.imageUrl
+                  isCurrent && profile?.photoUrl
+                    ? profile.photoUrl
                     : getUserImage(participant);
                 const hasImage = !!userImage;
 

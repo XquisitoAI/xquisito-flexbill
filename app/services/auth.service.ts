@@ -1,3 +1,5 @@
+import { apiService } from "../utils/api";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 interface SendOTPResponse {
@@ -103,6 +105,12 @@ class AuthService {
           "xquisito_refresh_token",
           data.data.session.refresh_token
         );
+        if (data.data.session.expires_at) {
+          localStorage.setItem(
+            "xquisito_expires_at",
+            data.data.session.expires_at.toString()
+          );
+        }
         localStorage.setItem("xquisito_user", JSON.stringify(data.data.user));
       }
 
@@ -128,17 +136,24 @@ class AuthService {
         };
       }
 
-      const response = await fetch(`${API_URL}/profiles`, {
+      // Use apiService which has automatic token refresh
+      const response = await apiService.request("/profiles", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify(profileData),
       });
 
-      const data = await response.json();
-      return data;
+      if (response.success) {
+        return {
+          success: true,
+          data: response.data,
+        };
+      } else {
+        return {
+          success: false,
+          error:
+            response.error?.message || "Error al crear/actualizar el perfil",
+        };
+      }
     } catch (error) {
       console.error("Error creating/updating profile:", error);
       return {
@@ -160,15 +175,25 @@ class AuthService {
         };
       }
 
-      const response = await fetch(`${API_URL}/profiles/me`, {
+      // Use apiService which has automatic token refresh
+      const response = await apiService.request("/profiles/me", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      const data = await response.json();
-      return data;
+      if (response.success) {
+        return {
+          success: true,
+          data: response.data,
+        };
+      } else {
+        return {
+          success: false,
+          error: response.error?.message || "Error al obtener el perfil",
+        };
+      }
     } catch (error) {
       console.error("Error getting profile:", error);
       return {
@@ -190,17 +215,23 @@ class AuthService {
         };
       }
 
-      const response = await fetch(`${API_URL}/profiles/me`, {
+      // Use apiService which has automatic token refresh
+      const response = await apiService.request("/profiles/me", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify(updates),
       });
 
-      const data = await response.json();
-      return data;
+      if (response.success) {
+        return {
+          success: true,
+          data: response.data,
+        };
+      } else {
+        return {
+          success: false,
+          error: response.error?.message || "Error al actualizar el perfil",
+        };
+      }
     } catch (error) {
       console.error("Error updating profile:", error);
       return {
@@ -241,6 +272,12 @@ class AuthService {
           "xquisito_refresh_token",
           data.data.session.refresh_token
         );
+        if (data.data.session.expires_at) {
+          localStorage.setItem(
+            "xquisito_expires_at",
+            data.data.session.expires_at.toString()
+          );
+        }
       }
 
       return data;

@@ -78,11 +78,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = async () => {
     try {
       const response = await authService.getMyProfile();
-      if (response.success && response.data?.profile) {
-        setProfile(response.data.profile);
+      console.log("📊 AuthContext loadProfile response:", response);
+
+      if (response.success && response.data) {
+        // El backend puede devolver data.data.profile o data.profile
+        const responseData = (response as any).data;
+        const profileData = responseData?.data?.profile || responseData?.profile;
+
+        if (profileData) {
+          console.log("✅ Profile loaded in AuthContext:", profileData);
+          setProfile(profileData);
+        } else {
+          console.warn("⚠️ No profile data found in response");
+        }
       }
     } catch (error) {
-      console.error("Error loading profile:", error);
+      console.error("❌ Error loading profile:", error);
     }
   };
 
@@ -101,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Add token to user object for context consistency
       const userWithToken = {
         ...response.data.user,
-        token: response.data.session.access_token
+        token: response.data.session.access_token,
       };
 
       setUser(userWithToken);

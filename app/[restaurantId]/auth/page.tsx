@@ -27,7 +27,8 @@ export default function AuthPage() {
 
   const [step, setStep] = useState<Step>("phone");
   const [countryCode, setCountryCode] = useState("+52");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState(""); // Solo números sin formato
+  const [phoneNumberDisplay, setPhoneNumberDisplay] = useState(""); // Con formato para mostrar
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -37,6 +38,44 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(0);
+
+  // Formatear número de teléfono para mostrar
+  const formatPhoneNumber = (phoneNumber: string) => {
+    if (!phoneNumber) return "";
+
+    const cleaned = phoneNumber.replace(/\D/g, "");
+
+    // Sin código de país - solo 10 dígitos
+    if (cleaned.length === 10) {
+      return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
+    }
+
+    // Con código de país
+    if (cleaned.length > 10) {
+      const countryCode = cleaned.slice(0, cleaned.length - 10);
+      const areaCode = cleaned.slice(-10, -7);
+      const firstPart = cleaned.slice(-7, -4);
+      const lastPart = cleaned.slice(-4);
+      return `+${countryCode} (${areaCode}) ${firstPart}-${lastPart}`;
+    }
+
+    return phoneNumber;
+  };
+
+  // Formatear número mientras se escribe (para el input)
+  const formatPhoneInput = (value: string) => {
+    const cleaned = value.replace(/\D/g, "");
+
+    if (cleaned.length <= 3) {
+      return cleaned;
+    } else if (cleaned.length <= 6) {
+      return `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
+    } else if (cleaned.length <= 10) {
+      return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
+    }
+
+    return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6, 10)}`;
+  };
 
   // Store context
   useEffect(() => {
@@ -247,7 +286,7 @@ export default function AuthPage() {
             {step === "phone"
               ? "Te enviaremos un código de verificación para tu registro"
               : step === "verify"
-                ? `Enviamos un código al ${phone}`
+                ? `Enviamos un código al ${formatPhoneNumber(phone)}`
                 : "Cuéntanos un poco más sobre ti"}
           </p>
         </div>
@@ -287,16 +326,17 @@ export default function AuthPage() {
                   <input
                     required
                     type="tel"
-                    value={phoneNumber}
+                    value={phoneNumberDisplay}
                     onChange={(e) => {
                       // Only allow numbers
                       const value = e.target.value.replace(/\D/g, "");
                       setPhoneNumber(value);
+                      setPhoneNumberDisplay(formatPhoneInput(value));
                     }}
                     className="w-full pl-10 pr-3 py-3 text-gray-600 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0a8b9b] focus:border-transparent"
                     placeholder="Número de teléfono"
                     disabled={loading}
-                    maxLength={10}
+                    maxLength={14}
                   />
                 </div>
               </div>

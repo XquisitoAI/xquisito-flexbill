@@ -37,27 +37,60 @@ export interface AddPaymentMethodRequest {
 class ApiService {
   private baseURL: string;
   private authToken?: string;
+  private isHandlingAuthFailure: boolean = false;
 
   constructor() {
     this.baseURL = API_BASE_URL;
+    // Restore auth token from localStorage on initialization
+    this.restoreAuthToken();
+  }
+
+  // Restore auth token from localStorage
+  private restoreAuthToken() {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("xquisito_access_token");
+      if (token) {
+        this.authToken = token;
+        // Mark that user was authenticated
+        sessionStorage.setItem("was_authenticated", "true");
+        console.log(
+          "🔑 ApiService - Auth token restored from localStorage on init"
+        );
+      }
+    }
   }
 
   // Set authentication token for authenticated users
   setAuthToken(token: string) {
     this.authToken = token;
-    console.log("🔑 ApiService - Auth token set:", token ? token.substring(0, 20) + "..." : "undefined");
+    // Persist token to localStorage to ensure it's available across page loads
+    if (typeof window !== "undefined") {
+      localStorage.setItem("xquisito_access_token", token);
+      // Mark that user was authenticated to handle session expiry properly
+      sessionStorage.setItem("was_authenticated", "true");
+    }
+    console.log(
+      "🔑 ApiService - Auth token set:",
+      token ? token.substring(0, 20) + "..." : "undefined"
+    );
   }
 
   // Clear authentication token
   clearAuthToken() {
     this.authToken = undefined;
+    // Remove token from localStorage
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("xquisito_access_token");
+      sessionStorage.removeItem("was_authenticated");
+    }
     console.log("🔑 ApiService - Auth token cleared");
   }
 
   private async makeRequest<T = any>(
     endpoint: string,
     options: RequestInit = {},
-    authToken?: string
+    authToken?: string,
+    isRetry: boolean = false
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseURL}${endpoint}`;
@@ -67,13 +100,26 @@ class ApiService {
         ...(options.headers as Record<string, string>),
       };
 
+      // Ensure auth token is loaded from localStorage if not already set
+      if (!this.authToken && typeof window !== "undefined") {
+        const storedToken = localStorage.getItem("xquisito_access_token");
+        if (storedToken) {
+          this.authToken = storedToken;
+          // Mark that user was authenticated
+          sessionStorage.setItem("was_authenticated", "true");
+          console.log(
+            "🔄 makeRequest - Auth token lazy-loaded from localStorage"
+          );
+        }
+      }
+
       // Add authentication token for authenticated users
       const tokenToUse = authToken || this.authToken;
       console.log("🔍 makeRequest - Token check:", {
         endpoint,
         hasTokenParam: !!authToken,
         hasInstanceToken: !!this.authToken,
-        tokenToUse: tokenToUse ? tokenToUse.substring(0, 20) + "..." : "none"
+        tokenToUse: tokenToUse ? tokenToUse.substring(0, 20) + "..." : "none",
       });
 
       if (tokenToUse) {
@@ -98,7 +144,7 @@ class ApiService {
       console.log("🔍 makeRequest - Final headers:", {
         Authorization: headers["Authorization"] ? "Bearer ***" : "missing",
         "x-guest-id": headers["x-guest-id"] || "missing",
-        endpoint
+        endpoint,
       });
 
       const response = await fetch(url, {
@@ -107,6 +153,69 @@ class ApiService {
       });
 
       const data = await response.json();
+
+      // Handle 401 Unauthorized - Token expired
+      if (
+        response.status === 401 &&
+        !isRetry &&
+        typeof window !== "undefined"
+      ) {
+        console.log("🔄 Token expired (401), attempting to refresh...");
+
+        const refreshToken = localStorage.getItem("xquisito_refresh_token");
+        if (refreshToken) {
+          try {
+            // Attempt to refresh the token
+            const refreshResponse = await fetch(
+              `${this.baseURL}/auth/refresh`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ refresh_token: refreshToken }),
+              }
+            );
+
+            const refreshData = await refreshResponse.json();
+
+            if (
+              refreshResponse.ok &&
+              refreshData.success &&
+              refreshData.data?.session?.access_token
+            ) {
+              // Store new tokens
+              const newAccessToken = refreshData.data.session.access_token;
+              const newRefreshToken = refreshData.data.session.refresh_token;
+
+              localStorage.setItem("xquisito_access_token", newAccessToken);
+              localStorage.setItem("xquisito_refresh_token", newRefreshToken);
+              this.authToken = newAccessToken;
+
+              console.log(
+                "✅ Token refreshed successfully, retrying original request"
+              );
+
+              // Retry the original request with the new token
+              return this.makeRequest<T>(
+                endpoint,
+                options,
+                newAccessToken,
+                true
+              );
+            } else {
+              console.log("❌ Token refresh failed, logging out user");
+              this.handleAuthFailure();
+            }
+          } catch (refreshError) {
+            console.error("❌ Error refreshing token:", refreshError);
+            this.handleAuthFailure();
+          }
+        } else {
+          console.log("❌ No refresh token available, logging out user");
+          this.handleAuthFailure();
+        }
+      }
 
       if (!response.ok) {
         return {
@@ -136,6 +245,51 @@ class ApiService {
         },
       };
     }
+  }
+
+  // Handle authentication failure - clear tokens and reload
+  private handleAuthFailure() {
+    // Prevent multiple simultaneous auth failure handling
+    if (this.isHandlingAuthFailure) {
+      console.log("⚠️ Auth failure already being handled, skipping...");
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      this.isHandlingAuthFailure = true;
+
+      // Clear all auth data
+      localStorage.removeItem("xquisito_access_token");
+      localStorage.removeItem("xquisito_refresh_token");
+      localStorage.removeItem("xquisito_user");
+      localStorage.removeItem("xquisito_expires_at");
+      this.authToken = undefined;
+
+      // Dispatch a custom event to notify AuthContext
+      window.dispatchEvent(new CustomEvent("auth:session-expired"));
+
+      // Only reload if we had auth tokens before (user was logged in)
+      // This prevents infinite reload loops for unauthenticated users
+      const wasAuthenticated =
+        sessionStorage.getItem("was_authenticated") === "true";
+
+      if (wasAuthenticated) {
+        console.log("⚠️ Session expired. Reloading to re-authenticate...");
+        sessionStorage.removeItem("was_authenticated");
+        window.location.reload();
+      } else {
+        console.log("⚠️ No authenticated session found, skipping reload");
+        this.isHandlingAuthFailure = false;
+      }
+    }
+  }
+
+  // Generic request method for external use
+  async request<T = any>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
+    return this.makeRequest<T>(endpoint, options);
   }
 
   // Payment Methods API
@@ -244,7 +398,11 @@ class ApiService {
   }
 
   // Method to explicitly set guest and table info (for better context integration)
-  setGuestInfo(guestId?: string, tableNumber?: string, restaurantId?: string): void {
+  setGuestInfo(
+    guestId?: string,
+    tableNumber?: string,
+    restaurantId?: string
+  ): void {
     if (typeof window !== "undefined") {
       if (guestId) {
         localStorage.setItem("xquisito-guest-id", guestId);
@@ -303,22 +461,37 @@ class ApiService {
   /**
    * Get table summary information
    */
-  async getTableSummary(restaurantId: string, tableNumber: string): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/restaurants/${restaurantId}/tables/${tableNumber}/summary`);
+  async getTableSummary(
+    restaurantId: string,
+    tableNumber: string
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(
+      `/restaurants/${restaurantId}/tables/${tableNumber}/summary`
+    );
   }
 
   /**
    * Get table orders
    */
-  async getTableOrders(restaurantId: string, tableNumber: string): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/restaurants/${restaurantId}/tables/${tableNumber}/orders`);
+  async getTableOrders(
+    restaurantId: string,
+    tableNumber: string
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(
+      `/restaurants/${restaurantId}/tables/${tableNumber}/orders`
+    );
   }
 
   /**
    * Get active users for a table
    */
-  async getActiveUsers(restaurantId: string, tableNumber: string): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/restaurants/${restaurantId}/tables/${tableNumber}/active-users`);
+  async getActiveUsers(
+    restaurantId: string,
+    tableNumber: string
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(
+      `/restaurants/${restaurantId}/tables/${tableNumber}/active-users`
+    );
   }
 
   /**
@@ -331,8 +504,13 @@ class ApiService {
   /**
    * Check table availability
    */
-  async checkTableAvailability(restaurantId: string, tableNumber: string): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/restaurants/${restaurantId}/tables/${tableNumber}/availability`);
+  async checkTableAvailability(
+    restaurantId: string,
+    tableNumber: string
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(
+      `/restaurants/${restaurantId}/tables/${tableNumber}/availability`
+    );
   }
 
   // ===============================================
@@ -363,20 +541,23 @@ class ApiService {
     }>,
     extraPrice?: number
   ): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/restaurants/${restaurantId}/tables/${tableNumber}/dishes`, {
-      method: "POST",
-      body: JSON.stringify({
-        userId,
-        guestName,
-        item,
-        quantity,
-        price,
-        guestId,
-        images,
-        customFields,
-        extraPrice,
-      }),
-    });
+    return this.makeRequest(
+      `/restaurants/${restaurantId}/tables/${tableNumber}/dishes`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          userId,
+          guestName,
+          item,
+          quantity,
+          price,
+          guestId,
+          images,
+          customFields,
+          extraPrice,
+        }),
+      }
+    );
   }
 
   /**
@@ -420,15 +601,18 @@ class ApiService {
     guestName?: string | null,
     paymentMethodId?: string | null
   ): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/restaurants/${restaurantId}/tables/${tableNumber}/pay`, {
-      method: "POST",
-      body: JSON.stringify({
-        amount,
-        userId,
-        guestName,
-        paymentMethodId,
-      }),
-    });
+    return this.makeRequest(
+      `/restaurants/${restaurantId}/tables/${tableNumber}/pay`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          amount,
+          userId,
+          guestName,
+          paymentMethodId,
+        }),
+      }
+    );
   }
 
   // ===============================================
@@ -445,14 +629,17 @@ class ApiService {
     userIds?: string[] | null,
     guestNames?: string[] | null
   ): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/restaurants/${restaurantId}/tables/${tableNumber}/split-bill`, {
-      method: "POST",
-      body: JSON.stringify({
-        numberOfPeople,
-        userIds,
-        guestNames,
-      }),
-    });
+    return this.makeRequest(
+      `/restaurants/${restaurantId}/tables/${tableNumber}/split-bill`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          numberOfPeople,
+          userIds,
+          guestNames,
+        }),
+      }
+    );
   }
 
   /**
@@ -465,21 +652,29 @@ class ApiService {
     guestName?: string | null,
     paymentMethodId?: string | null
   ): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/restaurants/${restaurantId}/tables/${tableNumber}/pay-split`, {
-      method: "POST",
-      body: JSON.stringify({
-        userId,
-        guestName,
-        paymentMethodId,
-      }),
-    });
+    return this.makeRequest(
+      `/restaurants/${restaurantId}/tables/${tableNumber}/pay-split`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          userId,
+          guestName,
+          paymentMethodId,
+        }),
+      }
+    );
   }
 
   /**
    * Get split payment status for a table
    */
-  async getSplitPaymentStatus(restaurantId: string, tableNumber: string): Promise<ApiResponse<any>> {
-    return this.makeRequest(`/restaurants/${restaurantId}/tables/${tableNumber}/split-status`);
+  async getSplitPaymentStatus(
+    restaurantId: string,
+    tableNumber: string
+  ): Promise<ApiResponse<any>> {
+    return this.makeRequest(
+      `/restaurants/${restaurantId}/tables/${tableNumber}/split-status`
+    );
   }
 
   /**
@@ -529,8 +724,19 @@ class ApiService {
 
 export const apiService = new ApiService();
 
-// Debug logging
-console.log("🔧 ApiService instance created:", apiService);
+// Debug logging - check token after hydration
+if (typeof window !== "undefined") {
+  // Use setTimeout to ensure this runs after the constructor completes
+  setTimeout(() => {
+    console.log("🔧 ApiService instance created:", {
+      baseURL: apiService["baseURL"],
+      hasAuthToken: !!(apiService as any).authToken,
+      authTokenPreview: (apiService as any).authToken
+        ? (apiService as any).authToken.substring(0, 20) + "..."
+        : "none",
+    });
+  }, 0);
+}
 
 // Utility functions for payment data validation
 export const validateCardNumber = (cardNumber: string): boolean => {

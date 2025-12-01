@@ -34,7 +34,7 @@ export default function DashboardView() {
             {/* Logo */}
             <div className="mb-6 md:mb-8 lg:mb-10 text-center">
               <img
-                src="/logos/logo-short-green.webp"
+                src="/logo-short-green.webp"
                 alt="Xquisito Logo"
                 className="size-16 md:size-20 lg:size-24 mx-auto mb-4 md:mb-5 lg:mb-6"
               />

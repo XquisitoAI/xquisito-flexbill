@@ -23,6 +23,29 @@ export default function ProfileTab() {
   const [photoUrl, setPhotoUrl] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Formatear número de teléfono
+  const formatPhoneNumber = (phoneNumber: string) => {
+    if (!phoneNumber) return "";
+
+    const cleaned = phoneNumber.replace(/\D/g, "");
+
+    if (cleaned.length === 10) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    }
+
+    // Código de país (ej: +52)
+    if (cleaned.length > 10) {
+      const countryCode = cleaned.slice(0, cleaned.length - 10);
+      const areaCode = cleaned.slice(-10, -7);
+      const firstPart = cleaned.slice(-7, -4);
+      const lastPart = cleaned.slice(-4);
+      return `+${countryCode} ${areaCode} ${firstPart} ${lastPart}`;
+    }
+
+    return phoneNumber;
+  };
+
+  // Load profile data from AuthContext
   useEffect(() => {
     const loadUserData = async () => {
       setIsLoadingData(true);
@@ -39,19 +62,26 @@ export default function ProfileTab() {
 
       try {
         const response = await authService.getMyProfile();
+        console.log("📊 getMyProfile response:", response);
 
-        if (response.success && response.data?.profile) {
-          const profile = response.data.profile;
-          setFirstName(profile.firstName || "");
-          setLastName(profile.lastName || "");
-          setPhone(profile.phone || "");
-          setEmail(profile.email || "");
-          setBirthDate(profile.birthDate || "");
-          setGender(profile.gender || "");
-          setPhotoUrl(profile.photoUrl || "");
+        // El backend puede devolver data.data.profile o data.profile
+        const responseData = (response as any).data;
+        const profileData = responseData?.data?.profile || responseData?.profile;
+
+        if (response.success && profileData) {
+          console.log("✅ Profile data loaded:", profileData);
+          setFirstName(profileData.firstName || "");
+          setLastName(profileData.lastName || "");
+          setPhone(profileData.phone || "");
+          setEmail(profileData.email || "");
+          setBirthDate(profileData.birthDate || "");
+          setGender(profileData.gender || "");
+          setPhotoUrl(profileData.photoUrl || "");
+        } else {
+          console.warn("⚠️ No profile data in response:", response);
         }
       } catch (error) {
-        console.error("Error loading user data:", error);
+        console.error("❌ Error loading user data:", error);
       } finally {
         setIsLoadingData(false);
       }
@@ -59,10 +89,6 @@ export default function ProfileTab() {
 
     loadUserData();
   }, []);
-
-  const handleLogin = () => {
-    router.push("/sign-up");
-  };
 
   const handleUpdateProfile = async () => {
     if (!isAuthenticated) return;
@@ -92,12 +118,51 @@ export default function ProfileTab() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isAuthenticated || !e.target.files || !e.target.files[0]) return;
 
+    const file = e.target.files[0];
+
+    // Validar tamaño (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("La imagen no puede superar los 5MB");
+      return;
+    }
+
+    // Validar tipo
+    if (!file.type.startsWith("image/")) {
+      alert("Solo se permiten archivos de imagen");
+      return;
+    }
+
     setIsUpdating(true);
 
     try {
-      // TODO: Implement image upload to Supabase Storage
-      // For now, just show a placeholder message
-      alert("La funcionalidad de cambiar foto estará disponible próximamente");
+      const token = localStorage.getItem("xquisito_access_token");
+      if (!token) {
+        alert("No estás autenticado");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("photo", file);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/profiles/upload-photo`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success && data.data?.photoUrl) {
+        setPhotoUrl(data.data.photoUrl);
+        alert("Foto de perfil actualizada correctamente");
+      } else {
+        throw new Error(data.error || "Error al subir la foto");
+      }
     } catch (error) {
       console.error("Error al actualizar la foto:", error);
       alert("Error al actualizar la foto");
@@ -175,7 +240,7 @@ export default function ProfileTab() {
           Teléfono
         </label>
         <div className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 text-base md:text-lg lg:text-xl">
-          {phone}
+          {formatPhoneNumber(phone)}
         </div>
       </div>
 
@@ -224,8 +289,10 @@ export default function ProfileTab() {
             value={birthDate}
             onChange={(e) => setBirthDate(e.target.value)}
             max={new Date().toISOString().split("T")[0]}
-            className="cursor-pointer w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+            placeholder="dd/mm/aaaa"
+            className="cursor-pointer w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed [&::-webkit-calendar-picker-indicator]:cursor-pointer"
             disabled={isUpdating || !isAuthenticated}
+            lang="es-MX"
           />
         </div>
 
@@ -251,9 +318,7 @@ export default function ProfileTab() {
       {/* Logout/Login */}
       <div className="flex items-center justify-end">
         <button
-          onClick={
-            isAuthenticated ? () => setIsLogoutModalOpen(true) : handleLogin
-          }
+          onClick={() => setIsLogoutModalOpen(true)}
           className={`font-medium text-sm md:text-base lg:text-lg flex items-center gap-2 cursor-pointer ${
             isAuthenticated
               ? "text-red-600 hover:text-red-700"

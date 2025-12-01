@@ -309,8 +309,15 @@ export default function HistoryTab() {
                 {selectedOrderDetails.dishes?.map((dish: any) => (
                   <div
                     key={dish.dishOrderId}
-                    className="flex justify-between items-start gap-3 md:gap-4 lg:gap-5"
+                    className="flex justify-between items-center gap-3 md:gap-4 lg:gap-5"
                   >
+                    <div className="size-14 md:size-16 lg:size-20 bg-gray-300 rounded-sm md:rounded-md flex items-center justify-center hover:scale-105 transition-transform duration-200">
+                      <img
+                        src={dish.images[0]}
+                        alt="Dish preview"
+                        className="w-full h-full object-cover rounded-sm md:rounded-md"
+                      />
+                    </div>
                     {/* Dish Info */}
                     <div className="flex-1">
                       <p className="text-white font-medium text-base md:text-lg lg:text-xl capitalize">

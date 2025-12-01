@@ -105,7 +105,7 @@ class ApiService {
         ...options,
         headers,
       });
-
+      
       const data = await response.json();
 
       if (!response.ok) {

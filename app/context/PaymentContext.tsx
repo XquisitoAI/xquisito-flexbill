@@ -122,10 +122,10 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
 
     console.log('🔧 Setting default payment method for registered user:', paymentMethodId);
     try {
-      // Get Clerk auth token
-      const token = await getToken();
-      if (token) {
-        apiService.setAuthToken(token);
+      // Get Supabase auth token
+      const currentUser = await authService.getCurrentUser();
+      if (currentUser?.token) {
+        apiService.setAuthToken(currentUser.token);
       }
 
       const response = await apiService.setDefaultPaymentMethod(paymentMethodId);
@@ -156,10 +156,10 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
 
     console.log('🗑️ Deleting payment method for registered user:', paymentMethodId);
     try {
-      // Get Clerk auth token
-      const token = await getToken();
-      if (token) {
-        apiService.setAuthToken(token);
+      // Get Supabase auth token
+      const currentUser = await authService.getCurrentUser();
+      if (currentUser?.token) {
+        apiService.setAuthToken(currentUser.token);
       }
 
       const response = await apiService.deletePaymentMethod(paymentMethodId);

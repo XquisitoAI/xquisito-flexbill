@@ -248,9 +248,9 @@ const OrderAnimation = ({
                 >
                   <button
                     onClick={handleCancel}
-                    className="py-2 md:py-2.5 px-6 md:px-8 text-white bg-gradient-to-bl from-red-600 to-red-700 rounded-full active:scale-95 transition-all font-medium text-sm md:text-base"
+                    className="py-1 md:py-1.5 px-6 md:px-8 text-black rounded-full active:scale-95 transition-all font-medium text-sm md:text-base bg-[#f9f9f9] lg:py-2 border border-[#8e8e8e]/40 cursor-pointer"
                   >
-                    Cancelar
+                    Deshacer pedido
                   </button>
                 </div>
               )}

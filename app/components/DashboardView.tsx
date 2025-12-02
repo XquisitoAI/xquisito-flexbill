@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
 import ProfileTab from "./dashboard/ProfileTab";
 import CardsTab from "./dashboard/CardsTab";
 import HistoryTab from "./dashboard/HistoryTab";
 import SupportTab from "./dashboard/SupportTab";
 import DashboardHeader from "./headers/DashboardHeader";
 import { useTableNavigation } from "../hooks/useTableNavigation";
+import { useAuth } from "../context/AuthContext";
 
 export default function DashboardView() {
   const [activeTab, setActiveTab] = useState<
@@ -21,12 +20,11 @@ export default function DashboardView() {
   >([]);
   const [supportSessionId, setSupportSessionId] = useState<string | null>(null);
 
-  const { user, isLoaded } = useUser();
+  const { profile, isLoading } = useAuth();
   const { navigateWithTable } = useTableNavigation();
-  const router = useRouter();
 
   // Loading state
-  if (!isLoaded) {
+  if (isLoading) {
     return (
       <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
@@ -97,29 +95,6 @@ export default function DashboardView() {
     );
   }
 
-  // Not authenticated (shouldn't happen but good fallback)
-  /*
-  if (!user) {
-    return (
-      <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex items-center justify-center">
-        <div className="text-center px-6">
-          <h1 className="text-2xl font-medium text-white mb-4">
-            Acceso denegado
-          </h1>
-          <p className="text-white mb-6">
-            Inicia sesión para acceder a tu perfil
-          </p>
-          <button
-            onClick={() => router.push("/sign-in")}
-            className="bg-black hover:bg-stone-950 text-white px-6 py-3 rounded-full cursor-pointer transition-colors"
-          >
-            Iniciar sesión
-          </button>
-        </div>
-      </div>
-    );
-  }*/
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <DashboardHeader />
@@ -129,7 +104,7 @@ export default function DashboardView() {
         <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
           <div className="py-6 md:py-8 lg:py-10 px-8 md:px-10 lg:px-12 flex flex-col justify-center pb-12 md:pb-14 lg:pb-16">
             <h1 className="text-white text-2xl md:text-3xl lg:text-4xl font-medium">
-              ¡Bienvenido{user?.firstName ? ` ${user.firstName}` : ""}!
+              ¡Bienvenido{profile?.firstName ? ` ${profile.firstName}` : ""}!
             </h1>
           </div>
         </div>

@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { authService } from "@/app/services/auth.service";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { User, Camera, Loader2, Phone, X, LogOut, LogIn } from "lucide-react";
 
 export default function ProfileTab() {
-  const router = useRouter();
   const { navigateWithTable } = useTableNavigation();
   const { logout: contextLogout } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -66,7 +64,8 @@ export default function ProfileTab() {
 
         // El backend puede devolver data.data.profile o data.profile
         const responseData = (response as any).data;
-        const profileData = responseData?.data?.profile || responseData?.profile;
+        const profileData =
+          responseData?.data?.profile || responseData?.profile;
 
         if (response.success && profileData) {
           console.log("✅ Profile data loaded:", profileData);

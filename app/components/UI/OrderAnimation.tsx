@@ -12,12 +12,16 @@ interface OrderAnimationProps {
   userName?: string;
   orderedItems?: CartItem[];
   onContinue?: () => void;
+  onCancel?: () => void;
+  onConfirm?: () => void;
 }
 
 const OrderAnimation = ({
   userName,
   orderedItems,
   onContinue,
+  onCancel,
+  onConfirm,
 }: OrderAnimationProps) => {
   const { navigateWithTable } = useTableNavigation();
   const { state: tableState } = useTable();
@@ -27,6 +31,7 @@ const OrderAnimation = ({
     "circle" | "content" | "greenCircle" | "success"
   >("circle");
   const [logoColorful, setLogoColorful] = useState(false);
+  const [showCancelButton, setShowCancelButton] = useState(true);
 
   const displayName =
     userName || tableState.currentUserName || profile?.firstName || "Usuario";
@@ -40,6 +45,14 @@ const OrderAnimation = ({
     const contentTimer = setTimeout(() => {
       setAnimationState("content");
     }, 1500);
+
+    const cancelButtonTimer = setTimeout(() => {
+      setShowCancelButton(false);
+      // Confirmar la orden después de que expire el tiempo de cancelación
+      if (onConfirm) {
+        onConfirm();
+      }
+    }, 4000);
 
     const logoTimer = setTimeout(() => {
       setLogoColorful(true);
@@ -59,6 +72,7 @@ const OrderAnimation = ({
 
     return () => {
       clearTimeout(contentTimer);
+      clearTimeout(cancelButtonTimer);
       clearTimeout(logoTimer);
       clearTimeout(greenCircleTimer);
       clearTimeout(successTimer);
@@ -71,6 +85,12 @@ const OrderAnimation = ({
       onContinue();
     } else {
       navigateWithTable("/order");
+    }
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
     }
   };
 
@@ -216,6 +236,24 @@ const OrderAnimation = ({
                   </div>
                 )}
               </div>
+
+              {/* Botón de cancelar */}
+              {onCancel && (
+                <div
+                  className={`mt-auto pt-6 md:pt-8 pb-4 md:pb-6 transition-opacity duration-500 ${
+                    showCancelButton
+                      ? "opacity-100"
+                      : "opacity-0 pointer-events-none"
+                  }`}
+                >
+                  <button
+                    onClick={handleCancel}
+                    className="py-2 md:py-2.5 px-6 md:px-8 text-white bg-gradient-to-bl from-red-600 to-red-700 rounded-full active:scale-95 transition-all font-medium text-sm md:text-base"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

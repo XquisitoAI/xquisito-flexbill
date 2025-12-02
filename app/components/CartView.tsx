@@ -24,30 +24,11 @@ export default function CartView() {
     // Si el usuario está loggeado, hacer la orden directamente con animación
     if (!isLoading && isAuthenticated && user) {
       setIsSubmitting(true);
-      try {
-        // Guardar items antes de que se limpie el carrito
-        const itemsToOrder = [...cartState.items];
-        setOrderedItems(itemsToOrder);
-        // Mostrar animación de orden INMEDIATAMENTE
-        setShowOrderAnimation(true);
-        // Enviar la orden a la API en segundo plano usando el perfil del usuario
-        const userName = profile?.firstName
-          ? `${profile.firstName} ${profile.lastName || ''}`.trim()
-          : `Usuario ${user.id.substring(0, 8)}`;
-
-        console.log("🛍️ Submitting order for authenticated user:", userName);
-
-        // IMPORTANTE: Pasar los items del carrito a submitOrder
-        await submitOrder(userName, itemsToOrder);
-        // Limpiar el carrito de la base de datos después de la orden exitosa
-        await clearCart();
-      } catch (error) {
-        console.error("Error submitting order:", error);
-        // Si hay error, ocultar la animación
-        setShowOrderAnimation(false);
-      } finally {
-        setIsSubmitting(false);
-      }
+      // Guardar items antes de que se limpie el carrito
+      const itemsToOrder = [...cartState.items];
+      setOrderedItems(itemsToOrder);
+      // Mostrar animación de orden INMEDIATAMENTE (sin enviar la orden aún)
+      setShowOrderAnimation(true);
     } else {
       // Si NO está loggeado, navegar a la vista de usuario para capturar su nombre
       console.log("📱 User not authenticated, redirecting to /user");
@@ -57,6 +38,37 @@ export default function CartView() {
 
   const handleContinueFromAnimation = () => {
     navigateWithTable("/order");
+  };
+
+  const handleCancelOrder = () => {
+    console.log("❌ Order cancelled by user");
+    setShowOrderAnimation(false);
+    setOrderedItems([]);
+    setIsSubmitting(false);
+  };
+
+  const handleConfirmOrder = async () => {
+    // Esta función se ejecuta después de que expira el período de cancelación
+    if (!isLoading && isAuthenticated && user && orderedItems.length > 0) {
+      try {
+        const userName = profile?.firstName
+          ? `${profile.firstName} ${profile.lastName || ''}`.trim()
+          : `Usuario ${user.id.substring(0, 8)}`;
+
+        console.log("🛍️ Submitting order for authenticated user:", userName);
+
+        // Enviar la orden a la API
+        await submitOrder(userName, orderedItems);
+        // Limpiar el carrito de la base de datos después de la orden exitosa
+        await clearCart();
+      } catch (error) {
+        console.error("Error submitting order:", error);
+        // Si hay error, ocultar la animación
+        setShowOrderAnimation(false);
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
   };
 
   return (
@@ -247,6 +259,8 @@ export default function CartView() {
           }
           orderedItems={orderedItems}
           onContinue={handleContinueFromAnimation}
+          onCancel={handleCancelOrder}
+          onConfirm={handleConfirmOrder}
         />
       )}
     </div>

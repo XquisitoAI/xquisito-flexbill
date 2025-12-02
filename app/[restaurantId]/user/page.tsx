@@ -63,16 +63,35 @@ export default function UserPage() {
   const handleProceedToOrder = async () => {
     if (userName.trim()) {
       setIsSubmitting(true);
+      // Guardar items antes de que se limpie el carrito
+      const itemsToOrder = [...cartState.items];
+      setOrderedItems(itemsToOrder);
+      setOrderUserName(userName.trim());
+      // Mostrar animación de orden INMEDIATAMENTE (sin enviar la orden aún)
+      setShowOrderAnimation(true);
+    }
+  };
+
+  const handleContinueFromAnimation = () => {
+    navigateWithTable("/order");
+  };
+
+  const handleCancelOrder = () => {
+    console.log("❌ Order cancelled by user");
+    setShowOrderAnimation(false);
+    setOrderedItems([]);
+    setOrderUserName("");
+    setIsSubmitting(false);
+  };
+
+  const handleConfirmOrder = async () => {
+    // Esta función se ejecuta después de que expira el período de cancelación
+    if (orderUserName && orderedItems.length > 0) {
       try {
-        // Guardar items antes de que se limpie el carrito
-        const itemsToOrder = [...cartState.items];
-        setOrderedItems(itemsToOrder);
-        setOrderUserName(userName.trim());
-        // Mostrar animación de orden INMEDIATAMENTE
-        setShowOrderAnimation(true);
-        // Enviar la orden a la API en segundo plano
-        // IMPORTANTE: Pasar los items del carrito a submitOrder
-        await submitOrder(userName.trim(), itemsToOrder);
+        console.log("🛍️ Submitting order for guest user:", orderUserName);
+
+        // Enviar la orden a la API
+        await submitOrder(orderUserName, orderedItems);
         // Limpiar el carrito de la base de datos después de la orden exitosa
         await clearCart();
       } catch (error) {
@@ -83,10 +102,6 @@ export default function UserPage() {
         setIsSubmitting(false);
       }
     }
-  };
-
-  const handleContinueFromAnimation = () => {
-    navigateWithTable("/order");
   };
 
   if (!tableNumber || isNaN(parseInt(tableNumber))) {
@@ -215,6 +230,8 @@ export default function UserPage() {
           userName={orderUserName}
           orderedItems={orderedItems}
           onContinue={handleContinueFromAnimation}
+          onCancel={handleCancelOrder}
+          onConfirm={handleConfirmOrder}
         />
       )}
     </div>

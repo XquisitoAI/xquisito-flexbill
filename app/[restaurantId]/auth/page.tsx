@@ -2,13 +2,29 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, Phone, User } from "lucide-react";
+import { ArrowLeft, Phone, User, ChevronDown } from "lucide-react";
+import Flag from "react-world-flags";
 import { authService } from "@/app/services/auth.service";
 import { useRestaurant } from "@/app/context/RestaurantContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 
 type Step = "phone" | "verify" | "profile";
+
+interface Country {
+  code: string;
+  flag: string;
+  name: string;
+}
+
+const countries: Country[] = [
+  { code: "+52", flag: "MX", name: "México" },
+  { code: "+1", flag: "US", name: "Estados Unidos" },
+  { code: "+34", flag: "ES", name: "España" },
+  { code: "+54", flag: "AR", name: "Argentina" },
+  { code: "+57", flag: "CO", name: "Colombia" },
+  { code: "+58", flag: "VE", name: "Venezuela" },
+];
 
 export default function AuthPage() {
   const router = useRouter();
@@ -38,6 +54,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(0);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Formatear número de teléfono para mostrar
   const formatPhoneNumber = (phoneNumber: string) => {
@@ -76,6 +93,24 @@ export default function AuthPage() {
 
     return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6, 10)}`;
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".country-selector")) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   // Store context
   useEffect(() => {
@@ -172,8 +207,19 @@ export default function AuthPage() {
       if (response.success) {
         // Check if profile exists
         const profileResponse = await authService.getMyProfile();
-        if (profileResponse.success && profileResponse.data?.profile) {
-          const profile = profileResponse.data.profile;
+
+        if (profileResponse.success && profileResponse.data) {
+          // Handle nested data structure: data.data.profile or data.profile or data
+          const responseData = profileResponse.data as any;
+          const profile =
+            responseData.data?.profile ||
+            responseData.profile ||
+            responseData.data ||
+            responseData;
+
+          console.log("👤 profile object:", profile);
+          console.log("👤 profile.firstName:", profile.firstName);
+
           // If profile has firstName, redirect based on context
           if (profile.firstName) {
             await refreshProfile();
@@ -190,6 +236,7 @@ export default function AuthPage() {
         setError(response.error || "Código inválido");
       }
     } catch (err) {
+      console.error("❌ Error in handleVerifyOTP:", err);
       setError("Error al verificar el código");
     } finally {
       setLoading(false);
@@ -262,7 +309,12 @@ export default function AuthPage() {
             router.back();
           }
         }}
-        className="absolute top-4 md:top-6 lg:top-8 left-4 md:left-6 lg:left-8 p-2 md:p-3 text-white hover:bg-white/10 rounded-full transition-colors z-20"
+        disabled={step === "profile"}
+        className={`absolute top-4 md:top-6 lg:top-8 left-4 md:left-6 lg:left-8 p-2 md:p-3 text-white rounded-full transition-colors z-20 ${
+          step === "profile"
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:bg-white/10"
+        }`}
       >
         <ArrowLeft className="size-5 md:size-6 lg:size-7" />
       </button>
@@ -302,22 +354,51 @@ export default function AuthPage() {
         {step === "phone" && (
           <form onSubmit={handleSendOTP} className="space-y-4">
             <div className="space-y-2">
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 {/* Country Code Selector */}
-                <div className="relative">
-                  <select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    className="w-20 pl-3 pr-8 py-3 text-gray-600 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0a8b9b] focus:border-transparent appearance-none"
+                <div className="relative country-selector">
+                  <button
+                    type="button"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="h-[48px] w-[90px] px-3 text-gray-700 font-medium bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0a8b9b] focus:border-transparent cursor-pointer hover:border-gray-400 transition-colors flex items-center justify-between gap-1.5"
                     disabled={loading}
                   >
-                    <option value="+52">🇲🇽 +52</option>
-                    <option value="+1">🇺🇸 +1</option>
-                    <option value="+34">🇪🇸 +34</option>
-                    <option value="+54">🇦🇷 +54</option>
-                    <option value="+57">🇨🇴 +57</option>
-                    <option value="+58">🇻🇪 +58</option>
-                  </select>
+                    <div className="flex items-center gap-1.5">
+                      <Flag
+                        code={
+                          countries.find((c) => c.code === countryCode)?.flag ||
+                          "MX"
+                        }
+                        style={{ width: 20, height: 15, borderRadius: 2 }}
+                      />
+                      <span className="text-sm">{countryCode}</span>
+                    </div>
+                    <ChevronDown className="size-3 text-gray-500 flex-shrink-0" />
+                  </button>
+
+                  {isDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 overflow-hidden">
+                      {countries.map((country) => (
+                        <button
+                          key={country.code}
+                          type="button"
+                          onClick={() => {
+                            setCountryCode(country.code);
+                            setIsDropdownOpen(false);
+                          }}
+                          className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-100 transition-colors text-left"
+                        >
+                          <Flag
+                            code={country.flag}
+                            style={{ width: 20, height: 15, borderRadius: 2 }}
+                          />
+                          <span className="text-sm font-medium text-gray-700">
+                            {country.code}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Phone Number Input */}
@@ -333,7 +414,7 @@ export default function AuthPage() {
                       setPhoneNumber(value);
                       setPhoneNumberDisplay(formatPhoneInput(value));
                     }}
-                    className="w-full pl-10 pr-3 py-3 text-gray-600 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0a8b9b] focus:border-transparent"
+                    className="h-[48px] w-full pl-10 pr-3 text-gray-600 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0a8b9b] focus:border-transparent"
                     placeholder="Número de teléfono"
                     disabled={loading}
                     maxLength={14}
@@ -343,10 +424,10 @@ export default function AuthPage() {
               <p className="text-gray-300 text-xs">
                 Ejemplo:{" "}
                 {countryCode === "+52"
-                  ? "5512345678"
+                  ? "551 234 5678"
                   : countryCode === "+1"
-                    ? "2125551234"
-                    : "123456789"}
+                    ? "212 555 1234"
+                    : "123 456 789"}
               </p>
             </div>
 

@@ -52,6 +52,7 @@ export default function TipSelectionPage() {
   const [showTotalModal, setShowTotalModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [showCustomTipInput, setShowCustomTipInput] = useState(false);
 
   const loadSplitStatus = async () => {
     if (!state.tableNumber) return;
@@ -314,7 +315,9 @@ export default function TipSelectionPage() {
   }
 
   return (
-    <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className={`bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col ${
+      paymentType === "select-items" ? "h-screen overflow-y-auto overflow-x-hidden" : "min-h-screen"
+    }`}>
       {/* Fixed Header - solo cuando NO es select-items */}
       {paymentType !== "select-items" && (
         <>
@@ -334,7 +337,7 @@ export default function TipSelectionPage() {
 
       <div
         className={`w-full flex-1 flex flex-col ${
-          paymentType === "select-items" ? "overflow-y-auto" : "justify-end"
+          paymentType === "select-items" ? "" : "justify-end"
         }`}
       >
         {/* Header que hace scroll - solo cuando es select-items */}
@@ -349,12 +352,12 @@ export default function TipSelectionPage() {
         <div
           className={`${
             paymentType === "select-items"
-              ? "flex flex-col relative px-4 md:px-6 lg:px-8 flex-1"
+              ? "flex flex-col relative px-4 md:px-6 lg:px-8"
               : "fixed bottom-0 left-0 right-0 z-50 flex justify-center"
           }`}
         >
           <div
-            className={`flex flex-col relative ${paymentType !== "select-items" ? "px-4 md:px-6 lg:px-8 w-full" : "flex-1"}`}
+            className={`flex flex-col relative ${paymentType !== "select-items" ? "px-4 md:px-6 lg:px-8 w-full" : ""}`}
           >
             <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
               <div className="py-6 md:py-8 lg:py-10 px-8 md:px-10 lg:px-12 flex flex-col justify-center">
@@ -368,8 +371,8 @@ export default function TipSelectionPage() {
             </div>
 
             <div
-              className={`bg-white rounded-t-4xl relative z-10 flex flex-col pt-8 md:pt-10 lg:pt-12 pb-4 md:pb-6${
-                paymentType === "select-items" ? "pb-[200px] flex-1" : ""
+              className={`bg-white rounded-t-4xl relative z-10 flex flex-col pt-8 md:pt-10 lg:pt-12 pb-4 md:pb-6 ${
+                paymentType === "select-items" ? "pb-[200px]" : ""
               }`}
             >
               {/* Seleccionar monto a pagar para choose-amount */}
@@ -562,18 +565,23 @@ export default function TipSelectionPage() {
 
                   {/* Selección de propina */}
                   <div className="md:mb-4 lg:mb-5">
+                    {/* Propina label y botones de porcentaje */}
                     <div className="flex items-center gap-4 mb-3">
-                      <span className="text-black font-medium text-base md:text-lg lg:text-xl">
+                      <span className="text-black font-medium text-base md:text-lg lg:text-xl whitespace-nowrap">
                         Propina
                       </span>
                       {/* Tip Percentage Buttons */}
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 gap-2 flex-1">
                         {[0, 10, 15, 20].map((percentage) => (
                           <button
                             key={percentage}
-                            onClick={() => handleTipPercentage(percentage)}
+                            onClick={() => {
+                              handleTipPercentage(percentage);
+                              setShowCustomTipInput(false);
+                            }}
                             className={`py-1 md:py-1.5 lg:py-2 rounded-full border border-[#8e8e8e]/40 text-black transition-colors cursor-pointer ${
-                              tipPercentage === percentage
+                              tipPercentage === percentage &&
+                              !showCustomTipInput
                                 ? "bg-[#eab3f4] text-white"
                                 : "bg-[#f9f9f9] hover:border-gray-400"
                             }`}
@@ -581,27 +589,45 @@ export default function TipSelectionPage() {
                             {percentage === 0 ? "0%" : `${percentage}%`}
                           </button>
                         ))}
-                        {/* Custom Tip Input */}
-                        <div>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black">
-                              $
-                            </span>
-                            <input
-                              type="number"
-                              value={customTip}
-                              onChange={(e) =>
-                                handleCustomTipChange(e.target.value)
-                              }
-                              placeholder="0.00"
-                              step="0.01"
-                              min="0"
-                              className="w-full pl-6 pr-1 py-1 md:py-1.5 lg:py-2 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                            />
-                          </div>
-                        </div>
+                        {/* Custom Tip Button */}
+                        <button
+                          onClick={() => {
+                            setShowCustomTipInput(true);
+                            setTipPercentage(0);
+                          }}
+                          className={`py-1 md:py-1.5 lg:py-2 rounded-full border border-[#8e8e8e]/40 text-black transition-colors cursor-pointer ${
+                            showCustomTipInput
+                              ? "bg-[#eab3f4] text-white"
+                              : "bg-[#f9f9f9] hover:border-gray-400"
+                          }`}
+                        >
+                          $
+                        </button>
                       </div>
                     </div>
+
+                    {/* Custom Tip Input - Solo se muestra cuando showCustomTipInput es true */}
+                    {showCustomTipInput && (
+                      <div className="flex flex-col gap-2 mb-3">
+                        <div className="relative w-full">
+                          <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-black text-sm">
+                            $
+                          </span>
+                          <input
+                            type="number"
+                            value={customTip}
+                            onChange={(e) =>
+                              handleCustomTipChange(e.target.value)
+                            }
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                            autoFocus
+                            className="w-full pl-8 pr-4 py-1 md:py-1.5 lg:py-2 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black text-center bg-[#f9f9f9] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {tipAmount > 0 && (
                       <div className="flex justify-end items-center mt-2 text-sm">
@@ -756,18 +782,22 @@ export default function TipSelectionPage() {
 
               {/* Selección de propina */}
               <div>
+                {/* Propina label y botones de porcentaje */}
                 <div className="flex items-center gap-4 mb-3">
-                  <span className="text-black font-medium text-base md:text-lg lg:text-xl">
+                  <span className="text-black font-medium text-base md:text-lg lg:text-xl whitespace-nowrap">
                     Propina
                   </span>
                   {/* Tip Percentage Buttons */}
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-5 gap-2 flex-1">
                     {[0, 10, 15, 20].map((percentage) => (
                       <button
                         key={percentage}
-                        onClick={() => handleTipPercentage(percentage)}
+                        onClick={() => {
+                          handleTipPercentage(percentage);
+                          setShowCustomTipInput(false);
+                        }}
                         className={`py-1 md:py-1.5 lg:py-2 rounded-full border border-[#8e8e8e]/40 text-black transition-colors cursor-pointer ${
-                          tipPercentage === percentage
+                          tipPercentage === percentage && !showCustomTipInput
                             ? "bg-[#eab3f4] text-white"
                             : "bg-[#f9f9f9] hover:border-gray-400"
                         }`}
@@ -775,27 +805,43 @@ export default function TipSelectionPage() {
                         {percentage === 0 ? "0%" : `${percentage}%`}
                       </button>
                     ))}
-                    {/* Custom Tip Input */}
-                    <div>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black">
-                          $
-                        </span>
-                        <input
-                          type="number"
-                          value={customTip}
-                          onChange={(e) =>
-                            handleCustomTipChange(e.target.value)
-                          }
-                          placeholder="0.00"
-                          step="0.01"
-                          min="0"
-                          className="w-full pl-6 pr-1 py-1 md:py-1.5 lg:py-2 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                        />
-                      </div>
-                    </div>
+                    {/* Custom Tip Button */}
+                    <button
+                      onClick={() => {
+                        setShowCustomTipInput(true);
+                        setTipPercentage(0);
+                      }}
+                      className={`py-1 md:py-1.5 lg:py-2 rounded-full border border-[#8e8e8e]/40 text-black transition-colors cursor-pointer ${
+                        showCustomTipInput
+                          ? "bg-[#eab3f4] text-white"
+                          : "bg-[#f9f9f9] hover:border-gray-400"
+                      }`}
+                    >
+                      $
+                    </button>
                   </div>
                 </div>
+
+                {/* Custom Tip Input - Solo se muestra cuando showCustomTipInput es true */}
+                {showCustomTipInput && (
+                  <div className="flex flex-col gap-2 mb-3">
+                    <div className="relative w-full">
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-black text-sm">
+                        $
+                      </span>
+                      <input
+                        type="number"
+                        value={customTip}
+                        onChange={(e) => handleCustomTipChange(e.target.value)}
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                        autoFocus
+                        className="w-full pl-8 pr-4 py-1 md:py-1.5 lg:py-2 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black text-center bg-[#f9f9f9] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {tipAmount > 0 && (
                   <div className="flex justify-end items-center mt-2 text-sm">

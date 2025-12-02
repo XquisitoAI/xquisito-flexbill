@@ -427,6 +427,7 @@ export default function CardSelectionPage() {
               : paymentType === "select-items"
                 ? selectedItems.length
                 : unpaidDishes.length,
+          selectedItems: paymentType === "select-items" ? selectedItems : [], // Store selected items for filtering
           alreadyProcessed: true,
           // Payment method details
           cardLast4: selectedMethod?.lastFourDigits,
@@ -630,6 +631,7 @@ export default function CardSelectionPage() {
             xquisitoRestaurantCharge,
             xquisitoCommissionTotal,
             totalAmountCharged, // Total cobrado al cliente
+            selectedItems: paymentType === "select-items" ? selectedItems : [], // Store selected items for filtering
             // Payment method details
             cardLast4: selectedMethod?.lastFourDigits,
             cardBrand: selectedMethod?.cardType,

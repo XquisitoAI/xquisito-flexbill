@@ -161,8 +161,29 @@ export default function PaymentSuccessPage() {
   const amount =
     paymentDetails?.totalAmountCharged || paymentDetails?.amount || urlAmount;
 
-  // Get dish orders from paymentDetails
-  const dishOrders = paymentDetails?.dishOrders || [];
+  // Get payment type from paymentDetails
+  const paymentType = paymentDetails?.paymentType || "";
+
+  // Get dish orders from paymentDetails based on payment type
+  const getDisplayedDishOrders = () => {
+    const allDishOrders = paymentDetails?.dishOrders || [];
+
+    if (paymentType === "select-items") {
+      // For select-items, filter only the selected items
+      const selectedItemIds = paymentDetails?.selectedItems || [];
+      return allDishOrders.filter((dish: any) =>
+        selectedItemIds.includes(dish.dish_order_id?.toString())
+      );
+    } else if (paymentType === "full-bill") {
+      // For full-bill, show all orders
+      return allDishOrders;
+    } else {
+      // For equal-shares and choose-amount, don't show individual items
+      return [];
+    }
+  };
+
+  const dishOrders = getDisplayedDishOrders();
 
   const handleBackToMenu = () => {
     // Clear payment success data from sessionStorage
@@ -467,34 +488,56 @@ export default function PaymentSuccessPage() {
               </div>
 
               {/* Order Items */}
-              {dishOrders.length > 0 && (
+              {(dishOrders.length > 0 ||
+                paymentType === "choose-amount" ||
+                paymentType === "equal-shares") && (
                 <div className="border-t border-white/20 pt-4 md:pt-5 lg:pt-6">
                   <h3 className="font-medium text-xl md:text-2xl lg:text-3xl text-white mb-3 md:mb-4 lg:mb-5">
                     Items de la orden
                   </h3>
                   <div className="space-y-3 md:space-y-4 lg:space-y-5">
-                    {dishOrders.map((dish: any, index: number) => (
-                      <div
-                        key={dish.dish_order_id || index}
-                        className="flex justify-between items-start gap-3 md:gap-4 lg:gap-5"
-                      >
-                        <div className="flex-1">
-                          <p className="text-white font-medium text-base md:text-lg lg:text-xl">
-                            {dish.quantity}x {dish.item}
-                          </p>
-                          {dish.guest_name && (
-                            <p className="text-xs md:text-sm lg:text-base text-white/60 uppercase">
-                              {dish.guest_name}
+                    {/* Show individual items for full-bill and select-items */}
+                    {dishOrders.length > 0 &&
+                      dishOrders.map((dish: any, index: number) => (
+                        <div
+                          key={dish.dish_order_id || index}
+                          className="flex justify-between items-start gap-3 md:gap-4 lg:gap-5"
+                        >
+                          <div className="flex-1">
+                            <p className="text-white font-medium text-base md:text-lg lg:text-xl">
+                              {dish.quantity}x {dish.item}
                             </p>
-                          )}
+                            {dish.guest_name && (
+                              <p className="text-xs md:text-sm lg:text-base text-white/60 uppercase">
+                                {dish.guest_name}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-white font-medium text-base md:text-lg lg:text-xl">
+                              ${dish.total_price?.toFixed(2) || "0.00"} MXN
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-white font-medium text-base md:text-lg lg:text-xl">
-                            ${dish.total_price?.toFixed(2) || "0.00"} MXN
-                          </p>
+                      ))}
+
+                    {/* Show consumo for choose-amount and equal-shares */}
+                    {(paymentType === "choose-amount" ||
+                      paymentType === "equal-shares") &&
+                      paymentDetails?.baseAmount > 0 && (
+                        <div className="flex justify-between items-start gap-3 md:gap-4 lg:gap-5">
+                          <div className="flex-1">
+                            <p className="text-white font-medium text-base md:text-lg lg:text-xl">
+                              Consumo
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-white font-medium text-base md:text-lg lg:text-xl">
+                              ${paymentDetails.baseAmount.toFixed(2)} MXN
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )}
 
                     {/* Propina como item */}
                     {paymentDetails?.tipAmount > 0 && (

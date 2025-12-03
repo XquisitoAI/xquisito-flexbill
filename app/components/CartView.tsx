@@ -52,10 +52,8 @@ export default function CartView() {
     if (!isLoading && isAuthenticated && user && orderedItems.length > 0) {
       try {
         const userName = profile?.firstName
-          ? `${profile.firstName} ${profile.lastName || ''}`.trim()
+          ? `${profile.firstName}`.trim()
           : `Usuario ${user.id.substring(0, 8)}`;
-
-        console.log("🛍️ Submitting order for authenticated user:", userName);
 
         // Enviar la orden a la API
         await submitOrder(userName, orderedItems);
@@ -180,14 +178,18 @@ export default function CartView() {
                           <div className="text-right flex items-center justify-center gap-4 md:gap-5 lg:gap-6">
                             <div className="flex items-center gap-2 md:gap-3">
                               <Minus
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                onClick={() =>
+                                  updateQuantity(item.id, item.quantity - 1)
+                                }
                                 className="size-4 md:size-5 lg:size-6 flex items-center justify-center text-black cursor-pointer"
                               />
                               <p className="text-base md:text-lg lg:text-xl text-black text-center">
                                 {item.quantity}
                               </p>
                               <Plus
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                onClick={() =>
+                                  updateQuantity(item.id, item.quantity + 1)
+                                }
                                 className="size-4 md:size-5 lg:size-6 flex items-center justify-center text-black cursor-pointer"
                               />
                             </div>
@@ -254,9 +256,7 @@ export default function CartView() {
       {/* OrderAnimation overlay - solo para usuarios loggeados */}
       {showOrderAnimation && (
         <OrderAnimation
-          userName={
-            profile?.firstName || "Usuario"
-          }
+          userName={profile?.firstName || "Usuario"}
           orderedItems={orderedItems}
           onContinue={handleContinueFromAnimation}
           onCancel={handleCancelOrder}

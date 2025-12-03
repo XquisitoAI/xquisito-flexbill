@@ -1,20 +1,17 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { Eye, EyeClosed, Loader, Loader2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import { useTable } from "../context/TableContext";
 import { useTableNavigation } from "../hooks/useTableNavigation";
-import { useGuest } from "../context/GuestContext";
-import { useAuth } from "../context/AuthContext";
-import { useState, useEffect } from "react";
 import { getRestaurantData } from "../utils/restaurantData";
-import { Loader2, Eye, EyeClosed, Loader } from "lucide-react";
 import MenuHeaderBackOrder from "./headers/MenuHeaderBackOrder";
 
 export default function OrderStatus() {
   const { state, loadTableData } = useTable();
-  const { goBack, navigateWithTable } = useTableNavigation();
-  const { setAsGuest } = useGuest();
+  const { navigateWithTable } = useTableNavigation();
   const { isAuthenticated, isLoading } = useAuth();
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [showPaidOrders, setShowPaidOrders] = useState(false);
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
@@ -113,7 +110,7 @@ export default function OrderStatus() {
   }, [state.dishOrders?.length, state.tableSummary, state.error]); // Only log meaningful changes
 
   return (
-    <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <MenuHeaderBackOrder
         restaurant={restaurantData}
         tableNumber={state.tableNumber}
@@ -372,7 +369,7 @@ export default function OrderStatus() {
                                             "/logo-short-green.webp"
                                           }
                                           alt="Logo Xquisito"
-                                          className="size-18 md:size-20 lg:size-22 object-contain rounded-sm md:rounded-md"
+                                          className="w-full h-full object-cover rounded-sm md:rounded-md"
                                         />
                                       </div>
                                     </div>
@@ -502,7 +499,7 @@ export default function OrderStatus() {
                       disabled={
                         isProcessingPayment || tableRemainingAmount <= 0
                       }
-                      className={`mt-5 md:mt-6 lg:mt-7 w-full py-3 md:py-4 lg:py-5 rounded-full font-normal transition-colors text-white text-base md:text-lg lg:text-xl ${
+                      className={`mt-5 md:mt-6 lg:mt-7 w-full py-3 md:py-4 lg:py-5 rounded-full font-normal active:scale-95 transition-all text-white text-base md:text-lg lg:text-xl ${
                         !isProcessingPayment && tableRemainingAmount > 0
                           ? "bg-gradient-to-r from-[#34808C] to-[#173E44] cursor-pointer"
                           : "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed"

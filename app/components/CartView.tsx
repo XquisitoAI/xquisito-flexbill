@@ -242,9 +242,16 @@ export default function CartView() {
                   </div>
                   <button
                     onClick={handleOrder}
-                    className="bg-gradient-to-r from-[#34808C] to-[#173E44] py-3 md:py-4 lg:py-5 text-white px-20 md:px-24 lg:px-28 rounded-full cursor-pointer transition-colors font-normal h-fit flex items-center justify-center animate-pulse-button text-base md:text-lg lg:text-xl"
+                    disabled={isSubmitting || cartState.isLoading}
+                    className={`py-3 md:py-4 lg:py-5 text-white rounded-full cursor-pointer font-normal h-fit flex items-center justify-center text-base md:text-lg lg:text-xl active:scale-95 transition-transform ${
+                      isSubmitting || cartState.isLoading
+                        ? "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed px-18 md:px-20 lg:px-24"
+                        : "bg-gradient-to-r from-[#34808C] to-[#173E44] px-20 md:px-24 lg:px-28 animate-pulse-button"
+                    }`}
                   >
-                    Ordenar
+                    {isSubmitting || cartState.isLoading
+                      ? "Cargando..."
+                      : "Ordenar"}
                   </button>
                 </div>
               </div>

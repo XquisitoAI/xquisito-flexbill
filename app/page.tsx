@@ -5,8 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import Loader from "./components/UI/Loader";
 
-// Restaurant ID por defecto para testing
+// Restaurant ID y Branch por defecto para testing
 const DEFAULT_RESTAURANT_ID = 5;
+const DEFAULT_BRANCH_NUMBER = 1;
 const DEFAULT_TABLE = 20;
 
 function HomeContent() {
@@ -14,21 +15,24 @@ function HomeContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Check for table parameter in URL
+    // Check for parameters in URL
     const tableParam = searchParams.get("table");
     const restaurantParam = searchParams.get("restaurant");
-    const restaurantId = restaurantParam || DEFAULT_RESTAURANT_ID;
+    const branchParam = searchParams.get("branch");
 
-    console.log('🏠 HomePage redirect:', { tableParam, restaurantParam, restaurantId });
+    const restaurantId = restaurantParam || DEFAULT_RESTAURANT_ID;
+    const branchNumber = branchParam || DEFAULT_BRANCH_NUMBER;
+
+    console.log('🏠 HomePage redirect:', { tableParam, restaurantParam, branchParam, restaurantId, branchNumber });
 
     if (tableParam) {
       // Redirect to menu with table parameter
-      const redirectUrl = `/${restaurantId}/menu?table=${tableParam}`;
+      const redirectUrl = `/${restaurantId}/${branchNumber}/menu?table=${tableParam}`;
       console.log('✅ Redirecting to:', redirectUrl);
       router.replace(redirectUrl);
     } else {
       // Default redirect to restaurant menu with default table
-      const redirectUrl = `/${DEFAULT_RESTAURANT_ID}/menu?table=${DEFAULT_TABLE}`;
+      const redirectUrl = `/${DEFAULT_RESTAURANT_ID}/${DEFAULT_BRANCH_NUMBER}/menu?table=${DEFAULT_TABLE}`;
       console.log('✅ Default redirecting to:', redirectUrl);
       router.replace(redirectUrl);
     }

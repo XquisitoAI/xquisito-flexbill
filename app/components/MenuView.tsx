@@ -1,15 +1,16 @@
 "use client";
 
-import MenuHeader from "./headers/MenuHeader";
-import MenuCategory from "./MenuCategory";
+import MenuHeader from "@/app/components/headers/MenuHeader";
+import MenuCategory from "@/app/components/MenuCategory";
+import ErrorScreen from "@/app/components/ErrorScreen";
+import Loader from "@/app/components/UI/Loader";
 import { Search, ShoppingCart, Settings } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
-import { useGuest } from "../context/GuestContext";
-import { useTableNavigation } from "../hooks/useTableNavigation";
-import { useCart } from "../context/CartContext";
-import { useRestaurant } from "../context/RestaurantContext";
-import Loader from "./UI/Loader";
+import { useAuth } from "@/app/context/AuthContext";
+import { useTableNavigation } from "@/app/hooks/useTableNavigation";
+import { useCart } from "@/app/context/CartContext";
+import { useRestaurant } from "@/app/context/RestaurantContext";
+import { DEFAULT_IMAGES } from "@/app/constants/images";
 
 interface MenuViewProps {
   tableNumber?: string;
@@ -19,7 +20,6 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
   const [filter, setFilter] = useState("Todo");
   const [searchQuery, setSearchQuery] = useState("");
   const { profile, isAuthenticated } = useAuth();
-  const { isGuest, guestName } = useGuest();
   const { navigateWithTable } = useTableNavigation();
   const { state: cartState, refreshCart } = useCart();
   const { restaurant, menu, loading, error } = useRestaurant();
@@ -27,7 +27,7 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
   // Refresh del carrito cada vez que se renderiza el componente
   useEffect(() => {
     refreshCart();
-  }, []);
+  }, [refreshCart]);
 
   // Obtener categorías únicas del menú de la BD ordenadas por display_order
   const categorias = useMemo(() => {
@@ -93,35 +93,29 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
   // Mostrar error si falla
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex items-center justify-center">
-        <div className="text-center px-6">
-          <h1 className="text-2xl font-bold text-white mb-2">Error</h1>
-          <p className="text-white">{error}</p>
-        </div>
-      </div>
+      <ErrorScreen
+        title="Error al cargar el menú"
+        description="No pudimos obtener la información del restaurante"
+        detail={error}
+      />
     );
   }
 
   // Mostrar mensaje si no hay restaurante
   if (!restaurant) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex items-center justify-center">
-        <div className="text-center px-6">
-          <h1 className="text-2xl font-bold text-white mb-2">
-            Restaurante no encontrado
-          </h1>
-        </div>
-      </div>
+      <ErrorScreen
+        title="Restaurante no encontrado"
+        description="No se pudo cargar la información del restaurante"
+        detail="Por favor verifica el código QR"
+      />
     );
   }
 
   return (
     <div className="min-h-screen bg-white relative">
       <img
-        src={
-          restaurant.banner_url ||
-          "https://w0.peakpx.com/wallpaper/531/501/HD-wallpaper-coffee-espresso-latte-art-cup-food.jpg"
-        }
+        src={restaurant.banner_url || DEFAULT_IMAGES.RESTAURANT_BANNER}
         alt=""
         className="absolute top-0 left-0 w-full h-72 md:h-96 lg:h-[28rem] object-cover z-0"
       />
@@ -172,23 +166,20 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
           <div className="mb-4 md:mb-6 flex flex-col items-center">
             <div className="size-28 md:size-36 lg:size-40 rounded-full bg-gray-200 overflow-hidden border border-gray-400 shadow-sm">
               <img
-                src={
-                  restaurant.logo_url ||
-                  "https://t4.ftcdn.net/jpg/02/15/84/43/360_F_215844325_ttX9YiIIyeaR7Ne6EaLLjMAmy4GvPC69.jpg"
-                }
+                src={restaurant.logo_url || DEFAULT_IMAGES.RESTAURANT_LOGO}
                 alt="Profile Pic"
                 className="w-full h-full object-cover"
               />
             </div>
-            <h1 className="text-black text-3xl md:text-4xl lg:text-5xl font-medium mt-3 md:mt-5 mb-6 md:mb-8">
-              ¡{welcomeMessage}
-              {profile?.firstName
-                ? ` ${profile.firstName}`
-                : isGuest && guestName
-                  ? ` ${guestName}`
-                  : ""}
-              !
-            </h1>
+            <div className="text-black mt-3 md:mt-5 mb-6 md:mb-8 flex flex-col items-center">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-medium">
+                ¡{welcomeMessage}
+                {profile?.firstName ? ` ${profile.firstName}` : ""}!
+              </h1>
+              <h3 className="mt-1 text-black/70 text-xl md:text-2xl lg:text-3xl">
+                Mesa {tableNumber}
+              </h3>
+            </div>
           </div>
 
           {/* Search Input */}

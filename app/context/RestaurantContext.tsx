@@ -8,12 +8,14 @@ import { isRestaurantOpen } from "../utils/restaurantHours";
 
 interface RestaurantContextValue {
   restaurantId: number | null;
+  branchNumber: number | null;
   restaurant: Restaurant | null;
   menu: MenuSection[];
   loading: boolean;
   error: string | null;
   isOpen: boolean;
   setRestaurantId: (id: number) => void;
+  setBranchNumber: (branchNum: number) => void;
   refetchMenu: () => Promise<void>;
 }
 
@@ -25,6 +27,7 @@ interface RestaurantProviderProps {
 
 export function RestaurantProvider({ children }: RestaurantProviderProps) {
   const [restaurantId, setRestaurantIdState] = useState<number | null>(null);
+  const [branchNumber, setBranchNumberState] = useState<number | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [menu, setMenu] = useState<MenuSection[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -34,6 +37,12 @@ export function RestaurantProvider({ children }: RestaurantProviderProps) {
   const setRestaurantId = (id: number) => {
     console.log("🍽️ Setting restaurant ID:", id);
     setRestaurantIdState(id);
+  };
+
+  // Función para establecer el branchNumber
+  const setBranchNumber = (branchNum: number) => {
+    console.log("🏢 Setting branch number:", branchNum);
+    setBranchNumberState(branchNum);
   };
 
   // Función para recargar el menú
@@ -100,12 +109,14 @@ export function RestaurantProvider({ children }: RestaurantProviderProps) {
 
   const value: RestaurantContextValue = {
     restaurantId,
+    branchNumber,
     restaurant,
     menu,
     loading,
     error,
     isOpen,
     setRestaurantId,
+    setBranchNumber,
     refetchMenu,
   };
 

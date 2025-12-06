@@ -2,7 +2,8 @@
 // CART API SERVICE
 // ===============================================
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -72,7 +73,7 @@ class CartApiService {
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
-        ...options?.headers as Record<string, string>,
+        ...(options?.headers as Record<string, string>),
       };
 
       // Add authentication headers (similar to main apiService)
@@ -80,7 +81,9 @@ class CartApiService {
       if (authToken) {
         // For authenticated users, use Bearer token
         headers["Authorization"] = `Bearer ${authToken}`;
-        console.log("🔑 CartAPI - Adding Authorization header for authenticated user");
+        console.log(
+          "🔑 CartAPI - Adding Authorization header for authenticated user"
+        );
       } else {
         // For guests, add guest identification headers
         const guestId = this.getGuestId();
@@ -112,7 +115,8 @@ class CartApiService {
       console.error("Cart API Error:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
       };
     }
   }
@@ -191,7 +195,7 @@ class CartApiService {
     const params = new URLSearchParams(userId as Record<string, string>);
 
     if (this.restaurantId) {
-      params.append('restaurant_id', this.restaurantId.toString());
+      params.append("restaurant_id", this.restaurantId.toString());
     }
 
     return this.request<Cart>(`/cart?${params.toString()}`);
@@ -205,7 +209,7 @@ class CartApiService {
     const params = new URLSearchParams(userId as Record<string, string>);
 
     if (this.restaurantId) {
-      params.append('restaurant_id', this.restaurantId.toString());
+      params.append("restaurant_id", this.restaurantId.toString());
     }
 
     return this.request<CartTotals>(`/cart/totals?${params.toString()}`);
@@ -227,7 +231,9 @@ class CartApiService {
   /**
    * Eliminar item del carrito
    */
-  async removeFromCart(cartItemId: string): Promise<ApiResponse<{ message: string }>> {
+  async removeFromCart(
+    cartItemId: string
+  ): Promise<ApiResponse<{ message: string }>> {
     return this.request<{ message: string }>(`/cart/items/${cartItemId}`, {
       method: "DELETE",
     });

@@ -6,8 +6,6 @@ import { TableProvider } from "./context/TableContext";
 import { GuestProvider } from "./context/GuestContext";
 import { PaymentProvider } from "./context/PaymentContext";
 import { RestaurantProvider } from "./context/RestaurantContext";
-import { ClerkProvider } from "@clerk/nextjs";
-import ClerkSessionProvider from "./components/ClerkSessionProvider";
 import { AuthProvider } from "./context/AuthContext";
 
 const helveticaNeue = localFont({
@@ -119,28 +117,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider signUpFallbackRedirectUrl="/" signInFallbackRedirectUrl="/">
-      <html lang="es">
-        <head></head>
-        <body
-          className={`${helveticaNeue.variable} antialiased`}
-          style={{ fontFamily: "var(--font-helvetica-neue)" }}
-        >
-          <AuthProvider>
-            <ClerkSessionProvider>
-              <RestaurantProvider>
-                <CartProvider>
-                  <TableProvider>
-                    <GuestProvider>
-                      <PaymentProvider>{children}</PaymentProvider>
-                    </GuestProvider>
-                  </TableProvider>
-                </CartProvider>
-              </RestaurantProvider>
-            </ClerkSessionProvider>
-          </AuthProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="es">
+      <head></head>
+      <body
+        className={`${helveticaNeue.variable} antialiased`}
+        style={{ fontFamily: "var(--font-helvetica-neue)" }}
+      >
+        <AuthProvider>
+          <RestaurantProvider>
+            <CartProvider>
+              <TableProvider>
+                <GuestProvider>
+                  <PaymentProvider>{children}</PaymentProvider>
+                </GuestProvider>
+              </TableProvider>
+            </CartProvider>
+          </RestaurantProvider>
+        </AuthProvider>
+      </body>
+    </html>
   );
 }

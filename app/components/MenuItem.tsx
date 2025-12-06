@@ -41,6 +41,8 @@ export default function MenuItem({ item }: MenuItemProps) {
   const { flyToCart } = useFlyToCart();
   const { isOpen, restaurant } = useRestaurant();
   const plusButtonRef = useRef<HTMLDivElement>(null);
+  const isAddingRef = useRef(false);
+  const isRemovingRef = useRef(false);
   const [localQuantity, setLocalQuantity] = useState(0);
   const [isPulsing, setIsPulsing] = useState(false);
   const [showClosedModal, setShowClosedModal] = useState(false);
@@ -71,6 +73,11 @@ export default function MenuItem({ item }: MenuItemProps) {
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
+    // Evitar clicks múltiples mientras se está agregando (usando ref para check síncrono)
+    if (isAddingRef.current) {
+      return;
+    }
+
     // Verificar si el restaurante está abierto
     if (!isOpen) {
       setShowClosedModal(true);
@@ -95,15 +102,21 @@ export default function MenuItem({ item }: MenuItemProps) {
     };
 
     // Si no tiene custom fields, agregar directamente al carrito
+    // Bloquear SÍNCRONAMENTE con ref antes de cualquier async
+    isAddingRef.current = true;
     setLocalQuantity((prev) => prev + 1);
     setIsPulsing(true);
 
-    if (plusButtonRef.current) {
-      flyToCart(plusButtonRef.current, async () => {
+    try {
+      if (plusButtonRef.current) {
+        flyToCart(plusButtonRef.current, async () => {
+          await addItem(itemWithDiscount);
+        });
+      } else {
         await addItem(itemWithDiscount);
-      });
-    } else {
-      await addItem(itemWithDiscount);
+      }
+    } finally {
+      isAddingRef.current = false;
     }
   };
 
@@ -118,6 +131,11 @@ export default function MenuItem({ item }: MenuItemProps) {
   const handleRemoveFromCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
+    // Evitar clicks múltiples mientras se está removiendo (usando ref para check síncrono)
+    if (isRemovingRef.current) {
+      return;
+    }
+
     // Si hay múltiples variaciones, navegar al carrito
     const itemsWithSameId = state.items.filter(
       (cartItem) => cartItem.id === adaptedItem.id
@@ -127,16 +145,23 @@ export default function MenuItem({ item }: MenuItemProps) {
       return;
     }
 
+    // Bloquear SÍNCRONAMENTE con ref antes de cualquier async
+    isRemovingRef.current = true;
+
     // Update local quantity
     setLocalQuantity((prev) => Math.max(0, prev - 1));
 
-    const cartItem = state.items.find(
-      (cartItem) => cartItem.id === adaptedItem.id
-    );
-    if (cartItem && cartItem.quantity > 1) {
-      await updateQuantity(adaptedItem.id, cartItem.quantity - 1);
-    } else if (cartItem && cartItem.quantity === 1) {
-      await removeItem(adaptedItem.id);
+    try {
+      const cartItem = state.items.find(
+        (cartItem) => cartItem.id === adaptedItem.id
+      );
+      if (cartItem && cartItem.quantity > 1) {
+        await updateQuantity(adaptedItem.id, cartItem.quantity - 1);
+      } else if (cartItem && cartItem.quantity === 1) {
+        await removeItem(adaptedItem.id);
+      }
+    } finally {
+      isRemovingRef.current = false;
     }
   };
 

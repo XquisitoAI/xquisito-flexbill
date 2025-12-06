@@ -15,7 +15,6 @@ export default function ProfileTab() {
   const [lastName, setLastName] = useState("");
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [gender, setGender] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
@@ -72,7 +71,6 @@ export default function ProfileTab() {
           setFirstName(profileData.firstName || "");
           setLastName(profileData.lastName || "");
           setPhone(profileData.phone || "");
-          setEmail(profileData.email || "");
           setBirthDate(profileData.birthDate || "");
           setGender(profileData.gender || "");
           setPhotoUrl(profileData.photoUrl || "");

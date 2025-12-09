@@ -119,7 +119,7 @@ const CartContext = createContext<CartContextType | null>(null);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const { user, isLoading } = useAuth();
-  const { restaurantId } = useRestaurant();
+  const { restaurantId, branchNumber } = useRestaurant();
 
   // Establecer supabase_user_id y restaurant_id en cartApi cuando cambien
   useEffect(() => {
@@ -131,6 +131,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     cartApi.setRestaurantId(restaurantId);
   }, [restaurantId]);
+
+  useEffect(() => {
+    cartApi.setBranchNumber(branchNumber);
+  }, [branchNumber]);
 
   // Función para refrescar el carrito desde el backend
   const refreshCart = async () => {

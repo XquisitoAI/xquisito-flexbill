@@ -51,6 +51,7 @@ export interface CartTotals {
 class CartApiService {
   private supabaseUserId: string | null = null;
   private restaurantId: number | null = null;
+  private branchNumber: number | null = null;
 
   /**
    * Establecer el supabase_user_id manualmente (llamar desde el componente con useAuth)
@@ -64,6 +65,13 @@ class CartApiService {
    */
   public setRestaurantId(restaurantId: number | null) {
     this.restaurantId = restaurantId;
+  }
+
+  /**
+   * Establecer el branch_number manualmente (llamar desde el componente)
+   */
+  public setBranchNumber(branchNumber: number | null) {
+    this.branchNumber = branchNumber;
   }
 
   private async request<T>(
@@ -183,6 +191,7 @@ class CartApiService {
         custom_fields: customFields,
         extra_price: extraPrice,
         restaurant_id: this.restaurantId,
+        branch_number: this.branchNumber,
       }),
     });
   }
@@ -198,6 +207,10 @@ class CartApiService {
       params.append("restaurant_id", this.restaurantId.toString());
     }
 
+    if (this.branchNumber) {
+      params.append("branch_number", this.branchNumber.toString());
+    }
+
     return this.request<Cart>(`/cart?${params.toString()}`);
   }
 
@@ -210,6 +223,10 @@ class CartApiService {
 
     if (this.restaurantId) {
       params.append("restaurant_id", this.restaurantId.toString());
+    }
+
+    if (this.branchNumber) {
+      params.append("branch_number", this.branchNumber.toString());
     }
 
     return this.request<CartTotals>(`/cart/totals?${params.toString()}`);
@@ -250,6 +267,7 @@ class CartApiService {
       body: JSON.stringify({
         ...userId,
         restaurant_id: this.restaurantId,
+        branch_number: this.branchNumber,
       }),
     });
   }

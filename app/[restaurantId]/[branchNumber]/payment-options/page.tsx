@@ -7,14 +7,14 @@ import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { getRestaurantData } from "@/app/utils/restaurantData";
 import { getSavedUrlParams, clearSavedUrlParams } from "@/app/utils/urlParams";
 import MenuHeaderBack from "@/app/components/headers/MenuHeaderBack";
-import { apiService } from "@/app/utils/api";
+import { paymentService } from "@/app/services/payment.service";
 import { ChevronRight, DollarSign, ReceiptText } from "lucide-react";
 import Loader from "@/app/components/UI/Loader";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
 
 export default function PaymentOptionsPage() {
-  const { validationError, isValidating, restaurantId } = useValidateAccess();
+  const { validationError, isValidating, restaurantId, branchNumber } = useValidateAccess();
   const searchParams = useSearchParams();
 
   const { state, dispatch, loadTableData, loadActiveUsers } = useTable();
@@ -36,32 +36,15 @@ export default function PaymentOptionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [splitStatus, setSplitStatus] = useState<any>(null);
 
-  // Mostrar error de validación si existe
-  if (validationError) {
-    return <ValidationError errorType={validationError as any} />;
-  }
-
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
-  }
-
-  useEffect(() => {
-    const savedParams = getSavedUrlParams();
-    if (savedParams) {
-      router.replace(`/payment-options${savedParams}`);
-      clearSavedUrlParams();
-    }
-  }, [router]);
-
   const loadSplitStatus = async () => {
-    if (!state.tableNumber) return;
+    if (!state.tableNumber || !branchNumber) return;
 
-    console.log("🔄 Loading split status for table:", state.tableNumber);
+    console.log("🔄 Loading split status for table:", state.tableNumber, "branch:", branchNumber);
 
     try {
-      const response = await apiService.getSplitPaymentStatus(
+      const response = await paymentService.getSplitPaymentStatus(
         restaurantId.toString(),
+        branchNumber.toString(),
         state.tableNumber.toString()
       );
       console.log("📡 Split status API response:", response);
@@ -78,6 +61,14 @@ export default function PaymentOptionsPage() {
       setSplitStatus(null);
     }
   };
+
+  useEffect(() => {
+    const savedParams = getSavedUrlParams();
+    if (savedParams) {
+      router.replace(`/payment-options${savedParams}`);
+      clearSavedUrlParams();
+    }
+  }, [router]);
 
   useEffect(() => {
     const loadPaymentData = async () => {
@@ -121,6 +112,16 @@ export default function PaymentOptionsPage() {
       loadSplitStatus();
     }
   }, [state.splitPayments]);
+
+  // Mostrar error de validación si existe
+  if (validationError) {
+    return <ValidationError errorType={validationError as any} />;
+  }
+
+  // Mostrar loader mientras valida
+  if (isValidating) {
+    return <Loader />;
+  }
 
   // Calcular totales usando tableSummary si está disponible
   const dishOrders = Array.isArray(state.dishOrders) ? state.dishOrders : [];

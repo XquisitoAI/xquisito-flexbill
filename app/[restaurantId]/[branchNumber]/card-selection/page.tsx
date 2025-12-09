@@ -15,16 +15,23 @@ import PaymentAnimation from "@/app/components/UI/PaymentAnimation";
 import Loader from "@/app/components/UI/Loader";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
+import { paymentService } from "@/app/services/payment.service";
 
 import { Plus, Trash2, Loader2, CircleAlert, X } from "lucide-react";
 import { getCardTypeIcon } from "@/app/utils/cardIcons";
 
 export default function CardSelectionPage() {
-  const { validationError, isValidating, restaurantId } = useValidateAccess();
-
+  const { validationError, isValidating, restaurantId, branchNumber } =
+    useValidateAccess();
   const { state, dispatch, loadTableData } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const searchParams = useSearchParams();
+  const restaurantData = getRestaurantData();
+  const isGuest = useIsGuest();
+  const { guestId, tableNumber, setAsAuthenticated } = useGuest();
+  const { hasPaymentMethods, paymentMethods, deletePaymentMethod } =
+    usePayment();
+  const { user, profile, isLoading } = useAuth();
 
   // Establecer tableNumber desde URL si no está en el estado
   useEffect(() => {
@@ -37,22 +44,6 @@ export default function CardSelectionPage() {
       dispatch({ type: "SET_TABLE_NUMBER", payload: tableFromUrl });
     }
   }, [searchParams, state.tableNumber, dispatch]);
-  const restaurantData = getRestaurantData();
-  const isGuest = useIsGuest();
-  const { guestId, tableNumber, setAsAuthenticated } = useGuest();
-  const { hasPaymentMethods, paymentMethods, deletePaymentMethod } =
-    usePayment();
-  const { user, profile, isLoading } = useAuth();
-
-  // Mostrar error de validación si existe
-  if (validationError) {
-    return <ValidationError errorType={validationError as any} />;
-  }
-
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
-  }
 
   // Tarjeta por defecto del sistema para todos los usuarios
 
@@ -263,83 +254,41 @@ export default function CardSelectionPage() {
 
       if (paymentType === "user-items" && userName) {
         // Pagar solo los platillos del usuario específico
-        const userDishes = dishOrders.filter(
-          (dish) =>
-            dish.guest_name === userName &&
-            (dish.payment_status === "not_paid" || !dish.payment_status)
+        await paymentService.payUserDishes(
+          dishOrders,
+          userName,
+          realPaymentMethodId
         );
-
-        for (const dish of userDishes) {
-          try {
-            await apiService.payDishOrder(
-              dish.dish_order_id,
-              realPaymentMethodId
-            );
-          } catch (error) {
-            console.error(`Error paying dish ${dish.dish_order_id}:`, error);
-          }
-        }
       } else if (paymentType === "select-items") {
         // Pagar solo los platillos seleccionados específicamente
-        for (const dishId of selectedItems) {
-          try {
-            await apiService.payDishOrder(dishId, realPaymentMethodId);
-          } catch (error) {
-            console.error(`Error paying selected dish ${dishId}:`, error);
-          }
-        }
+        await paymentService.paySelectedDishes(
+          selectedItems,
+          realPaymentMethodId
+        );
       } else if (paymentType === "equal-shares") {
         // Para división equitativa, usar paySplitAmount para rastrear qué usuario pagó
-        try {
-          if (user && user.id) {
-            await apiService.paySplitAmount(
-              restaurantId,
-              state.tableNumber,
-              user.id,
-              null,
-              realPaymentMethodId
-            );
-          } else if (isGuest && name.trim()) {
-            await apiService.paySplitAmount(
-              restaurantId,
-              state.tableNumber,
-              null,
-              name.trim(),
-              realPaymentMethodId
-            );
-          }
-        } catch (error) {
-          console.error("Error paying split amount:", error);
-        }
+        await paymentService.paySplitAmount({
+          restaurantId,
+          branchNumber,
+          tableNumber: state.tableNumber,
+          userId: user?.id,
+          guestName: !user?.id ? name.trim() : null,
+          paymentMethodId: realPaymentMethodId,
+        });
       } else if (
         paymentType === "full-bill" ||
         paymentType === "choose-amount"
       ) {
         // Para cuenta completa o monto personalizado, usar el monto exacto
-        try {
-          if (user && user.id) {
-            await apiService.payTableAmount(
-              restaurantId,
-              state.tableNumber,
-              baseAmount,
-              user.id,
-              null,
-              realPaymentMethodId
-            );
-            console.log("hollaaaaaaaaaaa");
-          } else {
-            await apiService.payTableAmount(
-              restaurantId,
-              state.tableNumber,
-              baseAmount,
-              null,
-              name.trim(),
-              realPaymentMethodId
-            );
-          }
-        } catch (error) {
-          console.error("Error paying table amount:", error);
-        }
+        await paymentService.payTableAmount({
+          restaurantId,
+          branchNumber,
+          tableNumber: state.tableNumber,
+          amount: baseAmount,
+          userId: user?.id,
+          guestName: !user?.id ? name.trim() : null,
+          paymentMethodId: realPaymentMethodId,
+        });
       }
 
       // OPERACIONES NO CRÍTICAS (ejecutar en segundo plano)
@@ -369,7 +318,7 @@ export default function CardSelectionPage() {
               : selectedPaymentMethodId;
 
           // Registrar transacción siempre, con o sin table_order_id
-          await apiService.recordPaymentTransaction({
+          await paymentService.recordPaymentTransaction({
             payment_method_id: transactionPaymentMethodId,
             restaurant_id: parseInt(restaurantId),
             id_table_order: tableOrderId,
@@ -502,7 +451,7 @@ export default function CardSelectionPage() {
 
       // Para tarjetas reales, continuar con el flujo normal de EcartPay
       // Check if user has payment methods
-      const paymentMethodsResult = await apiService.getPaymentMethods();
+      const paymentMethodsResult = await paymentService.getPaymentMethods();
 
       if (!paymentMethodsResult.success) {
         throw new Error(
@@ -583,7 +532,7 @@ export default function CardSelectionPage() {
       };
 
       console.log("💳 Sending payment request:", paymentData);
-      const paymentResult = await apiService.processPayment(paymentData);
+      const paymentResult = await paymentService.processPayment(paymentData);
 
       if (!paymentResult.success) {
         console.error("❌ Payment failed:", paymentResult.error);
@@ -779,6 +728,16 @@ export default function CardSelectionPage() {
   const displayTotal = getDisplayTotal();
 
   if (isLoadingInitial) {
+    return <Loader />;
+  }
+
+  // Mostrar error de validación si existe
+  if (validationError) {
+    return <ValidationError errorType={validationError as any} />;
+  }
+
+  // Mostrar loader mientras valida
+  if (isValidating) {
     return <Loader />;
   }
 

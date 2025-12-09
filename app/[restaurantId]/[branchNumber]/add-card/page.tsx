@@ -3,52 +3,33 @@
 // NOTE: This page is maintained for users who want to manage payment methods separately
 // Main payment flows now use EcartPay SDK directly in payment/page.tsx and add-tip/page.tsx
 
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTable } from "@/app/context/TableContext";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { useGuest, useIsGuest } from "@/app/context/GuestContext";
 import { usePayment } from "@/app/context/PaymentContext";
 import { getRestaurantData } from "@/app/utils/restaurantData";
-import { useState } from "react";
 import { apiService } from "@/app/utils/api";
 import MenuHeaderBack from "@/app/components/headers/MenuHeaderBack";
 import CardScanner from "@/app/components/CardScanner";
 import Loader from "@/app/components/UI/Loader";
-import { useUser, useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/app/context/AuthContext";
 import { Camera } from "lucide-react";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
 
 function AddCardContent() {
-  const { validationError, isValidating, restaurantId } = useValidateAccess();
-
-  // Mostrar error de validación si existe
-  if (validationError) {
-    return <ValidationError errorType={validationError as any} />;
-  }
-
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
-  }
-
+  const { validationError, isValidating } = useValidateAccess();
   const { state } = useTable();
-  const { goBack, navigateWithTable } = useTableNavigation();
+  const { navigateWithTable } = useTableNavigation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const restaurantData = getRestaurantData();
-  const isGuest = useIsGuest();
+  const isGuestUser = useIsGuest();
   const { guestId, tableNumber } = useGuest();
-  const { addPaymentMethod, refreshPaymentMethods, paymentMethods } =
-    usePayment();
-  const { user, isLoaded } = useUser();
-  const { getToken } = useAuth();
-
-  // Refresh payment methods on mount to ensure we have the latest data
-  useEffect(() => {
-    refreshPaymentMethods();
-  }, []);
+  const { addPaymentMethod, refreshPaymentMethods, paymentMethods } = usePayment();
+  const { user } = useAuth();
 
   const [fullName, setFullName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -56,6 +37,12 @@ function AddCardContent() {
   const [cvv, setCvv] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [isLoadingParams, setIsLoadingParams] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Refresh payment methods on mount to ensure we have the latest data
+  useEffect(() => {
+    refreshPaymentMethods();
+  }, [refreshPaymentMethods]);
 
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -72,8 +59,6 @@ function AddCardContent() {
     setExpDate("12/25");
     setCvv("123");
   };
-
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async () => {
     if (!fullName.trim()) {
@@ -112,21 +97,16 @@ function AddCardContent() {
     try {
       // Configure API service based on user type
       if (user) {
-        // For registered users, set auth token
+        // For registered users - auth token is already set by AuthContext
         console.log("💳 Adding card for registered user:", user.id);
-        const token = await getToken();
-        if (token) {
-          apiService.setAuthToken(token);
-        }
-      } else if (isGuest && guestId && tableNumber) {
+      } else if (isGuestUser && guestId && tableNumber) {
         // For guests only (when no registered user)
         console.log("💳 Adding card for guest:", guestId);
         apiService.setGuestInfo(guestId, tableNumber.toString());
       }
 
-      // Use user's email from Clerk if authenticated, otherwise generate temporary guest email
-      const userEmail = user?.emailAddresses?.[0]?.emailAddress ||
-                       `guest-${guestId || Date.now()}@xquisito.temp`;
+      // Use user's email/phone if authenticated, otherwise generate temporary guest email
+      const userEmail = user?.email || user?.phone || `guest-${guestId || Date.now()}@xquisito.temp`;
 
       const result = await apiService.addPaymentMethod({
         fullName,
@@ -242,8 +222,13 @@ function AddCardContent() {
     setIsLoadingParams(false);
   }, [searchParams]);
 
-  // Mostrar loader mientras lee los parámetros
-  if (isLoadingParams) {
+  // Mostrar error de validación si existe
+  if (validationError) {
+    return <ValidationError errorType={validationError as any} />;
+  }
+
+  // Mostrar loader mientras valida
+  if (isValidating || isLoadingParams) {
     return <Loader />;
   }
 

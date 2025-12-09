@@ -7,14 +7,15 @@ import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { getRestaurantData } from "@/app/utils/restaurantData";
 import MenuHeaderBack from "@/app/components/headers/MenuHeaderBack";
 import { CircleAlert, Loader2, X } from "lucide-react";
-import { apiService } from "@/app/utils/api";
+import { paymentService } from "@/app/services/payment.service";
 import Loader from "@/app/components/UI/Loader";
 import { calculateCommissions } from "@/app/utils/commissionCalculator";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
 
 export default function TipSelectionPage() {
-  const { validationError, isValidating, restaurantId } = useValidateAccess();
+  const { validationError, isValidating, restaurantId, branchNumber } =
+    useValidateAccess();
 
   const { state, dispatch, loadTableData } = useTable();
   const { navigateWithTable } = useTableNavigation();
@@ -47,22 +48,13 @@ export default function TipSelectionPage() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [showCustomTipInput, setShowCustomTipInput] = useState(false);
 
-  // Mostrar error de validación si existe
-  if (validationError) {
-    return <ValidationError errorType={validationError as any} />;
-  }
-
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
-  }
-
   const loadSplitStatus = async () => {
-    if (!state.tableNumber) return;
+    if (!state.tableNumber || !branchNumber) return;
 
     try {
-      const response = await apiService.getSplitPaymentStatus(
+      const response = await paymentService.getSplitPaymentStatus(
         restaurantId.toString(),
+        branchNumber.toString(),
         state.tableNumber.toString()
       );
       if (response.success) {
@@ -312,6 +304,16 @@ export default function TipSelectionPage() {
   };
 
   const paymentDetails = getPaymentDetails();
+
+  // Mostrar error de validación si existe
+  if (validationError) {
+    return <ValidationError errorType={validationError as any} />;
+  }
+
+  // Mostrar loader mientras valida
+  if (isValidating) {
+    return <Loader />;
+  }
 
   if (isLoading) {
     return <Loader />;

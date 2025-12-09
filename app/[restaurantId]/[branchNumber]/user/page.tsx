@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, CartItem } from "@/app/context/CartContext";
 import { useTable } from "@/app/context/TableContext";
@@ -14,24 +14,6 @@ import ValidationError from "@/app/components/ValidationError";
 import Loader from "@/app/components/UI/Loader";
 
 export default function UserPage() {
-  const { validationError, isValidating, restaurantId } = useValidateAccess();
-
-  // Mostrar error de validación si existe
-  if (validationError) {
-    return <ValidationError errorType={validationError as any} />;
-  }
-
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
-  }
-
-  useEffect(() => {
-    if (restaurantId && !isNaN(parseInt(restaurantId))) {
-      setRestaurantId(parseInt(restaurantId));
-    }
-  }, [restaurantId, setRestaurantId]);
-
   const [userName, setUserName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOrderAnimation, setShowOrderAnimation] = useState(false);
@@ -42,23 +24,17 @@ export default function UserPage() {
   const { tableNumber, navigateWithTable } = useTableNavigation();
   const router = useRouter();
   const restaurantData = getRestaurantData();
+  const { validationError, isValidating, restaurantId, branchNumber } = useValidateAccess();
 
-  useEffect(() => {
-    if (!tableNumber) {
-      // Redirigir a home si no hay número de mesa
-      router.push("/");
-      return;
-    }
+  // Mostrar error de validación si existe
+  if (validationError) {
+    return <ValidationError errorType={validationError as any} />;
+  }
 
-    if (isNaN(parseInt(tableNumber))) {
-      // Redirigir si el número de mesa no es válido
-      router.push("/");
-      return;
-    }
-
-    // Establecer el número de mesa en el contexto
-    dispatch({ type: "SET_TABLE_NUMBER", payload: tableNumber });
-  }, [tableNumber, dispatch, router]);
+  // Mostrar loader mientras valida
+  if (isValidating) {
+    return <Loader />;
+  }
 
   // Función para validar que solo se ingresen caracteres de texto válidos para nombres
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,8 +76,8 @@ export default function UserPage() {
       try {
         console.log("🛍️ Submitting order for guest user:", orderUserName);
 
-        // Enviar la orden a la API
-        await submitOrder(orderUserName, orderedItems);
+        // Enviar la orden a la API con branchNumber
+        await submitOrder(orderUserName, orderedItems, branchNumber?.toString());
         // Limpiar el carrito de la base de datos después de la orden exitosa
         await clearCart();
       } catch (error) {

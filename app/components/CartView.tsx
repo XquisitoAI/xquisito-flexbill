@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
-import { useCart, CartItem } from "../context/CartContext";
-import { useTable } from "../context/TableContext";
-import { useTableNavigation } from "../hooks/useTableNavigation";
-import { getRestaurantData } from "../utils/restaurantData";
-import MenuHeaderBack from "./headers/MenuHeaderBack";
-import OrderAnimation from "./UI/OrderAnimation";
-import { useAuth } from "../context/AuthContext";
+import { useCart, CartItem } from "@/app/context/CartContext";
+import { useTable } from "@/app/context/TableContext";
+import { useTableNavigation } from "@/app/hooks/useTableNavigation";
+import { getRestaurantData } from "@/app/utils/restaurantData";
+import MenuHeaderBack from "@/app/components/headers/MenuHeaderBack";
+import OrderAnimation from "@/app/components/UI/OrderAnimation";
+import { useAuth } from "@/app/context/AuthContext";
+import { useRestaurant } from "@/app/context/RestaurantContext";
+import { DEFAULT_IMAGES } from "@/app/constants/images";
 
 export default function CartView() {
   const { state: cartState, updateQuantity, clearCart } = useCart();
@@ -16,9 +18,11 @@ export default function CartView() {
   const { navigateWithTable } = useTableNavigation();
   const restaurantData = getRestaurantData();
   const { user, isAuthenticated, isLoading, profile } = useAuth();
+  const { restaurantId, branchNumber } = useRestaurant();
   const [showOrderAnimation, setShowOrderAnimation] = useState(false);
   const [orderedItems, setOrderedItems] = useState<CartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderComments, setOrderComments] = useState("");
 
   const handleOrder = async () => {
     // Si el usuario está loggeado, hacer la orden directamente con animación
@@ -55,14 +59,16 @@ export default function CartView() {
           ? `${profile.firstName}`.trim()
           : `Usuario ${user.id.substring(0, 8)}`;
 
-        // Enviar la orden a la API
-        await submitOrder(userName, orderedItems);
+        // Enviar la orden a la API con branchNumber
+        await submitOrder(userName, orderedItems, branchNumber?.toString());
         // Limpiar el carrito de la base de datos después de la orden exitosa
         await clearCart();
       } catch (error) {
         console.error("Error submitting order:", error);
-        // Si hay error, ocultar la animación
+        // Si hay error, ocultar la animación y mostrar mensaje al usuario
         setShowOrderAnimation(false);
+        const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+        alert(`Error al enviar la orden: ${errorMessage}. Por favor intenta nuevamente.`);
       } finally {
         setIsSubmitting(false);
       }
@@ -145,7 +151,7 @@ export default function CartView() {
                                   />
                                 ) : (
                                   <img
-                                    src={"/logo-short-green.webp"}
+                                    src={DEFAULT_IMAGES.RESTAURANT_LOGO}
                                     alt="Logo Xquisito"
                                     className="size-18 md:size-20 lg:size-22 object-contain"
                                   />
@@ -213,8 +219,8 @@ export default function CartView() {
                       ¿Algo que debamos saber?
                     </span>
                     <textarea
-                      name=""
-                      id=""
+                      value={orderComments}
+                      onChange={(e) => setOrderComments(e.target.value)}
                       className="h-24 md:h-28 lg:h-32 text-base md:text-lg lg:text-xl w-full bg-[#f9f9f9] border border-[#bfbfbf] px-3 md:px-4 py-2 md:py-3 rounded-lg resize-none focus:outline-none mt-2 md:mt-3"
                       placeholder="Alergias, instrucciones especiales, comentarios..."
                     ></textarea>

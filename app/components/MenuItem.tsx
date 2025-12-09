@@ -3,14 +3,14 @@
 import {
   MenuItem as MenuItemDB,
   MenuItemData,
-} from "../interfaces/menuItemData";
-import { useCart } from "../context/CartContext";
-import { useTableNavigation } from "../hooks/useTableNavigation";
-import { useFlyToCart } from "../hooks/useFlyToCart";
-import { useRestaurant } from "../context/RestaurantContext";
+} from "@/app/interfaces/menuItemData";
+import { useCart } from "@/app/context/CartContext";
+import { useTableNavigation } from "@/app/hooks/useTableNavigation";
+import { useFlyToCart } from "@/app/hooks/useFlyToCart";
+import { useRestaurant } from "@/app/context/RestaurantContext";
 import { Plus, Minus } from "lucide-react";
 import { useRef, useState, useEffect, useMemo } from "react";
-import RestaurantClosedModal from "./RestaurantClosedModal";
+import RestaurantClosedModal from "@/app/components/RestaurantClosedModal";
 
 interface MenuItemProps {
   item: MenuItemDB | MenuItemData;
@@ -198,7 +198,7 @@ export default function MenuItem({ item }: MenuItemProps) {
               />
             ) : (
               <img
-                src={"/logo-short-green.webp"}
+                src="/logo-short-green.webp"
                 alt="Logo Xquisito"
                 className="size-18 md:size-20 lg:size-22 object-contain"
               />

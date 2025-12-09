@@ -463,10 +463,11 @@ class ApiService {
    */
   async getTableSummary(
     restaurantId: string,
+    branchNumber: string,
     tableNumber: string
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/tables/${tableNumber}/summary`
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/summary`
     );
   }
 
@@ -475,10 +476,11 @@ class ApiService {
    */
   async getTableOrders(
     restaurantId: string,
+    branchNumber: string,
     tableNumber: string
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/tables/${tableNumber}/orders`
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/orders`
     );
   }
 
@@ -487,10 +489,11 @@ class ApiService {
    */
   async getActiveUsers(
     restaurantId: string,
+    branchNumber: string,
     tableNumber: string
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/tables/${tableNumber}/active-users`
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/active-users`
     );
   }
 
@@ -522,6 +525,7 @@ class ApiService {
    */
   async createDishOrder(
     restaurantId: string,
+    branchNumber: string,
     tableNumber: string,
     userId: string | null,
     guestName: string,
@@ -542,7 +546,7 @@ class ApiService {
     extraPrice?: number
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/tables/${tableNumber}/dishes`,
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/dishes`,
       {
         method: "POST",
         body: JSON.stringify({
@@ -595,6 +599,7 @@ class ApiService {
    */
   async payTableAmount(
     restaurantId: string,
+    branchNumber: string,
     tableNumber: string,
     amount: number,
     userId?: string | null,
@@ -602,7 +607,7 @@ class ApiService {
     paymentMethodId?: string | null
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/tables/${tableNumber}/pay`,
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/pay`,
       {
         method: "POST",
         body: JSON.stringify({
@@ -624,13 +629,14 @@ class ApiService {
    */
   async initializeSplitBill(
     restaurantId: string,
+    branchNumber: string,
     tableNumber: string,
     numberOfPeople: number,
     userIds?: string[] | null,
     guestNames?: string[] | null
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/tables/${tableNumber}/split-bill`,
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/split-bill`,
       {
         method: "POST",
         body: JSON.stringify({
@@ -647,13 +653,14 @@ class ApiService {
    */
   async paySplitAmount(
     restaurantId: string,
+    branchNumber: string,
     tableNumber: string,
     userId?: string | null,
     guestName?: string | null,
     paymentMethodId?: string | null
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/tables/${tableNumber}/pay-split`,
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/pay-split`,
       {
         method: "POST",
         body: JSON.stringify({
@@ -670,10 +677,11 @@ class ApiService {
    */
   async getSplitPaymentStatus(
     restaurantId: string,
+    branchNumber: string,
     tableNumber: string
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/tables/${tableNumber}/split-status`
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/split-status`
     );
   }
 

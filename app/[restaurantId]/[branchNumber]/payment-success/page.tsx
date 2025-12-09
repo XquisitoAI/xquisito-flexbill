@@ -40,16 +40,6 @@ export default function PaymentSuccessPage() {
   const [isBreakdownModalOpen, setIsBreakdownModalOpen] = useState(false);
   const [hasRated, setHasRated] = useState(false); // Track if user has already rated
 
-  // Mostrar error de validación si existe
-  if (validationError) {
-    return <ValidationError errorType={validationError as any} />;
-  }
-
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
-  }
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       console.log(
@@ -269,6 +259,16 @@ export default function PaymentSuccessPage() {
       console.error("❌ Error submitting restaurant review:", error);
     }
   };
+
+  // Mostrar error de validación si existe
+  if (validationError) {
+    return <ValidationError errorType={validationError as any} />;
+  }
+
+  // Mostrar loader mientras valida
+  if (isValidating) {
+    return <Loader />;
+  }
 
   return (
     <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">

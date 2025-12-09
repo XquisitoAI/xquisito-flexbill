@@ -224,7 +224,7 @@ export default function SupportTab({
       </div>
 
       {/* Input fijado en la parte inferior */}
-      <div className="flex-shrink-0 pt-4">
+      <div className="flex-shrink-0 pt-4 pb-6">
         <div className="flex items-center gap-2 md:gap-3 lg:gap-4 bg-gray-100 rounded-full px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 border border-gray-200">
           <button className="text-gray-400 hover:text-gray-600 cursor-pointer">
             <Plus className="size-6 md:size-7 lg:size-8" />
@@ -235,7 +235,10 @@ export default function SupportTab({
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
             placeholder="Pregunta lo que necesites..."
-            className="flex-1 bg-transparent text-black text-base md:text-lg lg:text-xl placeholder-gray-500 focus:outline-none"
+            className="flex-1 min-w-0 bg-transparent text-black text-base md:text-lg lg:text-xl placeholder-gray-500 focus:outline-none"
+            style={{
+              textOverflow: 'ellipsis'
+            }}
           />
           <button className="text-gray-400 hover:text-gray-600 cursor-pointer">
             <Mic className="size-6 md:size-7 lg:size-8" />

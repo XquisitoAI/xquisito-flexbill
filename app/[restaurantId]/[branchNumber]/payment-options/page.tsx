@@ -88,13 +88,15 @@ export default function PaymentOptionsPage() {
           console.log("🔄 Payment options: Loading table data (missing data)");
           setIsLoading(true);
           await loadTableData();
+          await loadActiveUsers();
           await loadSplitStatus();
           setIsLoading(false);
         } else {
-          // Ya hay datos, solo cargar split status
+          // Ya hay datos, recargar activeUsers y split status (pueden haber cambiado por pagos)
           console.log(
-            "✅ Payment options: Data already loaded, loading split status only"
+            "✅ Payment options: Data already loaded, reloading active users and split status"
           );
+          await loadActiveUsers();
           await loadSplitStatus();
           setIsLoading(false);
         }
@@ -151,20 +153,26 @@ export default function PaymentOptionsPage() {
   const tableTotalItems =
     state.tableSummary?.data?.data?.no_items || dishOrders.length;
 
-  // Obtener usuarios únicos considerando active_users con total_paid_amount === 0
+  // Obtener usuarios únicos considerando active_users que NO hayan pagado nada
   const uniqueUsers = (() => {
     // Si tenemos activeUsers, usar esa información
     if (state.activeUsers && state.activeUsers.length > 0) {
-      const usersWithZeroPaid = state.activeUsers
-        .filter((user) => user.total_paid_amount === 0)
+      const usersWithNoPaid = state.activeUsers
+        .filter((user) => {
+          const totalPaid =
+            (user.total_paid_individual || 0) +
+            (user.total_paid_amount || 0) +
+            (user.total_paid_split || 0);
+          return totalPaid === 0;
+        })
         .map((user) => user.guest_name)
         .filter(Boolean);
 
-      console.log("🔍 Using active_users with total_paid_amount === 0:");
+      console.log("🔍 Using active_users with NO payments:");
       console.log("- Active users:", state.activeUsers);
-      console.log("- Users with zero paid:", usersWithZeroPaid);
+      console.log("- Users with no payments:", usersWithNoPaid);
 
-      return [...new Set(usersWithZeroPaid)]; // Asegurar unicidad
+      return [...new Set(usersWithNoPaid)]; // Asegurar unicidad
     }
 
     // Si hay split status activo, usar esa información

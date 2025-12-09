@@ -167,65 +167,60 @@ export default function SupportTab({
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="absolute inset-0 flex flex-col">
       {/* Mensajes con scroll */}
-      <div
-        className="flex-1 overflow-y-auto px-1 min-h-0 flex flex-col"
-        style={{ maxHeight: "100%" }}
-      >
-        <div className="flex-1 overflow-y-auto px-1 min-h-0">
-          {messages.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center max-w-md px-8">
-                <div className="mb-6 flex justify-center">
-                  <div className="rounded-full h-20 w-20 md:h-24 md:w-24 bg-gray-100 flex items-center justify-center">
-                    <Bot
-                      className="w-12 h-12 md:w-14 md:h-14 text-black"
-                      strokeWidth={1.5}
-                    />
-                  </div>
+      <div className="flex-1 overflow-y-auto flex flex-col px-1 scrollbar-hide">
+        {messages.length === 0 ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center max-w-md px-8">
+              <div className="mb-6 flex justify-center">
+                <div className="rounded-full h-20 w-20 md:h-24 md:w-24 bg-gray-100 flex items-center justify-center">
+                  <Bot
+                    className="w-12 h-12 md:w-14 md:h-14 text-black"
+                    strokeWidth={1.5}
+                  />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-medium text-gray-800 mb-3">
-                  Bienvenido
-                </h2>
-                <p className="text-gray-600 text-base md:text-lg mb-8">
-                  ¿En qué te puedo ayudar hoy?
-                </p>
               </div>
+              <h2 className="text-2xl md:text-3xl font-medium text-gray-800 mb-3">
+                Bienvenido
+              </h2>
+              <p className="text-gray-600 text-base md:text-lg mb-8">
+                ¿En qué te puedo ayudar hoy?
+              </p>
             </div>
-          ) : (
-            <>
-              {messages.map((msg, index) => (
+          </div>
+        ) : (
+          <div className="space-y-3 md:space-y-4 lg:space-y-5">
+            {messages.map((msg, index) => (
+              <div
+                key={index}
+                className={`flex ${
+                  msg.role === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
                 <div
-                  key={index}
-                  className={`flex ${
-                    msg.role === "user" ? "justify-end" : "justify-start"
+                  className={`max-w-[80%] rounded-xl px-4 md:px-5 lg:px-6 py-2 md:py-3 lg:py-4 text-black text-base md:text-lg lg:text-xl ${
+                    msg.role === "user" ? "bg-[#ebb2f4]" : "bg-gray-100"
                   }`}
                 >
-                  <div
-                    className={`max-w-[80%] rounded-xl px-4 md:px-5 lg:px-6 py-2 md:py-3 lg:py-4 text-black text-base md:text-lg lg:text-xl ${
-                      msg.role === "user" ? "bg-[#ebb2f4]" : "bg-gray-100"
-                    }`}
-                  >
-                    <MessageContent content={msg.content} />
-                  </div>
+                  <MessageContent content={msg.content} />
                 </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="max-w-[80%] rounded-xl px-4 md:px-5 lg:px-6 py-2 md:py-3 lg:py-4 text-black text-base md:text-lg lg:text-xl bg-gray-100">
-                    <p className="flex items-center gap-1">
-                      <span className="animate-bounce">.</span>
-                      <span className="animate-bounce delay-100">.</span>
-                      <span className="animate-bounce delay-200">.</span>
-                    </p>
-                  </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-xl px-4 md:px-5 lg:px-6 py-2 md:py-3 lg:py-4 text-black text-base md:text-lg lg:text-xl bg-gray-100">
+                  <p className="flex items-center gap-1">
+                    <span className="animate-bounce">.</span>
+                    <span className="animate-bounce delay-100">.</span>
+                    <span className="animate-bounce delay-200">.</span>
+                  </p>
                 </div>
-              )}
-              <div ref={messagesEndRef} />
-            </>
-          )}
-        </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </div>
 
       {/* Input fijado en la parte inferior */}

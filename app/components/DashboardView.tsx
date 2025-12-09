@@ -96,7 +96,7 @@ export default function DashboardView() {
   }
 
   return (
-    <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <DashboardHeader />
 
       <div className="px-4 md:px-6 lg:px-8 w-full flex-1 flex flex-col">
@@ -109,7 +109,7 @@ export default function DashboardView() {
           </div>
         </div>
 
-        <div className="flex-1 h-full flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col">
           <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col px-6 md:px-7 lg:px-8">
             {/* Tabs */}
             <div className="relative grid grid-cols-4 gap-2 my-6 md:my-7 lg:my-8 w-full">
@@ -173,7 +173,7 @@ export default function DashboardView() {
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 flex flex-col pb-6">
+            <div className={`flex-1 flex flex-col pb-6 ${activeTab === "support" ? "relative" : ""}`}>
               {activeTab === "profile" && <ProfileTab />}
               {activeTab === "cards" && <CardsTab />}
               {activeTab === "history" && <HistoryTab />}

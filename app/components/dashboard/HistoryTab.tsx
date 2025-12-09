@@ -38,6 +38,7 @@ export default function HistoryTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<any>(null);
+  const [displayCount, setDisplayCount] = useState(5);
 
   // Bloquear scroll cuando el modal está abierto
   useEffect(() => {
@@ -125,13 +126,21 @@ export default function HistoryTab() {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  // Órdenes visibles según displayCount
+  const visibleOrders = groupedOrders.slice(0, displayCount);
+  const hasMore = displayCount < groupedOrders.length;
+
+  const handleLoadMore = () => {
+    setDisplayCount((prev) => prev + 5);
+  };
+
   return (
     <>
       <h1 className="text-gray-700 text-xl md:text-2xl lg:text-3xl mb-3 md:mb-4 lg:mb-5">
         Ordenes previas
       </h1>
       <div className="space-y-3 md:space-y-4 lg:space-y-5">
-        {groupedOrders.map((order: any) => {
+        {visibleOrders.map((order: any) => {
           return (
             <div
               key={order.transactionId}
@@ -207,6 +216,16 @@ export default function HistoryTab() {
           );
         })}
       </div>
+
+      {/* Botón "Ver más" */}
+      {hasMore && (
+        <button
+          onClick={handleLoadMore}
+          className="mt-4 md:mt-5 lg:mt-6 border border-black/50 flex justify-center items-center gap-1 md:gap-1.5 lg:gap-2 w-full text-black text-base md:text-lg lg:text-xl py-3 md:py-4 lg:py-5 rounded-full cursor-pointer transition-colors bg-[#f9f9f9] hover:bg-gray-100"
+        >
+          Ver más órdenes
+        </button>
+      )}
 
       {/* Modal */}
       {selectedOrderDetails && (

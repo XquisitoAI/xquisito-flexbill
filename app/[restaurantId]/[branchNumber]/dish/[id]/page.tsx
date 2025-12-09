@@ -28,7 +28,8 @@ export default function DishDetailPage() {
   const branchNumber = params.branchNumber as string;
   const { state, addItem, removeItem, updateQuantity } = useCart();
   const { tableNumber, navigateWithTable } = useTableNavigation();
-  const { restaurant, menu, isOpen, setBranchNumber, setRestaurantId } = useRestaurant();
+  const { restaurant, menu, isOpen, setBranchNumber, setRestaurantId } =
+    useRestaurant();
   const [localQuantity, setLocalQuantity] = useState(0);
   const [isPulsing, setIsPulsing] = useState(false);
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>(
@@ -76,11 +77,12 @@ export default function DishDetailPage() {
 
       // Validar que existen
       try {
-        const validation = await restaurantService.validateRestaurantBranchTable(
-          parseInt(restaurantId),
-          parseInt(branchNumber),
-          parseInt(tableNumber)
-        );
+        const validation =
+          await restaurantService.validateRestaurantBranchTable(
+            parseInt(restaurantId),
+            parseInt(branchNumber),
+            parseInt(tableNumber)
+          );
 
         if (!validation.valid) {
           console.error("❌ Validation failed:", validation.error);
@@ -98,7 +100,14 @@ export default function DishDetailPage() {
     };
 
     validateParams();
-  }, [restaurantId, branchNumber, tableNumber, setRestaurantId, setBranchNumber, router]);
+  }, [
+    restaurantId,
+    branchNumber,
+    tableNumber,
+    setRestaurantId,
+    setBranchNumber,
+    router,
+  ]);
 
   // Intentar cargar datos del menú del contexto de forma sincrónica (precarga instantánea)
   const initialDishData = useMemo(() => {
@@ -630,11 +639,6 @@ export default function DishDetailPage() {
   // Mostrar error de validación si existe
   if (validationError) {
     return <ValidationError errorType={validationError as any} />;
-  }
-
-  // Mostrar loader mientras valida o carga el platillo
-  if (isValidating || dishLoading) {
-    return <Loader />;
   }
 
   // Si hubo error cargando el platillo

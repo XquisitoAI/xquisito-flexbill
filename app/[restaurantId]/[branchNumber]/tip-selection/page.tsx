@@ -310,11 +310,6 @@ export default function TipSelectionPage() {
     return <ValidationError errorType={validationError as any} />;
   }
 
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
-  }
-
   if (isLoading) {
     return <Loader />;
   }

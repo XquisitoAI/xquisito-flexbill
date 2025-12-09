@@ -14,7 +14,8 @@ import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
 
 export default function PaymentOptionsPage() {
-  const { validationError, isValidating, restaurantId, branchNumber } = useValidateAccess();
+  const { validationError, isValidating, restaurantId, branchNumber } =
+    useValidateAccess();
   const searchParams = useSearchParams();
 
   const { state, dispatch, loadTableData, loadActiveUsers } = useTable();
@@ -39,7 +40,12 @@ export default function PaymentOptionsPage() {
   const loadSplitStatus = async () => {
     if (!state.tableNumber || !branchNumber) return;
 
-    console.log("🔄 Loading split status for table:", state.tableNumber, "branch:", branchNumber);
+    console.log(
+      "🔄 Loading split status for table:",
+      state.tableNumber,
+      "branch:",
+      branchNumber
+    );
 
     try {
       const response = await paymentService.getSplitPaymentStatus(
@@ -116,11 +122,6 @@ export default function PaymentOptionsPage() {
   // Mostrar error de validación si existe
   if (validationError) {
     return <ValidationError errorType={validationError as any} />;
-  }
-
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
   }
 
   // Calcular totales usando tableSummary si está disponible

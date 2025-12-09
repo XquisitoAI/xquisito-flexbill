@@ -13,10 +13,5 @@ export default function OrderPage() {
     return <ValidationError errorType={validationError as any} />;
   }
 
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
-  }
-
   return <OrderStatus />;
 }

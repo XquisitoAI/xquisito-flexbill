@@ -265,11 +265,6 @@ export default function PaymentSuccessPage() {
     return <ValidationError errorType={validationError as any} />;
   }
 
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
-  }
-
   return (
     <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       {/* Success Icon */}

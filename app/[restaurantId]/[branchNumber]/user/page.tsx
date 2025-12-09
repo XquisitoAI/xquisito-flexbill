@@ -24,16 +24,12 @@ export default function UserPage() {
   const { tableNumber, navigateWithTable } = useTableNavigation();
   const router = useRouter();
   const restaurantData = getRestaurantData();
-  const { validationError, isValidating, restaurantId, branchNumber } = useValidateAccess();
+  const { validationError, isValidating, restaurantId, branchNumber } =
+    useValidateAccess();
 
   // Mostrar error de validación si existe
   if (validationError) {
     return <ValidationError errorType={validationError as any} />;
-  }
-
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
   }
 
   // Función para validar que solo se ingresen caracteres de texto válidos para nombres
@@ -77,7 +73,11 @@ export default function UserPage() {
         console.log("🛍️ Submitting order for guest user:", orderUserName);
 
         // Enviar la orden a la API con branchNumber
-        await submitOrder(orderUserName, orderedItems, branchNumber?.toString());
+        await submitOrder(
+          orderUserName,
+          orderedItems,
+          branchNumber?.toString()
+        );
         // Limpiar el carrito de la base de datos después de la orden exitosa
         await clearCart();
       } catch (error) {

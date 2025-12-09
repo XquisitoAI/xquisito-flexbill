@@ -287,7 +287,11 @@ export default function ProfileTab() {
             onChange={(e) => setBirthDate(e.target.value)}
             max={new Date().toISOString().split("T")[0]}
             placeholder="dd/mm/aaaa"
-            className="cursor-pointer w-full px-2 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+            className="cursor-pointer w-full px-2 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed [&::-webkit-calendar-picker-indicator]:cursor-pointer appearance-none bg-white"
+            style={{
+              WebkitAppearance: "none",
+              MozAppearance: "textfield",
+            }}
             disabled={isUpdating || !isAuthenticated}
             lang="es-MX"
           />
@@ -298,16 +302,37 @@ export default function ProfileTab() {
           <label className="gap-1.5 md:gap-2 flex items-center text-sm md:text-base lg:text-lg text-gray-700">
             Género
           </label>
-          <select
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
-            className="cursor-pointer w-full px-2 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-            disabled={isUpdating || !isAuthenticated}
-          >
-            <option value="male">Masculino</option>
-            <option value="female">Femenino</option>
-            <option value="other">Otro</option>
-          </select>
+          <div className="relative">
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className="cursor-pointer w-full px-2 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black text-base md:text-lg lg:text-xl border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed appearance-none bg-white pr-10"
+              style={{
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+              }}
+              disabled={isUpdating || !isAuthenticated}
+            >
+              <option value="male">Masculino</option>
+              <option value="female">Femenino</option>
+              <option value="other">Otro</option>
+            </select>
+            {/* Custom dropdown arrow */}
+            <div className="pointer-events-none absolute inset-y-0 right-2 md:right-5 lg:right-6 flex items-center">
+              <svg
+                className="h-5 w-5 text-gray-400"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 

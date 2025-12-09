@@ -736,11 +736,6 @@ export default function CardSelectionPage() {
     return <ValidationError errorType={validationError as any} />;
   }
 
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
-  }
-
   return (
     <>
       <PaymentAnimation
@@ -1202,7 +1197,7 @@ export default function CardSelectionPage() {
                                   <div className="flex items-center justify-between">
                                     <div className="flex-1">
                                       <p className="font-medium text-black text-base md:text-lg">
-                                        {option.months} meses sin intereses
+                                        {option.months} meses
                                       </p>
                                       <p className="text-xs md:text-sm text-gray-600">
                                         ${monthlyPayment.toFixed(2)} MXN

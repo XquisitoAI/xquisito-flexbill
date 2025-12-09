@@ -1,4 +1,4 @@
-import { Mic, Plus, SendHorizontal } from "lucide-react";
+import { Bot, Mic, Plus, SendHorizontal } from "lucide-react";
 import {
   useState,
   useRef,
@@ -123,9 +123,10 @@ export default function SupportTab({
       try {
         // Construir el mensaje con el contexto completo
         const userId = user?.id || null;
-        const userName = profile?.firstName && profile?.lastName
-          ? `${profile.firstName} ${profile.lastName}`
-          : profile?.firstName || null;
+        const userName =
+          profile?.firstName && profile?.lastName
+            ? `${profile.firstName} ${profile.lastName}`
+            : profile?.firstName || null;
         const tableNumber = state.tableNumber || null;
 
         const contextualMessage = `[CONTEXT: support_dashboard, restaurant_id=${restaurantId || "null"}, restaurant_name="${restaurant?.name || "unknown"}", table_number=${tableNumber || "null"}, user_id=${userId || "null"}, user_name="${userName || "unknown"}"]
@@ -166,32 +167,28 @@ export default function SupportTab({
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 pb-6">
+    <div className="flex-1 flex flex-col min-h-0">
       {/* Mensajes con scroll */}
-      <div className="flex-1 overflow-y-auto px-1 min-h-0" style={{ maxHeight: '100%' }}>
-        <div className="space-y-3 md:space-y-4 lg:space-y-5 py-2">
+      <div
+        className="flex-1 overflow-y-auto px-1 min-h-0 flex flex-col"
+        style={{ maxHeight: "100%" }}
+      >
+        <div className="flex-1 overflow-y-auto px-1 min-h-0">
           {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full min-h-[200px] text-gray-400">
+            <div className="h-full flex items-center justify-center">
               <div className="text-center max-w-md px-8">
                 <div className="mb-6 flex justify-center">
-                  <div className="rounded-full h-20 w-20 md:h-24 md:w-24 overflow-hidden flex items-center justify-center">
-                    <video
-                      src="/videos/video-icon-pepper.webm"
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      disablePictureInPicture
-                      controls={false}
-                      controlsList="nodownload nofullscreen noremoteplayback"
-                      className="w-full h-full object-cover"
+                  <div className="rounded-full h-20 w-20 md:h-24 md:w-24 bg-gray-100 flex items-center justify-center">
+                    <Bot
+                      className="w-12 h-12 md:w-14 md:h-14 text-black"
+                      strokeWidth={1.5}
                     />
                   </div>
                 </div>
-                <h3 className="text-2xl md:text-3xl font-semibold text-black mb-4">
-                  Pepper
-                </h3>
-                <p className="text-gray-600 text-base md:text-lg">
+                <h2 className="text-2xl md:text-3xl font-medium text-gray-800 mb-3">
+                  Bienvenido
+                </h2>
+                <p className="text-gray-600 text-base md:text-lg mb-8">
                   ¿En qué te puedo ayudar hoy?
                 </p>
               </div>

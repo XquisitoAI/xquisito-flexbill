@@ -32,7 +32,8 @@ const countries: Country[] = [
 export default function AuthPage() {
   const router = useRouter();
   const { navigateWithTable } = useTableNavigation();
-  const { validationError, isValidating, restaurantId, tableNumber } = useValidateAccess();
+  const { validationError, isValidating, restaurantId, tableNumber } =
+    useValidateAccess();
   const { setRestaurantId } = useRestaurant();
   const {
     verifyOTP,
@@ -295,11 +296,6 @@ export default function AuthPage() {
   // Mostrar error de validación si existe
   if (validationError) {
     return <ValidationError errorType={validationError as any} />;
-  }
-
-  // Mostrar loader mientras valida
-  if (isValidating) {
-    return <Loader />;
   }
 
   return (

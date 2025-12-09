@@ -15,7 +15,7 @@ import { useTable } from "../../context/TableContext";
 // Función para comunicarse con el agente a través del backend
 async function chatWithAgent(message: string, sessionId: string | null = null) {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/ai-agent/chat`,
+    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/ai-agent/chat`,
     {
       method: "POST",
       headers: {
@@ -129,7 +129,7 @@ export default function SupportTab({
             : profile?.firstName || null;
         const tableNumber = state.tableNumber || null;
 
-        const contextualMessage = `[CONTEXT: support_dashboard, restaurant_id=${restaurantId || "null"}, restaurant_name="${restaurant?.name || "unknown"}", table_number=${tableNumber || "null"}, user_id=${userId || "null"}, user_name="${userName || "unknown"}"]
+        const contextualMessage = `[CONTEXT: support_dashboard, table_number=${tableNumber || "null"}, user_id=${userId || "null"}, user_name="${userName || "unknown"}"]
 [USER_MESSAGE: ${userMessage}]`;
 
         const result = await chatWithAgent(contextualMessage, sessionId);
@@ -237,7 +237,7 @@ export default function SupportTab({
             placeholder="Pregunta lo que necesites..."
             className="flex-1 min-w-0 bg-transparent text-black text-base md:text-lg lg:text-xl placeholder-gray-500 focus:outline-none"
             style={{
-              textOverflow: 'ellipsis'
+              textOverflow: "ellipsis",
             }}
           />
           <button className="text-gray-400 hover:text-gray-600 cursor-pointer">

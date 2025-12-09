@@ -266,7 +266,10 @@ export default function ChatView({ onBack }: ChatViewProps) {
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
             placeholder="Pregunta lo que necesites..."
-            className="flex-1 bg-transparent text-black placeholder-gray-500 focus:outline-none text-base md:text-lg lg:text-xl"
+            className="flex-1 min-w-0 bg-transparent text-black placeholder-gray-500 focus:outline-none text-base md:text-lg lg:text-xl"
+            style={{
+              textOverflow: 'ellipsis'
+            }}
           />
           <button className="text-gray-400 hover:text-gray-600 cursor-pointer">
             <Mic className="size-6 md:size-7 lg:size-8" />

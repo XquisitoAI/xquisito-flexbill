@@ -8,7 +8,6 @@ import { getRestaurantData } from "@/app/utils/restaurantData";
 import MenuHeaderBack from "@/app/components/headers/MenuHeaderBack";
 import { CircleAlert, Loader2, X } from "lucide-react";
 import { paymentService } from "@/app/services/payment.service";
-import Loader from "@/app/components/UI/Loader";
 import { calculateCommissions } from "@/app/utils/commissionCalculator";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
@@ -311,7 +310,73 @@ export default function TipSelectionPage() {
   }
 
   if (isLoading) {
-    return <Loader />;
+    return (
+      <div className="bg-gradient-to-br from-[#0a8b9b] to-[#153f43] min-h-screen flex flex-col">
+        <div className="fixed top-0 left-0 right-0 z-50" style={{ zIndex: 999 }}>
+          <MenuHeaderBack
+            restaurant={restaurantData}
+            tableNumber={state.tableNumber}
+          />
+        </div>
+        <div className="h-20"></div>
+
+        <div className="w-full flex-1 flex flex-col justify-end">
+          <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center">
+            <div className="flex flex-col relative px-4 md:px-6 lg:px-8 w-full">
+              <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
+                <div className="py-6 md:py-8 lg:py-10 px-8 md:px-10 lg:px-12 flex flex-col justify-center">
+                  <h1 className="text-[#e0e0e0] text-xl md:text-2xl lg:text-3xl font-medium">
+                    Mesa {state.tableNumber}
+                  </h1>
+                  <h1 className="font-medium text-white text-3xl md:text-4xl lg:text-5xl leading-7 md:leading-9 lg:leading-tight mt-2 md:mt-3 mb-6 md:mb-8">
+                    Revisa tu cuenta
+                  </h1>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-t-4xl relative z-10 flex flex-col pt-5 md:pt-6 lg:pt-8 pb-4 md:pb-5">
+                <div className="space-y-3 md:space-y-4 lg:space-y-5 px-8 md:px-10 lg:px-12 animate-pulse">
+                  {/* Skeleton del resumen */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div className="h-4 bg-gray-200 rounded w-28"></div>
+                      <div className="h-4 bg-gray-200 rounded w-20"></div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="h-4 bg-gray-200 rounded w-36"></div>
+                      <div className="h-4 bg-gray-200 rounded w-20"></div>
+                    </div>
+                  </div>
+
+                  {/* Skeleton de propina */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-4 bg-gray-200 rounded w-16"></div>
+                      <div className="grid grid-cols-5 gap-2 flex-1">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div key={i} className="h-7 bg-gray-200 rounded-full"></div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Skeleton del total */}
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="w-full flex gap-3 justify-between">
+                      <div className="flex flex-col justify-center">
+                        <div className="h-3 bg-gray-200 rounded w-20 mb-1"></div>
+                        <div className="h-8 bg-gray-200 rounded w-28"></div>
+                      </div>
+                      <div className="h-9 md:h-10 lg:h-11 bg-gray-300 rounded-full w-28"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

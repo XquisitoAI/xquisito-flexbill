@@ -50,8 +50,8 @@ export default function CardSelectionPage() {
   const defaultSystemCard = {
     id: "system-default-card",
     lastFourDigits: "1234",
-    cardBrand: "visa",
-    cardType: "debit",
+    cardBrand: "amex",
+    cardType: "credit",
     isDefault: true,
     isSystemCard: true,
   };

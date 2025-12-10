@@ -743,7 +743,7 @@ export default function CardSelectionPage() {
         onAnimationComplete={handleAnimationComplete}
       />
 
-      <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <div className="min-h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         {/* Fixed Header */}
         <div
           className="fixed top-0 left-0 right-0 z-50"

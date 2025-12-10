@@ -311,8 +311,11 @@ export default function TipSelectionPage() {
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-br from-[#0a8b9b] to-[#153f43] min-h-screen flex flex-col">
-        <div className="fixed top-0 left-0 right-0 z-50" style={{ zIndex: 999 }}>
+      <div className="bg-gradient-to-br from-[#0a8b9b] to-[#153f43] min-h-[100dvh] flex flex-col">
+        <div
+          className="fixed top-0 left-0 right-0 z-50"
+          style={{ zIndex: 999 }}
+        >
           <MenuHeaderBack
             restaurant={restaurantData}
             tableNumber={state.tableNumber}
@@ -354,7 +357,10 @@ export default function TipSelectionPage() {
                       <div className="h-4 bg-gray-200 rounded w-16"></div>
                       <div className="grid grid-cols-5 gap-2 flex-1">
                         {[1, 2, 3, 4, 5].map((i) => (
-                          <div key={i} className="h-7 bg-gray-200 rounded-full"></div>
+                          <div
+                            key={i}
+                            className="h-7 bg-gray-200 rounded-full"
+                          ></div>
                         ))}
                       </div>
                     </div>
@@ -383,8 +389,8 @@ export default function TipSelectionPage() {
     <div
       className={`bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col ${
         paymentType === "select-items"
-          ? "h-screen overflow-y-auto overflow-x-hidden"
-          : "min-h-screen"
+          ? "h-[100dvh] overflow-y-auto overflow-x-hidden"
+          : "min-h-[100dvh]"
       }`}
     >
       {/* Fixed Header - solo cuando NO es select-items */}

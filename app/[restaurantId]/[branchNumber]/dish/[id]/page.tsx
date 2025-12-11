@@ -291,6 +291,12 @@ export default function DishDetailPage() {
       ...prev,
       [fieldId]: [optionId],
     }));
+
+    // Cerrar el dropdown automáticamente después de seleccionar
+    setOpenSections((prev) => ({
+      ...prev,
+      [fieldId]: false,
+    }));
   };
 
   const handleCheckboxChange = (fieldId: string, optionId: string) => {
@@ -975,9 +981,21 @@ export default function DishDetailPage() {
                       className="flex justify-between items-center pb-2 md:pb-3 border-b border-[#8e8e8e] cursor-pointer"
                       onClick={() => toggleSection(field.id)}
                     >
-                      <h3 className="font-medium text-black text-xl md:text-2xl lg:text-3xl">
-                        {field.name}
-                      </h3>
+                      <div className="flex flex-col">
+                        <h3 className="font-medium text-black text-xl md:text-2xl lg:text-3xl mb-4">
+                          {field.name}
+                        </h3>
+                        {field.type === "dropdown" && customFieldSelections[field.id] && customFieldSelections[field.id].length > 0 && (
+                          <span className="text-[#eab3f4] text-sm md:text-base mt-1">
+                            {field.options?.find(opt => opt.id === customFieldSelections[field.id][0])?.name || 'Seleccionado'}
+                          </span>
+                        )}
+                        {field.type === "dropdown" && (!customFieldSelections[field.id] || customFieldSelections[field.id].length === 0) && (
+                          <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
+                            Seleccionar opción
+                          </span>
+                        )}
+                      </div>
                       <div className="size-7 md:size-8 lg:size-9 bg-[#f9f9f9] rounded-full flex items-center justify-center border border-[#8e8e8e]/50">
                         <ChevronDown
                           className={`size-5 md:size-6 lg:size-7 text-black transition-transform duration-250 ${openSections[field.id] ? "rotate-180" : ""}`}
@@ -985,10 +1003,10 @@ export default function DishDetailPage() {
                       </div>
                     </div>
                     {openSections[field.id] && (
-                      <div>
+                      <div className="mt-3 md:mt-4">
                         {field.type === "dropdown" && field.options && (
-                          <div className="divide-y divide-[#8e8e8e]">
-                            {field.options.map((option) => {
+                          <div className="bg-white rounded-lg border border-[#8e8e8e]/30 shadow-lg overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                            {field.options.map((option, index) => {
                               const currentSelection = customFieldSelections[
                                 field.id
                               ] as string[] | undefined;
@@ -997,7 +1015,9 @@ export default function DishDetailPage() {
                               return (
                                 <label
                                   key={option.id}
-                                  className="flex items-center justify-between gap-2 md:gap-3 cursor-pointer py-6 md:py-7"
+                                  className={`flex items-center justify-between gap-2 md:gap-3 cursor-pointer py-4 md:py-5 px-4 md:px-6 hover:bg-[#f9f9f9] transition-colors duration-200 ${
+                                    isSelected ? 'bg-[#eab3f4]/10' : ''
+                                  } ${index !== field.options.length - 1 ? 'border-b border-[#8e8e8e]/20' : ''}`}
                                 >
                                   <div className="flex flex-col">
                                     <span className="text-black text-base md:text-lg lg:text-xl">

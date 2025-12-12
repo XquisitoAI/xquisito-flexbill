@@ -317,61 +317,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Send SMS OTP code to phone number
-   */
-  async sendOTPCode(phone: string): Promise<SendOTPResponse> {
-    try {
-      const response = await fetch(`${API_URL}/auth/customer/send-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ phone }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Error al enviar código SMS");
-      }
-
-      return data;
-    } catch (error) {
-      console.error("❌ Error in sendOTPCode:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Verify SMS OTP code
-   */
-  async verifyOTPCode(
-    phone: string,
-    token: string
-  ): Promise<VerifyOTPResponse> {
-    try {
-      const response = await fetch(`${API_URL}/auth/customer/verify-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ phone, token }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Código incorrecto. Inténtalo de nuevo.");
-      }
-
-      return data;
-    } catch (error) {
-      console.error("❌ Error in verifyOTPCode:", error);
-      throw error;
-    }
-  }
-
   // Obtener usuario actual del localStorage
   getCurrentUser(): any | null {
     const userStr = localStorage.getItem("xquisito_user");
@@ -386,40 +331,6 @@ class AuthService {
     }
 
     return null;
-  }
-
-  /**
-   * Refresh access token
-   */
-  async refreshAccessToken(): Promise<any> {
-    try {
-      const refreshToken = this.getRefreshToken();
-      if (!refreshToken) {
-        throw new Error("No refresh token found");
-      }
-
-      const response = await fetch(`${API_URL}/auth/refresh`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Error refreshing token");
-      }
-
-      // Store new tokens
-      this.storeSession(data.data.session);
-
-      return data;
-    } catch (error) {
-      console.error("❌ Error in refreshAccessToken:", error);
-      throw error;
-    }
   }
 
   // Store session data in localStorage

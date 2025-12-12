@@ -39,7 +39,7 @@ export default function DishDetailPage() {
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [customFieldSelections, setCustomFieldSelections] = useState<{
-    [fieldId: string]: string | string[];
+    [fieldId: string]: string | string[] | Record<string, number>;
   }>({});
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
@@ -312,6 +312,24 @@ export default function DishDetailPage() {
     });
   };
 
+  const handleQuantityChange = (fieldId: string, optionId: string, quantity: number) => {
+    setCustomFieldSelections((prev) => {
+      const current = (prev[fieldId] as Record<string, number>) || {};
+      const updatedSelections = { ...current };
+
+      if (quantity > 0) {
+        updatedSelections[optionId] = quantity;
+      } else {
+        delete updatedSelections[optionId];
+      }
+
+      return {
+        ...prev,
+        [fieldId]: updatedSelections,
+      };
+    });
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
   };
@@ -488,12 +506,26 @@ export default function DishDetailPage() {
     let extraPrice = 0;
     if (dishData.customFields) {
       dishData.customFields.forEach((field) => {
-        const selectedIds = (customFieldSelections[field.id] as string[]) || [];
-        const selectedOptions =
-          field.options?.filter((opt) => selectedIds.includes(opt.id)) || [];
-        selectedOptions.forEach((opt) => {
-          extraPrice += opt.price;
-        });
+        const fieldSelection = customFieldSelections[field.id];
+
+        if (field.type === "dropdown-quantity" && fieldSelection &&
+            typeof fieldSelection === 'object' && !Array.isArray(fieldSelection)) {
+          // Manejar dropdown-quantity (Record<string, number>)
+          const quantitySelections = fieldSelection as Record<string, number>;
+          Object.entries(quantitySelections).forEach(([optionId, quantity]) => {
+            const option = field.options?.find(opt => opt.id === optionId);
+            if (option && quantity > 0) {
+              extraPrice += option.price * quantity;
+            }
+          });
+        } else if (Array.isArray(fieldSelection)) {
+          // Manejar dropdown y checkboxes (string[])
+          const selectedOptions =
+            field.options?.filter((opt) => fieldSelection.includes(opt.id)) || [];
+          selectedOptions.forEach((opt) => {
+            extraPrice += opt.price;
+          });
+        }
       });
     }
     return basePrice + extraPrice;
@@ -518,19 +550,50 @@ export default function DishDetailPage() {
     // Calcular precio extra y preparar custom fields
     const customFieldsData = dishData.customFields
       ?.map((field) => {
-        const selectedIds = (customFieldSelections[field.id] as string[]) || [];
-        const selectedOptions =
-          field.options
-            ?.filter((opt) => selectedIds.includes(opt.id))
+        const fieldSelection = customFieldSelections[field.id];
+        let selectedOptions: Array<{
+          optionId: string;
+          optionName: string;
+          price: number;
+          quantity?: number;
+        }> = [];
+
+        if (field.type === "dropdown-quantity" && fieldSelection &&
+            typeof fieldSelection === 'object' && !Array.isArray(fieldSelection)) {
+          // Manejar dropdown-quantity (Record<string, number>)
+          const quantitySelections = fieldSelection as Record<string, number>;
+          selectedOptions = Object.entries(quantitySelections)
+            .filter(([_, quantity]) => quantity > 0)
+            .map(([optionId, quantity]) => {
+              const option = field.options?.find(opt => opt.id === optionId);
+              return option ? {
+                optionId: option.id,
+                optionName: option.name,
+                price: option.price,
+                quantity,
+              } : null;
+            })
+            .filter(Boolean) as Array<{
+              optionId: string;
+              optionName: string;
+              price: number;
+              quantity: number;
+            }>;
+        } else if (Array.isArray(fieldSelection)) {
+          // Manejar dropdown y checkboxes (string[])
+          selectedOptions = field.options
+            ?.filter((opt) => fieldSelection.includes(opt.id))
             .map((opt) => ({
               optionId: opt.id,
               optionName: opt.name,
               price: opt.price,
             })) || [];
+        }
 
         return {
           fieldId: field.id,
           fieldName: field.name,
+          fieldType: field.type,
           selectedOptions,
         };
       })
@@ -539,7 +602,8 @@ export default function DishDetailPage() {
     const extraPrice =
       customFieldsData?.reduce(
         (sum, field) =>
-          sum + field.selectedOptions.reduce((s, opt) => s + opt.price, 0),
+          sum + field.selectedOptions.reduce((s, opt) =>
+            s + (opt.price * (opt.quantity || 1)), 0),
         0
       ) || 0;
 
@@ -572,19 +636,50 @@ export default function DishDetailPage() {
     // Calcular precio extra y preparar custom fields
     const customFieldsData = dishData.customFields
       ?.map((field) => {
-        const selectedIds = (customFieldSelections[field.id] as string[]) || [];
-        const selectedOptions =
-          field.options
-            ?.filter((opt) => selectedIds.includes(opt.id))
+        const fieldSelection = customFieldSelections[field.id];
+        let selectedOptions: Array<{
+          optionId: string;
+          optionName: string;
+          price: number;
+          quantity?: number;
+        }> = [];
+
+        if (field.type === "dropdown-quantity" && fieldSelection &&
+            typeof fieldSelection === 'object' && !Array.isArray(fieldSelection)) {
+          // Manejar dropdown-quantity (Record<string, number>)
+          const quantitySelections = fieldSelection as Record<string, number>;
+          selectedOptions = Object.entries(quantitySelections)
+            .filter(([_, quantity]) => quantity > 0)
+            .map(([optionId, quantity]) => {
+              const option = field.options?.find(opt => opt.id === optionId);
+              return option ? {
+                optionId: option.id,
+                optionName: option.name,
+                price: option.price,
+                quantity,
+              } : null;
+            })
+            .filter(Boolean) as Array<{
+              optionId: string;
+              optionName: string;
+              price: number;
+              quantity: number;
+            }>;
+        } else if (Array.isArray(fieldSelection)) {
+          // Manejar dropdown y checkboxes (string[])
+          selectedOptions = field.options
+            ?.filter((opt) => fieldSelection.includes(opt.id))
             .map((opt) => ({
               optionId: opt.id,
               optionName: opt.name,
               price: opt.price,
             })) || [];
+        }
 
         return {
           fieldId: field.id,
           fieldName: field.name,
+          fieldType: field.type,
           selectedOptions,
         };
       })
@@ -593,7 +688,8 @@ export default function DishDetailPage() {
     const extraPrice =
       customFieldsData?.reduce(
         (sum, field) =>
-          sum + field.selectedOptions.reduce((s, opt) => s + opt.price, 0),
+          sum + field.selectedOptions.reduce((s, opt) =>
+            s + (opt.price * (opt.quantity || 1)), 0),
         0
       ) || 0;
 
@@ -986,15 +1082,56 @@ export default function DishDetailPage() {
                           {field.name}
                         </h3>
                         {field.type === "dropdown" && customFieldSelections[field.id] && customFieldSelections[field.id].length > 0 && (
+
                           <span className="text-[#eab3f4] text-sm md:text-base mt-1">
                             {field.options?.find(opt => opt.id === customFieldSelections[field.id][0])?.name || 'Seleccionado'}
                           </span>
+
                         )}
                         {field.type === "dropdown" && (!customFieldSelections[field.id] || customFieldSelections[field.id].length === 0) && (
+
                           <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
                             Seleccionar opción
                           </span>
+                          
                         )}
+                        {(() => {
+                          const quantitySelection = customFieldSelections[field.id];
+                          const isValidQuantitySelection = field.type === "dropdown-quantity" &&
+                            quantitySelection &&
+                            typeof quantitySelection === 'object' &&
+                            !Array.isArray(quantitySelection);
+
+                          if (isValidQuantitySelection) {
+                            const selectionCount = Object.keys(quantitySelection as Record<string, number>).length;
+                            if (selectionCount > 0) {
+                              return (
+                                <span className="text-[#eab3f4] text-sm md:text-base mt-1">
+                                  {selectionCount} producto(s) seleccionado(s)
+                                </span>
+                              );
+                            }
+                          }
+                          return null;
+                        })()}
+                        {(() => {
+                          const quantitySelection = customFieldSelections[field.id];
+                          const shouldShowPlaceholder = field.type === "dropdown-quantity" && (
+                            !quantitySelection ||
+                            Array.isArray(quantitySelection) ||
+                            typeof quantitySelection !== 'object' ||
+                            Object.keys(quantitySelection as Record<string, number>).length === 0
+                          );
+
+                          if (shouldShowPlaceholder) {
+                            return (
+                              <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
+                                Personalizar productos adicionales
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                       <div className="size-7 md:size-8 lg:size-9 bg-[#f9f9f9] rounded-full flex items-center justify-center border border-[#8e8e8e]/50">
                         <ChevronDown
@@ -1017,7 +1154,7 @@ export default function DishDetailPage() {
                                   key={option.id}
                                   className={`flex items-center justify-between gap-2 md:gap-3 cursor-pointer py-4 md:py-5 px-4 md:px-6 hover:bg-[#f9f9f9] transition-colors duration-200 ${
                                     isSelected ? 'bg-[#eab3f4]/10' : ''
-                                  } ${index !== field.options.length - 1 ? 'border-b border-[#8e8e8e]/20' : ''}`}
+                                  } ${index !== (field.options?.length ?? 0) - 1 ? 'border-b border-[#8e8e8e]/20' : ''}`}
                                 >
                                   <div className="flex flex-col">
                                     <span className="text-black text-base md:text-lg lg:text-xl">
@@ -1038,6 +1175,54 @@ export default function DishDetailPage() {
                                     className="myradio md:scale-125 lg:scale-150"
                                   />
                                 </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {field.type === "dropdown-quantity" && field.options && (
+                          <div className="bg-white rounded-lg border border-[#8e8e8e]/30 shadow-lg overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                            {field.options.map((option, index) => {
+                              const fieldSelection = customFieldSelections[field.id];
+                              const currentQuantity = (fieldSelection && typeof fieldSelection === 'object' && !Array.isArray(fieldSelection)
+                                ? (fieldSelection as Record<string, number>)[option.id]
+                                : 0) || 0;
+
+                              return (
+                                <div
+                                  key={option.id}
+                                  className={`flex items-center justify-between gap-2 md:gap-3 py-4 md:py-5 px-4 md:px-6 ${
+                                    index !== (field.options?.length ?? 0) - 1 ? 'border-b border-[#8e8e8e]/20' : ''
+                                  }`}
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="text-black text-base md:text-lg lg:text-xl">
+                                      {option.name}
+                                    </span>
+                                    {option.price > 0 && (
+                                      <span className="text-[#eab3f4] font-medium text-sm md:text-base lg:text-lg">
+                                        +${option.price}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      onClick={() => handleQuantityChange(field.id, option.id, Math.max(0, currentQuantity - 1))}
+                                      className="w-8 h-8 md:w-9 md:h-9 bg-[#f9f9f9] hover:bg-[#eab3f4]/20 rounded-full flex items-center justify-center border border-[#8e8e8e]/50 transition-colors duration-200"
+                                      disabled={currentQuantity <= 0}
+                                    >
+                                      <span className="text-lg font-medium text-[#8e8e8e]">−</span>
+                                    </button>
+                                    <span className="text-lg md:text-xl font-medium text-black min-w-[2rem] text-center">
+                                      {currentQuantity}
+                                    </span>
+                                    <button
+                                      onClick={() => handleQuantityChange(field.id, option.id, currentQuantity + 1)}
+                                      className="w-8 h-8 md:w-9 md:h-9 bg-[#f9f9f9] hover:bg-[#eab3f4]/20 rounded-full flex items-center justify-center border border-[#8e8e8e]/50 transition-colors duration-200"
+                                    >
+                                      <span className="text-lg font-medium text-[#8e8e8e]">+</span>
+                                    </button>
+                                  </div>
+                                </div>
                               );
                             })}
                           </div>

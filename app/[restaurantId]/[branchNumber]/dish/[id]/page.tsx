@@ -299,15 +299,31 @@ export default function DishDetailPage() {
     }));
   };
 
-  const handleCheckboxChange = (fieldId: string, optionId: string) => {
+  const handleCheckboxChange = (fieldId: string, optionId: string, field?: CustomField) => {
     setCustomFieldSelections((prev) => {
       const current = (prev[fieldId] as string[]) || [];
       const isSelected = current.includes(optionId);
+
+      // Si ya está seleccionado, siempre permitir desmarcar
+      if (isSelected) {
+        return {
+          ...prev,
+          [fieldId]: current.filter((item) => item !== optionId),
+        };
+      }
+
+      // Si no está seleccionado, verificar límite de selecciones
+      const maxSelections = field?.maxSelections || 1;
+      if (current.length >= maxSelections) {
+        // Mostrar feedback visual o sonoro si se excede el límite
+        console.log(`Máximo ${maxSelections} opción${maxSelections > 1 ? 'es' : ''} permitida${maxSelections > 1 ? 's' : ''}`);
+        return prev; // No agregar la nueva selección
+      }
+
+      // Agregar la nueva selección
       return {
         ...prev,
-        [fieldId]: isSelected
-          ? current.filter((item) => item !== optionId)
-          : [...current, optionId],
+        [fieldId]: [...current, optionId],
       };
     });
   };
@@ -1082,12 +1098,11 @@ export default function DishDetailPage() {
                           {field.name}
                         </h3>
                         {field.type === "dropdown" && customFieldSelections[field.id] && customFieldSelections[field.id].length > 0 && (
-
-                          <span className="text-[#eab3f4] text-sm md:text-base mt-1">
-                            {field.options?.find(opt => opt.id === customFieldSelections[field.id][0])?.name || 'Seleccionado'}
+                          <span className="text-black text-sm md:text-base mt-1">
+                            Selecciona una opción
                           </span>
-
                         )}
+
                         {field.type === "dropdown" && (!customFieldSelections[field.id] || customFieldSelections[field.id].length === 0) && (
 
                           <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
@@ -1095,6 +1110,7 @@ export default function DishDetailPage() {
                           </span>
                           
                         )}
+                        
                         {(() => {
                           const quantitySelection = customFieldSelections[field.id];
                           const isValidQuantitySelection = field.type === "dropdown-quantity" &&
@@ -1228,11 +1244,48 @@ export default function DishDetailPage() {
                           </div>
                         )}
                         {field.type === "checkboxes" && field.options && (
-                          <div className="divide-y divide-[8e8e8e]">
-                            {field.options.map((option) => (
+                          <div>
+                            {/* Contador y límite para checkboxes */}
+                            {(() => {
+                              const currentSelections = (customFieldSelections[field.id] as string[]) || [];
+                              const maxSelections = field.maxSelections || 1;
+                              const remainingSelections = maxSelections - currentSelections.length;
+
+                              return (
+                                <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                  <div className="flex justify-between items-center text-sm">
+                                    <span className="text-gray-600">
+                                      Seleccionadas: {currentSelections.length} de {maxSelections}
+                                    </span>
+                                    {/* <span className={`font-medium ${remainingSelections === 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                                      {remainingSelections === 0
+                                        ? 'Límite alcanzado'
+                                        : `${remainingSelections} disponible${remainingSelections > 1 ? 's' : ''}`
+                                      }
+                                    </span> */}
+                                  </div>
+                                  {maxSelections > 1 && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Puedes elegir hasta {maxSelections} opciones
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+
+                            <div className="divide-y divide-[8e8e8e]">
+                              {field.options.map((option) => {
+                                const currentSelections = (customFieldSelections[field.id] as string[]) || [];
+                                const maxSelections = field.maxSelections || 1;
+                                const isSelected = currentSelections.includes(option.id);
+                                const isDisabled = !isSelected && currentSelections.length >= maxSelections;
+
+                                return (
                               <label
                                 key={option.id}
-                                className="flex items-center justify-between gap-2 md:gap-3 cursor-pointer py-6 md:py-7"
+                                className={`flex items-center justify-between gap-2 md:gap-3 py-6 md:py-7 ${
+                                  isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                                }`}
                               >
                                 <div className="flex flex-col">
                                   <span className="text-black text-base md:text-lg lg:text-xl">
@@ -1246,20 +1299,21 @@ export default function DishDetailPage() {
                                 </div>
                                 <input
                                   type="checkbox"
-                                  checked={
-                                    (
-                                      customFieldSelections[field.id] as
-                                        | string[]
-                                        | undefined
-                                    )?.includes(option.id) || false
-                                  }
+                                  disabled={isDisabled}
+                                  checked={isSelected}
                                   onChange={() =>
-                                    handleCheckboxChange(field.id, option.id)
+                                    handleCheckboxChange(field.id, option.id, field)
                                   }
-                                  className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 rounded border-[#8e8e8e] text-[#eab3f4] focus:ring-[#eab3f4] accent-[#eab3f4]"
+                                  className={`w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 rounded border-[#8e8e8e] focus:ring-[#eab3f4] accent-[#eab3f4] ${
+                                    isDisabled
+                                      ? 'cursor-not-allowed opacity-50'
+                                      : 'text-[#eab3f4]'
+                                  }`}
                                 />
                               </label>
-                            ))}
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>

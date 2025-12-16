@@ -39,7 +39,7 @@ export default function DishDetailPage() {
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [customFieldSelections, setCustomFieldSelections] = useState<{
-    [fieldId: string]: string | string[];
+    [fieldId: string]: string | string[] | Record<string, number>;
   }>({});
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
@@ -269,12 +269,13 @@ export default function DishDetailPage() {
         return merged;
       });
 
-      // Abrir la primera sección por defecto
+      // Abrir todas las secciones por defecto
       if (dishData.customFields.length > 0) {
-        setOpenSections((prev) => ({
-          ...prev,
-          [dishData.customFields[0].id]: true,
-        }));
+        const allSectionsOpen: { [key: string]: boolean } = {};
+        dishData.customFields.forEach((field) => {
+          allSectionsOpen[field.id] = true;
+        });
+        setOpenSections(allSectionsOpen);
       }
     }
   }, [dishData?.customFields]);
@@ -291,17 +292,57 @@ export default function DishDetailPage() {
       ...prev,
       [fieldId]: [optionId],
     }));
+
+    // Cerrar el dropdown automáticamente después de seleccionar
+    setOpenSections((prev) => ({
+      ...prev,
+      [fieldId]: false,
+    }));
   };
 
-  const handleCheckboxChange = (fieldId: string, optionId: string) => {
+  const handleCheckboxChange = (fieldId: string, optionId: string, field?: CustomField) => {
     setCustomFieldSelections((prev) => {
       const current = (prev[fieldId] as string[]) || [];
       const isSelected = current.includes(optionId);
+
+      // Si ya está seleccionado, siempre permitir desmarcar
+      if (isSelected) {
+        return {
+          ...prev,
+          [fieldId]: current.filter((item) => item !== optionId),
+        };
+      }
+
+      // Si no está seleccionado, verificar límite de selecciones
+      const maxSelections = field?.maxSelections || 1;
+      if (current.length >= maxSelections) {
+        // Mostrar feedback visual o sonoro si se excede el límite
+        console.log(`Máximo ${maxSelections} opción${maxSelections > 1 ? 'es' : ''} permitida${maxSelections > 1 ? 's' : ''}`);
+        return prev; // No agregar la nueva selección
+      }
+
+      // Agregar la nueva selección
       return {
         ...prev,
-        [fieldId]: isSelected
-          ? current.filter((item) => item !== optionId)
-          : [...current, optionId],
+        [fieldId]: [...current, optionId],
+      };
+    });
+  };
+
+  const handleQuantityChange = (fieldId: string, optionId: string, quantity: number) => {
+    setCustomFieldSelections((prev) => {
+      const current = (prev[fieldId] as Record<string, number>) || {};
+      const updatedSelections = { ...current };
+
+      if (quantity > 0) {
+        updatedSelections[optionId] = quantity;
+      } else {
+        delete updatedSelections[optionId];
+      }
+
+      return {
+        ...prev,
+        [fieldId]: updatedSelections,
       };
     });
   };
@@ -482,12 +523,26 @@ export default function DishDetailPage() {
     let extraPrice = 0;
     if (dishData.customFields) {
       dishData.customFields.forEach((field) => {
-        const selectedIds = (customFieldSelections[field.id] as string[]) || [];
-        const selectedOptions =
-          field.options?.filter((opt) => selectedIds.includes(opt.id)) || [];
-        selectedOptions.forEach((opt) => {
-          extraPrice += opt.price;
-        });
+        const fieldSelection = customFieldSelections[field.id];
+
+        if (field.type === "dropdown-quantity" && fieldSelection &&
+            typeof fieldSelection === 'object' && !Array.isArray(fieldSelection)) {
+          // Manejar dropdown-quantity (Record<string, number>)
+          const quantitySelections = fieldSelection as Record<string, number>;
+          Object.entries(quantitySelections).forEach(([optionId, quantity]) => {
+            const option = field.options?.find(opt => opt.id === optionId);
+            if (option && quantity > 0) {
+              extraPrice += option.price * quantity;
+            }
+          });
+        } else if (Array.isArray(fieldSelection)) {
+          // Manejar dropdown y checkboxes (string[])
+          const selectedOptions =
+            field.options?.filter((opt) => fieldSelection.includes(opt.id)) || [];
+          selectedOptions.forEach((opt) => {
+            extraPrice += opt.price;
+          });
+        }
       });
     }
     return basePrice + extraPrice;
@@ -512,19 +567,50 @@ export default function DishDetailPage() {
     // Calcular precio extra y preparar custom fields
     const customFieldsData = dishData.customFields
       ?.map((field) => {
-        const selectedIds = (customFieldSelections[field.id] as string[]) || [];
-        const selectedOptions =
-          field.options
-            ?.filter((opt) => selectedIds.includes(opt.id))
+        const fieldSelection = customFieldSelections[field.id];
+        let selectedOptions: Array<{
+          optionId: string;
+          optionName: string;
+          price: number;
+          quantity?: number;
+        }> = [];
+
+        if (field.type === "dropdown-quantity" && fieldSelection &&
+            typeof fieldSelection === 'object' && !Array.isArray(fieldSelection)) {
+          // Manejar dropdown-quantity (Record<string, number>)
+          const quantitySelections = fieldSelection as Record<string, number>;
+          selectedOptions = Object.entries(quantitySelections)
+            .filter(([_, quantity]) => quantity > 0)
+            .map(([optionId, quantity]) => {
+              const option = field.options?.find(opt => opt.id === optionId);
+              return option ? {
+                optionId: option.id,
+                optionName: option.name,
+                price: option.price,
+                quantity,
+              } : null;
+            })
+            .filter(Boolean) as Array<{
+              optionId: string;
+              optionName: string;
+              price: number;
+              quantity: number;
+            }>;
+        } else if (Array.isArray(fieldSelection)) {
+          // Manejar dropdown y checkboxes (string[])
+          selectedOptions = field.options
+            ?.filter((opt) => fieldSelection.includes(opt.id))
             .map((opt) => ({
               optionId: opt.id,
               optionName: opt.name,
               price: opt.price,
             })) || [];
+        }
 
         return {
           fieldId: field.id,
           fieldName: field.name,
+          fieldType: field.type,
           selectedOptions,
         };
       })
@@ -533,7 +619,8 @@ export default function DishDetailPage() {
     const extraPrice =
       customFieldsData?.reduce(
         (sum, field) =>
-          sum + field.selectedOptions.reduce((s, opt) => s + opt.price, 0),
+          sum + field.selectedOptions.reduce((s, opt) =>
+            s + (opt.price * (opt.quantity || 1)), 0),
         0
       ) || 0;
 
@@ -566,19 +653,50 @@ export default function DishDetailPage() {
     // Calcular precio extra y preparar custom fields
     const customFieldsData = dishData.customFields
       ?.map((field) => {
-        const selectedIds = (customFieldSelections[field.id] as string[]) || [];
-        const selectedOptions =
-          field.options
-            ?.filter((opt) => selectedIds.includes(opt.id))
+        const fieldSelection = customFieldSelections[field.id];
+        let selectedOptions: Array<{
+          optionId: string;
+          optionName: string;
+          price: number;
+          quantity?: number;
+        }> = [];
+
+        if (field.type === "dropdown-quantity" && fieldSelection &&
+            typeof fieldSelection === 'object' && !Array.isArray(fieldSelection)) {
+          // Manejar dropdown-quantity (Record<string, number>)
+          const quantitySelections = fieldSelection as Record<string, number>;
+          selectedOptions = Object.entries(quantitySelections)
+            .filter(([_, quantity]) => quantity > 0)
+            .map(([optionId, quantity]) => {
+              const option = field.options?.find(opt => opt.id === optionId);
+              return option ? {
+                optionId: option.id,
+                optionName: option.name,
+                price: option.price,
+                quantity,
+              } : null;
+            })
+            .filter(Boolean) as Array<{
+              optionId: string;
+              optionName: string;
+              price: number;
+              quantity: number;
+            }>;
+        } else if (Array.isArray(fieldSelection)) {
+          // Manejar dropdown y checkboxes (string[])
+          selectedOptions = field.options
+            ?.filter((opt) => fieldSelection.includes(opt.id))
             .map((opt) => ({
               optionId: opt.id,
               optionName: opt.name,
               price: opt.price,
             })) || [];
+        }
 
         return {
           fieldId: field.id,
           fieldName: field.name,
+          fieldType: field.type,
           selectedOptions,
         };
       })
@@ -587,7 +705,8 @@ export default function DishDetailPage() {
     const extraPrice =
       customFieldsData?.reduce(
         (sum, field) =>
-          sum + field.selectedOptions.reduce((s, opt) => s + opt.price, 0),
+          sum + field.selectedOptions.reduce((s, opt) =>
+            s + (opt.price * (opt.quantity || 1)), 0),
         0
       ) || 0;
 
@@ -975,20 +1094,91 @@ export default function DishDetailPage() {
                       className="flex justify-between items-center pb-2 md:pb-3 border-b border-[#8e8e8e] cursor-pointer"
                       onClick={() => toggleSection(field.id)}
                     >
-                      <h3 className="font-medium text-black text-xl md:text-2xl lg:text-3xl">
-                        {field.name}
-                      </h3>
-                      <div className="size-7 md:size-8 lg:size-9 bg-[#f9f9f9] rounded-full flex items-center justify-center border border-[#8e8e8e]/50">
-                        <ChevronDown
-                          className={`size-5 md:size-6 lg:size-7 text-black transition-transform duration-250 ${openSections[field.id] ? "rotate-180" : ""}`}
-                        />
+                      <div className="flex flex-col flex-1">
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-medium text-black text-xl md:text-2xl lg:text-3xl mb-4">
+                            {field.name}
+                          </h3>
+                          {field.type === "dropdown" && (
+                            <div className="rounded bg-red-100 px-2 py-1">
+                              <span className="text-red-500 text-sm md:text-base lg:text-lg font-normal">Obligatorio</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <div>
+                            {field.type === "dropdown" && customFieldSelections[field.id] && customFieldSelections[field.id].length > 0 && (
+                              <span className="text-black text-sm md:text-base mt-1">
+                                Selecciona una opción
+                              </span>
+                            )}
+
+                            {field.type === "dropdown" && (!customFieldSelections[field.id] || customFieldSelections[field.id].length === 0) && (
+                              <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
+                                Seleccionar opción
+                              </span>
+                            )}
+
+                            {(() => {
+                              const quantitySelection = customFieldSelections[field.id];
+                              const isValidQuantitySelection = field.type === "dropdown-quantity" &&
+                                quantitySelection &&
+                                typeof quantitySelection === 'object' &&
+                                !Array.isArray(quantitySelection);
+
+                              if (isValidQuantitySelection) {
+                                const selectionCount = Object.keys(quantitySelection as Record<string, number>).length;
+                                if (selectionCount > 0) {
+                                  return (
+                                    <span className="text-[#eab3f4] text-sm md:text-base mt-1">
+                                      {selectionCount} producto(s) seleccionado(s)
+                                    </span>
+                                  );
+                                }
+                              }
+                              return null;
+                            })()}
+
+                            {(() => {
+                              const quantitySelection = customFieldSelections[field.id];
+                              const shouldShowPlaceholder = field.type === "dropdown-quantity" && (
+                                !quantitySelection ||
+                                Array.isArray(quantitySelection) ||
+                                typeof quantitySelection !== 'object' ||
+                                Object.keys(quantitySelection as Record<string, number>).length === 0
+                              );
+
+                              if (shouldShowPlaceholder) {
+                                return (
+                                  <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
+                                    Personalizar productos adicionales
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
+
+                            {field.type === "checkboxes" && (
+                              <span className="text-gray-600 text-sm md:text-base mt-1">
+                                Selecciona hasta {field.maxSelections || 1}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="size-7 md:size-8 lg:size-9 bg-[#f9f9f9] rounded-full flex items-center justify-center border border-[#8e8e8e]/50">
+                            <ChevronDown
+                              className={`size-5 md:size-6 lg:size-7 text-black transition-transform duration-250 ${openSections[field.id] ? "rotate-180" : ""}`}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                     {openSections[field.id] && (
-                      <div>
+                      <div className="mt-3 md:mt-4">
                         {field.type === "dropdown" && field.options && (
-                          <div className="divide-y divide-[#8e8e8e]">
-                            {field.options.map((option) => {
+                          <div className="bg-white rounded-lg border border-[#8e8e8e]/30 shadow-lg overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                            {field.options.map((option, index) => {
                               const currentSelection = customFieldSelections[
                                 field.id
                               ] as string[] | undefined;
@@ -997,7 +1187,9 @@ export default function DishDetailPage() {
                               return (
                                 <label
                                   key={option.id}
-                                  className="flex items-center justify-between gap-2 md:gap-3 cursor-pointer py-6 md:py-7"
+                                  className={`flex items-center justify-between gap-2 md:gap-3 cursor-pointer py-4 md:py-5 px-4 md:px-6 hover:bg-[#f9f9f9] transition-colors duration-200 ${
+                                    isSelected ? 'bg-[#eab3f4]/10' : ''
+                                  } ${index !== (field.options?.length ?? 0) - 1 ? 'border-b border-[#8e8e8e]/20' : ''}`}
                                 >
                                   <div className="flex flex-col">
                                     <span className="text-black text-base md:text-lg lg:text-xl">
@@ -1022,12 +1214,71 @@ export default function DishDetailPage() {
                             })}
                           </div>
                         )}
+                        {field.type === "dropdown-quantity" && field.options && (
+                          <div className="bg-white rounded-lg border border-[#8e8e8e]/30 shadow-lg overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                            {field.options.map((option, index) => {
+                              const fieldSelection = customFieldSelections[field.id];
+                              const currentQuantity = (fieldSelection && typeof fieldSelection === 'object' && !Array.isArray(fieldSelection)
+                                ? (fieldSelection as Record<string, number>)[option.id]
+                                : 0) || 0;
+
+                              return (
+                                <div
+                                  key={option.id}
+                                  className={`flex items-center justify-between gap-2 md:gap-3 py-4 md:py-5 px-4 md:px-6 ${
+                                    index !== (field.options?.length ?? 0) - 1 ? 'border-b border-[#8e8e8e]/20' : ''
+                                  }`}
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="text-black text-base md:text-lg lg:text-xl">
+                                      {option.name}
+                                    </span>
+                                    {option.price > 0 && (
+                                      <span className="text-[#eab3f4] font-medium text-sm md:text-base lg:text-lg">
+                                        +${option.price}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      onClick={() => handleQuantityChange(field.id, option.id, Math.max(0, currentQuantity - 1))}
+                                      className="w-8 h-8 md:w-9 md:h-9 bg-[#f9f9f9] hover:bg-[#eab3f4]/20 rounded-full flex items-center justify-center border border-[#8e8e8e]/50 transition-colors duration-200"
+                                      disabled={currentQuantity <= 0}
+                                    >
+                                      <span className="text-lg font-medium text-[#8e8e8e]">−</span>
+                                    </button>
+                                    <span className="text-lg md:text-xl font-medium text-black min-w-[2rem] text-center">
+                                      {currentQuantity}
+                                    </span>
+                                    <button
+                                      onClick={() => handleQuantityChange(field.id, option.id, currentQuantity + 1)}
+                                      className="w-8 h-8 md:w-9 md:h-9 bg-[#f9f9f9] hover:bg-[#eab3f4]/20 rounded-full flex items-center justify-center border border-[#8e8e8e]/50 transition-colors duration-200"
+                                    >
+                                      <span className="text-lg font-medium text-[#8e8e8e]">+</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                         {field.type === "checkboxes" && field.options && (
-                          <div className="divide-y divide-[8e8e8e]">
-                            {field.options.map((option) => (
+                          <div>
+                            {/* Contador removido - ahora está en el header */}
+
+                            <div className="divide-y divide-[8e8e8e]">
+                              {field.options.map((option) => {
+                                const currentSelections = (customFieldSelections[field.id] as string[]) || [];
+                                const maxSelections = field.maxSelections || 1;
+                                const isSelected = currentSelections.includes(option.id);
+                                const isDisabled = !isSelected && currentSelections.length >= maxSelections;
+
+                                return (
                               <label
                                 key={option.id}
-                                className="flex items-center justify-between gap-2 md:gap-3 cursor-pointer py-6 md:py-7"
+                                className={`flex items-center justify-between gap-2 md:gap-3 py-6 md:py-7 ${
+                                  isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                                }`}
                               >
                                 <div className="flex flex-col">
                                   <span className="text-black text-base md:text-lg lg:text-xl">
@@ -1041,20 +1292,21 @@ export default function DishDetailPage() {
                                 </div>
                                 <input
                                   type="checkbox"
-                                  checked={
-                                    (
-                                      customFieldSelections[field.id] as
-                                        | string[]
-                                        | undefined
-                                    )?.includes(option.id) || false
-                                  }
+                                  disabled={isDisabled}
+                                  checked={isSelected}
                                   onChange={() =>
-                                    handleCheckboxChange(field.id, option.id)
+                                    handleCheckboxChange(field.id, option.id, field)
                                   }
-                                  className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 rounded border-[#8e8e8e] text-[#eab3f4] focus:ring-[#eab3f4] accent-[#eab3f4]"
+                                  className={`w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 rounded border-[#8e8e8e] focus:ring-[#eab3f4] accent-[#eab3f4] ${
+                                    isDisabled
+                                      ? 'cursor-not-allowed opacity-50'
+                                      : 'text-[#eab3f4]'
+                                  }`}
                                 />
                               </label>
-                            ))}
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>

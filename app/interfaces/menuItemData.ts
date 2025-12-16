@@ -11,6 +11,7 @@ export interface CustomField {
   type: string;
   options?: CustomFieldOption[];
   required?: boolean;
+  maxSelections?: number; // Para checkboxes: cantidad máxima seleccionable (1-4)
 }
 
 // Interface que coincide con la estructura de la base de datos

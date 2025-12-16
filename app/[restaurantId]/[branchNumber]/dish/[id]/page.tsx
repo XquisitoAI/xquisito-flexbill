@@ -269,12 +269,13 @@ export default function DishDetailPage() {
         return merged;
       });
 
-      // Abrir la primera sección por defecto
+      // Abrir todas las secciones por defecto
       if (dishData.customFields.length > 0) {
-        setOpenSections((prev) => ({
-          ...prev,
-          [dishData.customFields[0].id]: true,
-        }));
+        const allSectionsOpen: { [key: string]: boolean } = {};
+        dishData.customFields.forEach((field) => {
+          allSectionsOpen[field.id] = true;
+        });
+        setOpenSections(allSectionsOpen);
       }
     }
   }, [dishData?.customFields]);
@@ -1093,66 +1094,84 @@ export default function DishDetailPage() {
                       className="flex justify-between items-center pb-2 md:pb-3 border-b border-[#8e8e8e] cursor-pointer"
                       onClick={() => toggleSection(field.id)}
                     >
-                      <div className="flex flex-col">
-                        <h3 className="font-medium text-black text-xl md:text-2xl lg:text-3xl mb-4">
-                          {field.name}
-                        </h3>
-                        {field.type === "dropdown" && customFieldSelections[field.id] && customFieldSelections[field.id].length > 0 && (
-                          <span className="text-black text-sm md:text-base mt-1">
-                            Selecciona una opción
-                          </span>
-                        )}
+                      <div className="flex flex-col flex-1">
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-medium text-black text-xl md:text-2xl lg:text-3xl mb-4">
+                            {field.name}
+                          </h3>
+                          {field.type === "dropdown" && (
+                            <div className="rounded bg-red-100 px-2 py-1">
+                              <span className="text-red-500 text-sm md:text-base lg:text-lg font-normal">Obligatorio</span>
+                            </div>
+                          )}
+                        </div>
 
-                        {field.type === "dropdown" && (!customFieldSelections[field.id] || customFieldSelections[field.id].length === 0) && (
-
-                          <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
-                            Seleccionar opción
-                          </span>
-                          
-                        )}
-                        
-                        {(() => {
-                          const quantitySelection = customFieldSelections[field.id];
-                          const isValidQuantitySelection = field.type === "dropdown-quantity" &&
-                            quantitySelection &&
-                            typeof quantitySelection === 'object' &&
-                            !Array.isArray(quantitySelection);
-
-                          if (isValidQuantitySelection) {
-                            const selectionCount = Object.keys(quantitySelection as Record<string, number>).length;
-                            if (selectionCount > 0) {
-                              return (
-                                <span className="text-[#eab3f4] text-sm md:text-base mt-1">
-                                  {selectionCount} producto(s) seleccionado(s)
-                                </span>
-                              );
-                            }
-                          }
-                          return null;
-                        })()}
-                        {(() => {
-                          const quantitySelection = customFieldSelections[field.id];
-                          const shouldShowPlaceholder = field.type === "dropdown-quantity" && (
-                            !quantitySelection ||
-                            Array.isArray(quantitySelection) ||
-                            typeof quantitySelection !== 'object' ||
-                            Object.keys(quantitySelection as Record<string, number>).length === 0
-                          );
-
-                          if (shouldShowPlaceholder) {
-                            return (
-                              <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
-                                Personalizar productos adicionales
+                        <div className="flex justify-between items-center">
+                          <div>
+                            {field.type === "dropdown" && customFieldSelections[field.id] && customFieldSelections[field.id].length > 0 && (
+                              <span className="text-black text-sm md:text-base mt-1">
+                                Selecciona una opción
                               </span>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </div>
-                      <div className="size-7 md:size-8 lg:size-9 bg-[#f9f9f9] rounded-full flex items-center justify-center border border-[#8e8e8e]/50">
-                        <ChevronDown
-                          className={`size-5 md:size-6 lg:size-7 text-black transition-transform duration-250 ${openSections[field.id] ? "rotate-180" : ""}`}
-                        />
+                            )}
+
+                            {field.type === "dropdown" && (!customFieldSelections[field.id] || customFieldSelections[field.id].length === 0) && (
+                              <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
+                                Seleccionar opción
+                              </span>
+                            )}
+
+                            {(() => {
+                              const quantitySelection = customFieldSelections[field.id];
+                              const isValidQuantitySelection = field.type === "dropdown-quantity" &&
+                                quantitySelection &&
+                                typeof quantitySelection === 'object' &&
+                                !Array.isArray(quantitySelection);
+
+                              if (isValidQuantitySelection) {
+                                const selectionCount = Object.keys(quantitySelection as Record<string, number>).length;
+                                if (selectionCount > 0) {
+                                  return (
+                                    <span className="text-[#eab3f4] text-sm md:text-base mt-1">
+                                      {selectionCount} producto(s) seleccionado(s)
+                                    </span>
+                                  );
+                                }
+                              }
+                              return null;
+                            })()}
+
+                            {(() => {
+                              const quantitySelection = customFieldSelections[field.id];
+                              const shouldShowPlaceholder = field.type === "dropdown-quantity" && (
+                                !quantitySelection ||
+                                Array.isArray(quantitySelection) ||
+                                typeof quantitySelection !== 'object' ||
+                                Object.keys(quantitySelection as Record<string, number>).length === 0
+                              );
+
+                              if (shouldShowPlaceholder) {
+                                return (
+                                  <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
+                                    Personalizar productos adicionales
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
+
+                            {field.type === "checkboxes" && (
+                              <span className="text-gray-600 text-sm md:text-base mt-1">
+                                Selecciona hasta {field.maxSelections || 1}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="size-7 md:size-8 lg:size-9 bg-[#f9f9f9] rounded-full flex items-center justify-center border border-[#8e8e8e]/50">
+                            <ChevronDown
+                              className={`size-5 md:size-6 lg:size-7 text-black transition-transform duration-250 ${openSections[field.id] ? "rotate-180" : ""}`}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                     {openSections[field.id] && (
@@ -1245,33 +1264,7 @@ export default function DishDetailPage() {
                         )}
                         {field.type === "checkboxes" && field.options && (
                           <div>
-                            {/* Contador y límite para checkboxes */}
-                            {(() => {
-                              const currentSelections = (customFieldSelections[field.id] as string[]) || [];
-                              const maxSelections = field.maxSelections || 1;
-                              const remainingSelections = maxSelections - currentSelections.length;
-
-                              return (
-                                <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                  <div className="flex justify-between items-center text-sm">
-                                    <span className="text-gray-600">
-                                      Seleccionadas: {currentSelections.length} de {maxSelections}
-                                    </span>
-                                    {/* <span className={`font-medium ${remainingSelections === 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                                      {remainingSelections === 0
-                                        ? 'Límite alcanzado'
-                                        : `${remainingSelections} disponible${remainingSelections > 1 ? 's' : ''}`
-                                      }
-                                    </span> */}
-                                  </div>
-                                  {maxSelections > 1 && (
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      Puedes elegir hasta {maxSelections} opciones
-                                    </p>
-                                  )}
-                                </div>
-                              );
-                            })()}
+                            {/* Contador removido - ahora está en el header */}
 
                             <div className="divide-y divide-[8e8e8e]">
                               {field.options.map((option) => {

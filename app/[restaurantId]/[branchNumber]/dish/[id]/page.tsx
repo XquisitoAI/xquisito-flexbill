@@ -251,24 +251,9 @@ export default function DishDetailPage() {
     fetchDish();
   }, [dishId]);
 
-  // Inicializar selecciones por defecto para dropdown fields
+  // Inicializar secciones abiertas por defecto
   useEffect(() => {
     if (dishData?.customFields) {
-      const defaultSelections: { [key: string]: string[] } = {};
-      dishData.customFields.forEach((field) => {
-        if (
-          field.type === "dropdown" &&
-          field.options &&
-          field.options.length > 0
-        ) {
-          defaultSelections[field.id] = [field.options[0].id];
-        }
-      });
-      setCustomFieldSelections((prev) => {
-        const merged = { ...defaultSelections, ...prev };
-        return merged;
-      });
-
       // Abrir todas las secciones por defecto
       if (dishData.customFields.length > 0) {
         const allSectionsOpen: { [key: string]: boolean } = {};
@@ -291,12 +276,6 @@ export default function DishDetailPage() {
     setCustomFieldSelections((prev) => ({
       ...prev,
       [fieldId]: [optionId],
-    }));
-
-    // Cerrar el dropdown automáticamente después de seleccionar
-    setOpenSections((prev) => ({
-      ...prev,
-      [fieldId]: false,
     }));
   };
 
@@ -548,9 +527,29 @@ export default function DishDetailPage() {
     return basePrice + extraPrice;
   };
 
+  // Validar que todos los dropdowns obligatorios tengan una opción seleccionada
+  const isFormValid = () => {
+    if (!dishData?.customFields) return true;
+
+    for (const field of dishData.customFields) {
+      if (field.type === "dropdown" && field.required) {
+        const selection = customFieldSelections[field.id] as string[] | undefined;
+        if (!selection || selection.length === 0) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
   const handleAddToCart = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (!dishData) return;
+
+    // Validar que todos los dropdowns tengan selección
+    if (!isFormValid()) {
+      return;
+    }
 
     // Verificar si el restaurante está abierto
     if (!isOpen) {
@@ -637,6 +636,11 @@ export default function DishDetailPage() {
 
   const handleAddToCartAndReturn = async () => {
     if (!dishData) return;
+
+    // Validar que todos los dropdowns tengan selección
+    if (!isFormValid()) {
+      return;
+    }
 
     // Verificar si el restaurante está abierto
     if (!isOpen) {
@@ -1099,24 +1103,41 @@ export default function DishDetailPage() {
                           <h3 className="font-medium text-black text-xl md:text-2xl lg:text-3xl mb-4">
                             {field.name}
                           </h3>
-                          {field.type === "dropdown" && (
-                            <div className="rounded bg-red-100 px-2 py-1">
-                              <span className="text-red-500 text-sm md:text-base lg:text-lg font-normal">Obligatorio</span>
-                            </div>
-                          )}
+                          {field.type === "dropdown" && field.required && (() => {
+                            const selection = customFieldSelections[field.id] as string[] | undefined;
+                            const hasSelection = selection && selection.length > 0;
+                            return (
+                              <div className={`rounded px-2 py-1 ${hasSelection ? 'bg-green-100' : 'bg-gray-100'}`}>
+                                <span className={`text-sm md:text-base lg:text-lg font-normal ${hasSelection ? 'text-green-600' : 'text-gray-500'}`}>
+                                  Obligatorio
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         <div className="flex justify-between items-center">
                           <div>
-                            {field.type === "dropdown" && customFieldSelections[field.id] && customFieldSelections[field.id].length > 0 && (
+                            {field.type === "dropdown" && !openSections[field.id] && (() => {
+                              const selection = customFieldSelections[field.id] as string[] | undefined;
+                              if (selection && selection.length > 0) {
+                                const selectedOption = field.options?.find(opt => opt.id === selection[0]);
+                                return (
+                                  <span className="text-black text-sm md:text-base mt-1">
+                                    {selectedOption?.name || 'Selecciona una opción'}
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
+                                  Seleccionar opción
+                                </span>
+                              );
+                            })()}
+
+                            {field.type === "dropdown" && openSections[field.id] && (
                               <span className="text-black text-sm md:text-base mt-1">
                                 Selecciona una opción
-                              </span>
-                            )}
-
-                            {field.type === "dropdown" && (!customFieldSelections[field.id] || customFieldSelections[field.id].length === 0) && (
-                              <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
-                                Seleccionar opción
                               </span>
                             )}
 
@@ -1337,7 +1358,12 @@ export default function DishDetailPage() {
             >
               <button
                 onClick={handleAddToCartAndReturn}
-                className="bg-gradient-to-r from-[#34808C] to-[#173E44] w-full text-white py-3 md:py-4 lg:py-5 rounded-full cursor-pointer transition-colors flex items-center justify-center gap-2 animate-pulse-button"
+                disabled={!isFormValid()}
+                className={`w-full text-white py-3 md:py-4 lg:py-5 rounded-full transition-colors flex items-center justify-center gap-2 ${
+                  isFormValid()
+                    ? "bg-gradient-to-r from-[#34808C] to-[#173E44] cursor-pointer animate-pulse-button"
+                    : "bg-gray-400 cursor-not-allowed opacity-60"
+                }`}
               >
                 <span className="text-base md:text-lg lg:text-xl font-medium">
                   Agregar al carrito • ${calculateTotalPrice().toFixed(2)} MXN

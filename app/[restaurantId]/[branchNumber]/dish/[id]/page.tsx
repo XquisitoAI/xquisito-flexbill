@@ -1149,11 +1149,11 @@ export default function DishDetailPage() {
                                 !Array.isArray(quantitySelection);
 
                               if (isValidQuantitySelection) {
-                                const selectionCount = Object.keys(quantitySelection as Record<string, number>).length;
-                                if (selectionCount > 0) {
+                                const totalQuantity = Object.values(quantitySelection as Record<string, number>).reduce((sum, qty) => sum + qty, 0);
+                                if (totalQuantity > 0) {
                                   return (
                                     <span className="text-[#eab3f4] text-sm md:text-base mt-1">
-                                      {selectionCount} producto(s) seleccionado(s)
+                                      {totalQuantity} producto(s) seleccionado(s)
                                     </span>
                                   );
                                 }
@@ -1180,11 +1180,25 @@ export default function DishDetailPage() {
                               return null;
                             })()}
 
-                            {field.type === "checkboxes" && (
-                              <span className="text-gray-600 text-sm md:text-base mt-1">
-                                Selecciona hasta {field.maxSelections || 1}
-                              </span>
-                            )}
+                            {field.type === "checkboxes" && (() => {
+                              const currentSelections = (customFieldSelections[field.id] as string[]) || [];
+                              const maxSelections = field.maxSelections || 1;
+                              const selectedCount = currentSelections.length;
+
+                              if (selectedCount > 0) {
+                                return (
+                                  <span className="text-[#eab3f4] text-sm md:text-base mt-1">
+                                    {selectedCount} producto(s) seleccionado(s)
+                                  </span>
+                                );
+                              }
+
+                              return (
+                                <span className="text-gray-600 text-sm md:text-base mt-1">
+                                  Selecciona hasta {maxSelections}
+                                </span>
+                              );
+                            })()}
                           </div>
 
                           <div className="size-7 md:size-8 lg:size-9 bg-[#f9f9f9] rounded-full flex items-center justify-center border border-[#8e8e8e]/50">
@@ -1285,8 +1299,6 @@ export default function DishDetailPage() {
                         )}
                         {field.type === "checkboxes" && field.options && (
                           <div>
-                            {/* Contador removido - ahora está en el header */}
-
                             <div className="divide-y divide-[8e8e8e]">
                               {field.options.map((option) => {
                                 const currentSelections = (customFieldSelections[field.id] as string[]) || [];

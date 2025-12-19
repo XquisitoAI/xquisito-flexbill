@@ -178,7 +178,8 @@ class CartApiService {
     menuItemId: number,
     quantity: number = 1,
     customFields: CartItem["customFields"] = [],
-    extraPrice: number = 0
+    extraPrice: number = 0,
+    price?: number
   ): Promise<ApiResponse<{ cart_item_id: string }>> {
     const userId = this.getUserIdentifier();
 
@@ -190,6 +191,7 @@ class CartApiService {
         quantity,
         custom_fields: customFields,
         extra_price: extraPrice,
+        price: price,
         restaurant_id: this.restaurantId,
         branch_number: this.branchNumber,
       }),

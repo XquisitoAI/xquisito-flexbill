@@ -10,7 +10,6 @@ import { useRestaurant } from "@/app/context/RestaurantContext";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
-import Loader from "@/app/components/UI/Loader";
 
 type Step = "phone" | "verify" | "profile";
 
@@ -175,7 +174,7 @@ export default function AuthPage() {
       const fullPhone = countryCode + phoneNumber;
       setPhone(fullPhone);
 
-      const response = await authService.sendOTPCode(fullPhone);
+      const response = await authService.sendPhoneOTP(fullPhone);
 
       if (response.success) {
         setStep("verify");
@@ -250,7 +249,7 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      const response = await authService.sendOTPCode(phone);
+      const response = await authService.sendPhoneOTP(phone);
 
       if (response.success) {
         setCountdown(60);

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/app/context/AuthContext";
 import { Loader2, ChevronRight, X, Calendar, Utensils } from "lucide-react";
-import { getCardTypeIcon } from "@/utils/cardIcons";
+import { getCardTypeIcon } from "@/app/utils/cardIcons";
 
 interface OrderHistoryItem {
   orderType?:

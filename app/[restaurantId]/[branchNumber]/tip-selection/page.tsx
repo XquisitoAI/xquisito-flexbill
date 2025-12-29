@@ -192,8 +192,6 @@ export default function TipSelectionPage() {
   const currentRemainingAmount =
     state.tableSummary?.data?.data?.remaining_amount || unpaidAmount;
   const maxAllowedAmount = currentRemainingAmount;
-  const MINIMUM_AMOUNT = 20; // Mínimo de compra requerido
-  const isUnderMinimum = baseAmount < MINIMUM_AMOUNT;
 
   const tipAmount = useMemo(() => {
     if (customTip && parseFloat(customTip) > 0) {
@@ -219,6 +217,10 @@ export default function TipSelectionPage() {
     totalAmountCharged: paymentAmount,
     rates, // Tasas aplicadas según el rango
   } = commissions;
+
+  // Validación de compra mínima - usar el total con propina, comisiones, etc.
+  const MINIMUM_AMOUNT = 20; // Mínimo de compra requerido
+  const isUnderMinimum = paymentAmount < MINIMUM_AMOUNT;
 
   const handleTipPercentage = (percentage: number) => {
     setTipPercentage(percentage);
@@ -569,7 +571,7 @@ export default function TipSelectionPage() {
                   </div>
                   {selectedItems.length === 0 && (
                     <p className="text-sm md:text-base lg:text-lg text-gray-500 mt-2 text-center">
-                      Selecciona al menos un artículo para continuar
+                      Selecciona un artículo para continuar
                     </p>
                   )}
                 </div>
@@ -792,8 +794,6 @@ export default function TipSelectionPage() {
                                 <Loader2 className="h-5 w-5 animate-spin" />
                                 <span>Cargando...</span>
                               </div>
-                            ) : isUnderMinimum && baseAmount > 0 ? (
-                              "Mínimo de compra no alcanzado"
                             ) : paymentType === "choose-amount" &&
                               (!customPaymentAmount ||
                                 parseFloat(customPaymentAmount) <= 0) ? (
@@ -989,10 +989,8 @@ export default function TipSelectionPage() {
                             <Loader2 className="h-5 w-5 animate-spin" />
                             <span>Cargando...</span>
                           </div>
-                        ) : isUnderMinimum && baseAmount > 0 ? (
-                          "Mínimo de compra no alcanzado"
                         ) : selectedItems.length === 0 ? (
-                          "Selecciona al menos un artículo"
+                          "Selecciona un artículo"
                         ) : (
                           "Pagar"
                         )}

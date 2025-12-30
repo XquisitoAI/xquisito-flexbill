@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useTable } from "@/app/context/TableContext";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { getRestaurantData } from "@/app/utils/restaurantData";
@@ -46,6 +46,26 @@ export default function TipSelectionPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
   const [showCustomTipInput, setShowCustomTipInput] = useState(false);
+  const [selectedUserFilter, setSelectedUserFilter] = useState<string>("all");
+  const [showUserSelector, setShowUserSelector] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Calcular posición del dropdown cuando se abre
+  useEffect(() => {
+    if (showUserSelector && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8, // 8px debajo del botón
+        right: window.innerWidth - rect.right,
+      });
+    } else {
+      setDropdownPosition(null);
+    }
+  }, [showUserSelector]);
 
   const loadSplitStatus = async () => {
     if (!state.tableNumber || !branchNumber) return;
@@ -115,6 +135,18 @@ export default function TipSelectionPage() {
   const paidDishes = dishOrders.filter(
     (dish) => dish.payment_status === "paid"
   );
+
+  // Obtener usuarios únicos de platillos no pagados
+  const unpaidUsersSet = new Set(
+    unpaidDishes.map((dish) => dish.guest_name).filter(Boolean)
+  );
+  const unpaidUsers = Array.from(unpaidUsersSet);
+
+  // Filtrar platillos según el usuario seleccionado
+  const filteredUnpaidDishes =
+    selectedUserFilter === "all"
+      ? unpaidDishes
+      : unpaidDishes.filter((dish) => dish.guest_name === selectedUserFilter);
 
   // Usar tableSummary.data.data si está disponible, sino calcular desde dishOrders
   const tableTotalPrice =
@@ -294,7 +326,7 @@ export default function TipSelectionPage() {
       case "select-items":
         return {
           description: "Artículos seleccionados",
-          items: `${selectedItems.length} de ${unpaidDishes.length} disponibles`,
+          items: `${selectedItems.length} de ${filteredUnpaidDishes.length} ${selectedUserFilter !== "all" ? `de ${selectedUserFilter}` : "disponibles"}`,
         };
       default:
         return {
@@ -436,14 +468,49 @@ export default function TipSelectionPage() {
           <div
             className={`flex flex-col relative ${paymentType !== "select-items" ? "px-4 md:px-6 lg:px-8 w-full" : ""}`}
           >
-            <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
+            <div
+              className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7"
+              style={{ zIndex: 0 }}
+            >
               <div className="py-6 md:py-8 lg:py-10 px-8 md:px-10 lg:px-12 flex flex-col justify-center">
-                <h1 className="text-[#e0e0e0] text-xl md:text-2xl lg:text-3xl font-medium">
-                  Mesa {state.tableNumber}
-                </h1>
-                <h1 className="font-medium text-white text-3xl md:text-4xl lg:text-5xl leading-7 md:leading-9 lg:leading-tight mt-2 md:mt-3 mb-6 md:mb-8">
-                  Revisa tu cuenta
-                </h1>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h1 className="text-[#e0e0e0] text-xl md:text-2xl lg:text-3xl font-medium">
+                      Mesa {state.tableNumber}
+                    </h1>
+                    <h1 className="font-medium text-white text-3xl md:text-4xl lg:text-5xl leading-7 md:leading-9 lg:leading-tight mt-2 md:mt-3 mb-6 md:mb-8">
+                      Revisa tu cuenta
+                    </h1>
+                  </div>
+
+                  {/* Filtro de usuarios - solo para select-items */}
+                  {paymentType === "select-items" && unpaidUsers.length > 1 && (
+                    <button
+                      ref={buttonRef}
+                      onClick={() => setShowUserSelector(!showUserSelector)}
+                      className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-white/30 transition-colors flex items-center gap-2"
+                    >
+                      <span>
+                        {selectedUserFilter === "all"
+                          ? "Todos"
+                          : selectedUserFilter}
+                      </span>
+                      <svg
+                        className={`w-4 h-4 transition-transform ${showUserSelector ? "rotate-180" : ""}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -500,7 +567,7 @@ export default function TipSelectionPage() {
               {paymentType === "select-items" && (
                 <div className="mb-6 px-8 md:px-10 lg:px-12">
                   <div className="space-y-3">
-                    {unpaidDishes.map((dish) => {
+                    {filteredUnpaidDishes.map((dish) => {
                       const isSelected = selectedItems.includes(
                         dish.dish_order_id
                       );
@@ -569,11 +636,17 @@ export default function TipSelectionPage() {
                       );
                     })}
                   </div>
-                  {selectedItems.length === 0 && (
+                  {filteredUnpaidDishes.length === 0 && (
                     <p className="text-sm md:text-base lg:text-lg text-gray-500 mt-2 text-center">
-                      Selecciona un artículo para continuar
+                      No hay artículos para este usuario
                     </p>
                   )}
+                  {filteredUnpaidDishes.length > 0 &&
+                    selectedItems.length === 0 && (
+                      <p className="text-sm md:text-base lg:text-lg text-gray-500 mt-2 text-center">
+                        Selecciona un artículo para continuar
+                      </p>
+                    )}
                 </div>
               )}
 
@@ -825,7 +898,7 @@ export default function TipSelectionPage() {
             className="fixed bottom-0 left-0 right-0 bg-white pt-8 md:pt-10 lg:pt-12 mx-4 md:mx-6 lg:mx-8"
             style={{
               paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
-              zIndex: 50,
+              zIndex: 40,
             }}
           >
             <div className="px-8 md:px-10 lg:px-12 space-y-4">
@@ -1003,6 +1076,58 @@ export default function TipSelectionPage() {
           </div>
         )}
       </div>
+
+      {/* Dropdown de selección de usuario */}
+      {showUserSelector && paymentType === "select-items" && dropdownPosition && (
+        <>
+          {/* Fondo para cerrar */}
+          <div
+            className="fixed inset-0"
+            style={{ zIndex: 99998 }}
+            onClick={() => setShowUserSelector(false)}
+          />
+
+          {/* Dropdown menu */}
+          <div
+            className="fixed bg-white rounded-lg shadow-xl w-48 overflow-hidden"
+            style={{
+              zIndex: 99999,
+              top: `${dropdownPosition.top}px`,
+              right: `${dropdownPosition.right}px`,
+            }}
+          >
+            <button
+              onClick={() => {
+                setSelectedUserFilter("all");
+                setShowUserSelector(false);
+              }}
+              className={`w-full text-left px-4 py-2.5 transition-colors ${
+                selectedUserFilter === "all"
+                  ? "bg-[#0a8b9b] text-white"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <span className="text-sm font-medium">Todos</span>
+            </button>
+            {unpaidUsers.map((user) => (
+              <button
+                key={user}
+                onClick={() => {
+                  setSelectedUserFilter(user);
+                  setShowUserSelector(false);
+                }}
+                className={`w-full text-left px-4 py-2.5 transition-colors ${
+                  selectedUserFilter === user
+                    ? "bg-[#0a8b9b] text-white"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <span className="text-sm font-medium capitalize">{user}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Modal de resumen del total */}
       {showTotalModal && (

@@ -45,6 +45,40 @@ export default function OrderStatus() {
     ? state.dishOrders.filter((dish) => dish.payment_status === "paid")
     : [];
 
+  // Función para agrupar items idénticos del mismo usuario
+  const groupIdenticalItems = (dishes: any[]) => {
+    const grouped = new Map<string, any>();
+
+    dishes.forEach((dish) => {
+      // Crear una clave única basada en: usuario + item + custom_fields
+      const customFieldsKey = JSON.stringify(
+        dish.custom_fields?.map((field: any) => ({
+          name: field.name,
+          options: field.selectedOptions
+            .map((opt: any) => `${opt.optionName}:${opt.price}`)
+            .sort(),
+        })) || []
+      );
+      const key = `${dish.guest_name}|${dish.item}|${customFieldsKey}`;
+
+      if (grouped.has(key)) {
+        // Si ya existe, sumar la cantidad y actualizar el total
+        const existing = grouped.get(key);
+        existing.quantity += dish.quantity;
+        existing.total_price += dish.total_price;
+        // Mantener el primer dish_order_id para la key
+      } else {
+        // Si no existe, agregar una copia del dish
+        grouped.set(key, { ...dish });
+      }
+    });
+
+    return Array.from(grouped.values());
+  };
+
+  // Agrupar items no pagados idénticos
+  const groupedUnpaidDishes = groupIdenticalItems(unpaidDishes);
+
   // Calcular totales de la mesa usando tableSummary si está disponible
   const tableTotalItems =
     state.tableSummary?.data?.data?.no_items || state.dishOrders?.length || 0;
@@ -217,15 +251,16 @@ export default function OrderStatus() {
                           <span>Precio</span>
                         </div>
                         <div className="divide-y divide-[#8e8e8e]/50">
-                          {unpaidDishes.map((dish, dishIndex) => {
-                            const statusMap = {
+                          {groupedUnpaidDishes.map((dish, dishIndex) => {
+                            const statusMap: Record<string, string> = {
                               pending: "En preparación",
                               preparing: "En preparación",
                               ready: "En camino",
                               delivered: "Entregado",
                             };
                             const status =
-                              statusMap[dish.status] || "En preparación";
+                              statusMap[dish.status as string] ||
+                              "En preparación";
 
                             return (
                               <div

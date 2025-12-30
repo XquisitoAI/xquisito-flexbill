@@ -115,6 +115,36 @@ class RestaurantService {
     }
   }
 
+  // Obtener restaurante con su menú filtrado por sucursal en una sola petición
+  async getRestaurantWithMenuByBranch(
+    restaurantId: number,
+    branchNumber: number
+  ): Promise<RestaurantWithMenu> {
+    try {
+      const response = await fetch(
+        `${API_URL}/restaurants/${restaurantId}/${branchNumber}/complete`
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("Restaurant or branch not found");
+        }
+        throw new Error("Failed to fetch restaurant data");
+      }
+
+      const result: ApiResponse<RestaurantWithMenu> = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || "Failed to fetch restaurant data");
+      }
+
+      return result.data;
+    } catch (error) {
+      console.error("Error fetching restaurant with menu by branch:", error);
+      throw error;
+    }
+  }
+
   // Obtener todos los restaurantes activos
   async getAllRestaurants(): Promise<Restaurant[]> {
     try {

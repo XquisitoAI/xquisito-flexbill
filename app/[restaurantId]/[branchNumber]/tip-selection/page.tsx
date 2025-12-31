@@ -854,32 +854,9 @@ export default function TipSelectionPage() {
                         return (
                           <button
                             onClick={handleContinueToCardSelection}
-                            disabled={isDisabled || isNavigating}
-                            className={`rounded-full cursor-pointer transition-colors h-10 md:h-12 lg:h-12 flex items-center justify-center text-base md:text-lg lg:text-xl  ${
-                              isDisabled || isNavigating
-                                ? "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed text-white px-10"
-                                : "bg-gradient-to-r from-[#34808C] to-[#173E44] text-white px-20 animate-pulse-button"
-                            }`}
+                            className="rounded-full cursor-pointer transition-all px-20 h-10 md:h-12 lg:h-12 flex items-center justify-center text-base md:text-lg lg:text-xl bg-gradient-to-r from-[#34808C] to-[#173E44] text-white animate-pulse-button active:scale-90"
                           >
-                            {isNavigating ? (
-                              <div className="flex items-center justify-center gap-2">
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                                <span>Cargando...</span>
-                              </div>
-                            ) : paymentType === "choose-amount" &&
-                              (!customPaymentAmount ||
-                                parseFloat(customPaymentAmount) <= 0) ? (
-                              "Introduce un monto"
-                            ) : paymentType === "choose-amount" &&
-                              parseFloat(customPaymentAmount) >
-                                maxAllowedAmount ? (
-                              "Monto excede el máximo permitido"
-                            ) : paymentType === "select-items" &&
-                              selectedItems.length === 0 ? (
-                              "Selecciona al menos un artículo"
-                            ) : (
-                              "Pagar"
-                            )}
+                            Pagar
                           </button>
                         );
                       })()}
@@ -1049,23 +1026,9 @@ export default function TipSelectionPage() {
                     return (
                       <button
                         onClick={handleContinueToCardSelection}
-                        disabled={isDisabled || isNavigating}
-                        className={`rounded-full cursor-pointer transition-colors h-10 md:h-12 lg:h-12 flex items-center justify-center text-base md:text-lg lg:text-xl ${
-                          isDisabled || isNavigating
-                            ? "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed text-white px-10"
-                            : "bg-gradient-to-r from-[#34808C] to-[#173E44] text-white px-20 animate-pulse-button"
-                        }`}
+                        className="rounded-full cursor-pointer h-10 md:h-12 lg:h-12 flex items-center justify-center px-20 text-base md:text-lg lg:text-xl active:scale-90 transition-all bg-gradient-to-r from-[#34808C] to-[#173E44] text-white animate-pulse-button"
                       >
-                        {isNavigating ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                            <span>Cargando...</span>
-                          </div>
-                        ) : selectedItems.length === 0 ? (
-                          "Selecciona un artículo"
-                        ) : (
-                          "Pagar"
-                        )}
+                        Pagar
                       </button>
                     );
                   })()}

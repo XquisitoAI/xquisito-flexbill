@@ -959,12 +959,7 @@ export default function CardSelectionPage() {
                   {/* Pay Button */}
                   <button
                     onClick={handlePayment}
-                    disabled={
-                      paymentLoading ||
-                      isProcessing ||
-                      (hasPaymentMethods && !selectedPaymentMethodId)
-                    }
-                    className={`w-full text-white py-3 rounded-full cursor-pointer transition-colors text-base md:text-lg lg:text-xl ${
+                    className={`w-full text-white py-3 rounded-full cursor-pointer transition-colors text-base md:text-lg lg:text-xl active:scale-90 ${
                       paymentLoading ||
                       isProcessing ||
                       (hasPaymentMethods && !selectedPaymentMethodId)
@@ -973,9 +968,40 @@ export default function CardSelectionPage() {
                     }`}
                   >
                     {paymentLoading || isProcessing ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>Procesando pago...</span>
+                      <div className="flex items-center justify-center gap-2 md:gap-3">
+                        <svg
+                          className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 text-white"
+                          style={{
+                            animation: "spin 1s linear infinite",
+                          }}
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        <style jsx>{`
+                          @keyframes spin {
+                            from {
+                              transform: rotate(0deg);
+                            }
+                            to {
+                              transform: rotate(360deg);
+                            }
+                          }
+                        `}</style>
                       </div>
                     ) : hasPaymentMethods && !selectedPaymentMethodId ? (
                       "Selecciona una tarjeta"

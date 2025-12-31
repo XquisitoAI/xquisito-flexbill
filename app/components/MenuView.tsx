@@ -16,7 +16,7 @@ interface MenuViewProps {
   tableNumber?: string;
 }
 
-export default function MenuView({ tableNumber }: MenuViewProps) {
+function MenuView({ tableNumber }: MenuViewProps) {
   const [filter, setFilter] = useState("Todo");
   const [searchQuery, setSearchQuery] = useState("");
   const { profile, isAuthenticated } = useAuth();
@@ -51,6 +51,23 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
 
   // Total de items en el carrito - ahora desde CartContext
   const totalItems = cartState.totalItems;
+
+  const handleSettingsClick = () => {
+    if (isAuthenticated) {
+      navigateWithTable("/dashboard");
+    } else {
+      sessionStorage.setItem("signInFromMenu", "true");
+      navigateWithTable("/auth");
+    }
+  };
+
+  const handlePepperClick = () => {
+    navigateWithTable("/pepper");
+  };
+
+  const handleCartClick = () => {
+    navigateWithTable("/cart");
+  };
 
   // Filtrar menú según la categoría seleccionada y búsqueda
   const filteredMenu = useMemo(() => {
@@ -122,15 +139,8 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
           <div className="mt-6 md:mt-8 flex items-start justify-between w-full">
             {/* Settings Icon */}
             <div
-              onClick={() => {
-                if (isAuthenticated) {
-                  navigateWithTable("/dashboard");
-                } else {
-                  sessionStorage.setItem("signInFromMenu", "true");
-                  navigateWithTable("/auth");
-                }
-              }}
-              className="bg-white rounded-full p-1.5 md:p-2 lg:p-2.5 border border-gray-400 shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+              onClick={handleSettingsClick}
+              className="bg-white rounded-full p-1.5 md:p-2 lg:p-2.5 border border-gray-400 shadow-sm cursor-pointer hover:bg-gray-50 transition-all active:scale-95"
             >
               <Settings
                 className="size-5 md:size-6 lg:size-7 text-stone-800"
@@ -139,7 +149,7 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
             </div>
             {/* Assistent Icon */}
             <div
-              onClick={() => navigateWithTable("/pepper")}
+              onClick={handlePepperClick}
               className="bg-white rounded-full text-black border border-gray-400 size-10 md:size-12 lg:size-14 cursor-pointer shadow-sm"
             >
               <video
@@ -233,11 +243,11 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
       {totalItems > 0 && (
         <div className="fixed bottom-6 md:bottom-8 lg:bottom-10 left-0 right-0 z-50 flex justify-center">
           <div
-            onClick={() => navigateWithTable("/cart")}
-            className="bg-gradient-to-r from-[#34808C] to-[#173E44] text-white rounded-full px-6 md:px-8 lg:px-10 py-3 md:py-4 lg:py-5 shadow-lg flex items-center gap-3 md:gap-4 cursor-pointer transition-all hover:scale-105 animate-bounce-in"
+            onClick={handleCartClick}
+            className="bg-gradient-to-r from-[#34808C] to-[#173E44] text-white rounded-full px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 shadow-lg flex items-center gap-3 md:gap-4 cursor-pointer transition-all hover:scale-105 animate-bounce-in active:scale-90"
           >
             <ShoppingCart className="size-5 md:size-6 lg:size-7" />
-            <span className="text-base md:text-lg lg:text-xl font-medium active:scale-95">
+            <span className="text-base md:text-lg lg:text-xl font-medium">
               Ver el carrito • {totalItems}
             </span>
           </div>
@@ -246,3 +256,5 @@ export default function MenuView({ tableNumber }: MenuViewProps) {
     </div>
   );
 }
+
+export default MenuView;

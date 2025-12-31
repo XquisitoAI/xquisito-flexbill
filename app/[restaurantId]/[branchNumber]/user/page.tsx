@@ -1,17 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useCart, CartItem } from "@/app/context/CartContext";
 import { useTable } from "@/app/context/TableContext";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { getRestaurantData } from "@/app/utils/restaurantData";
 import MenuHeaderBack from "@/app/components/headers/MenuHeaderBack";
-import { Loader2 } from "lucide-react";
 import OrderAnimation from "@/app/components/UI/OrderAnimation";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
-import Loader from "@/app/components/UI/Loader";
 
 export default function UserPage() {
   const [userName, setUserName] = useState("");
@@ -22,10 +19,8 @@ export default function UserPage() {
   const { state: cartState, clearCart } = useCart();
   const { state, dispatch, submitOrder } = useTable();
   const { tableNumber, navigateWithTable } = useTableNavigation();
-  const router = useRouter();
   const restaurantData = getRestaurantData();
-  const { validationError, isValidating, restaurantId, branchNumber } =
-    useValidateAccess();
+  const { validationError, branchNumber } = useValidateAccess();
 
   // Mostrar error de validación si existe
   if (validationError) {
@@ -158,7 +153,39 @@ export default function UserPage() {
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center gap-2 md:gap-3">
-                <Loader2 className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 animate-spin" />
+                <svg
+                  className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 text-white"
+                  style={{
+                    animation: "spin 1s linear infinite",
+                  }}
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <style jsx>{`
+                  @keyframes spin {
+                    from {
+                      transform: rotate(0deg);
+                    }
+                    to {
+                      transform: rotate(360deg);
+                    }
+                  }
+                `}</style>
               </div>
             ) : (
               "Continuar"
@@ -166,49 +193,6 @@ export default function UserPage() {
           </button>
         </div>
       </div>
-
-      {/* User Form */}
-      {/*<div className="max-w-md mx-auto px-4 pb-32">
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-medium text-gray-800 mb-2">
-              Enter your name
-            </h2>
-            <p className="text-sm text-gray-600">
-              We need your name to process your order
-            </p>
-          </div>
-
-          <div className="mb-6">
-            <input
-              type="text"
-              placeholder="Your name"
-              value={userName}
-              onChange={handleNameChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-            />
-          </div>
-        </div>
-      </div>*/}
-
-      {/* Order Button - Fixed at bottom */}
-      {/*<div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
-        <div className="max-w-md mx-auto">
-          <button
-            onClick={handleProceedToOrder}
-            disabled={!userName.trim() || state.isLoading}
-            className={`w-full py-4 rounded-lg font-medium transition-colors ${
-              userName.trim() && !state.isLoading
-                ? "bg-teal-700 text-white hover:bg-teal-800"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
-          >
-            {state.isLoading
-              ? "Placing Order..."
-              : `Order ${state.currentUserTotalItems} items`}
-          </button>
-        </div>
-      </div>*/}
 
       {/* OrderAnimation overlay - para usuarios invitados */}
       {showOrderAnimation && (

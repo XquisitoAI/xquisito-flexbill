@@ -13,8 +13,7 @@ import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
 
 export default function TipSelectionPage() {
-  const { validationError, isValidating, restaurantId, branchNumber } =
-    useValidateAccess();
+  const { validationError, restaurantId, branchNumber } = useValidateAccess();
 
   const { state, dispatch, loadTableData } = useTable();
   const { navigateWithTable } = useTableNavigation();
@@ -423,7 +422,7 @@ export default function TipSelectionPage() {
     <div
       className={`bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col ${
         paymentType === "select-items"
-          ? "h-[100dvh] overflow-y-auto overflow-x-hidden"
+          ? "min-h-[100dvh] overflow-y-auto overflow-x-hidden"
           : "min-h-[100dvh]"
       }`}
     >
@@ -1078,56 +1077,58 @@ export default function TipSelectionPage() {
       </div>
 
       {/* Dropdown de selección de usuario */}
-      {showUserSelector && paymentType === "select-items" && dropdownPosition && (
-        <>
-          {/* Fondo para cerrar */}
-          <div
-            className="fixed inset-0"
-            style={{ zIndex: 99998 }}
-            onClick={() => setShowUserSelector(false)}
-          />
+      {showUserSelector &&
+        paymentType === "select-items" &&
+        dropdownPosition && (
+          <>
+            {/* Fondo para cerrar */}
+            <div
+              className="fixed inset-0"
+              style={{ zIndex: 99998 }}
+              onClick={() => setShowUserSelector(false)}
+            />
 
-          {/* Dropdown menu */}
-          <div
-            className="fixed bg-white rounded-lg shadow-xl w-48 overflow-hidden"
-            style={{
-              zIndex: 99999,
-              top: `${dropdownPosition.top}px`,
-              right: `${dropdownPosition.right}px`,
-            }}
-          >
-            <button
-              onClick={() => {
-                setSelectedUserFilter("all");
-                setShowUserSelector(false);
+            {/* Dropdown menu */}
+            <div
+              className="fixed bg-white rounded-lg shadow-xl w-48 overflow-hidden"
+              style={{
+                zIndex: 99999,
+                top: `${dropdownPosition.top}px`,
+                right: `${dropdownPosition.right}px`,
               }}
-              className={`w-full text-left px-4 py-2.5 transition-colors ${
-                selectedUserFilter === "all"
-                  ? "bg-[#0a8b9b] text-white"
-                  : "text-gray-700 hover:bg-gray-50"
-              }`}
             >
-              <span className="text-sm font-medium">Todos</span>
-            </button>
-            {unpaidUsers.map((user) => (
               <button
-                key={user}
                 onClick={() => {
-                  setSelectedUserFilter(user);
+                  setSelectedUserFilter("all");
                   setShowUserSelector(false);
                 }}
                 className={`w-full text-left px-4 py-2.5 transition-colors ${
-                  selectedUserFilter === user
+                  selectedUserFilter === "all"
                     ? "bg-[#0a8b9b] text-white"
                     : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-sm font-medium capitalize">{user}</span>
+                <span className="text-sm font-medium">Todos</span>
               </button>
-            ))}
-          </div>
-        </>
-      )}
+              {unpaidUsers.map((user) => (
+                <button
+                  key={user}
+                  onClick={() => {
+                    setSelectedUserFilter(user);
+                    setShowUserSelector(false);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 transition-colors ${
+                    selectedUserFilter === user
+                      ? "bg-[#0a8b9b] text-white"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="text-sm font-medium capitalize">{user}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
       {/* Modal de resumen del total */}
       {showTotalModal && (

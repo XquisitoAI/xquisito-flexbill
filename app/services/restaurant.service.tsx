@@ -198,12 +198,17 @@ class RestaurantService {
   async validateRestaurantBranchTable(
     restaurantId: number,
     branchNumber: number,
-    tableNumber: number
+    tableNumber: number,
+    service?: string
   ): Promise<ValidationResult> {
     try {
-      const response = await fetch(
-        `${API_URL}/restaurants/${restaurantId}/${branchNumber}/${tableNumber}/validate`
-      );
+      // Construir la URL con el parámetro service si se proporciona
+      let url = `${API_URL}/restaurants/${restaurantId}/${branchNumber}/${tableNumber}/validate`;
+      if (service) {
+        url += `?service=${encodeURIComponent(service)}`;
+      }
+
+      const response = await fetch(url);
 
       if (!response.ok) {
         return {

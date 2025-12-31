@@ -8,7 +8,7 @@ import ErrorScreen from "@/app/components/ErrorScreen";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 
 export default function RestaurantMenuPage() {
-  const { validationError, isValidating, tableNumber } = useValidateAccess();
+  const { validationError, tableNumber } = useValidateAccess();
   const { restaurant, loading, error } = useRestaurant();
 
   // Mostrar error de validación
@@ -17,7 +17,7 @@ export default function RestaurantMenuPage() {
   }
 
   // Mostrar loader mientras valida o carga
-  if (isValidating || loading || !restaurant) {
+  if (loading || !restaurant) {
     return <Loader />;
   }
 

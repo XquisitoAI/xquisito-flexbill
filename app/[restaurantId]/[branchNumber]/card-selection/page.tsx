@@ -21,8 +21,7 @@ import { Plus, Trash2, Loader2, CircleAlert, X } from "lucide-react";
 import { getCardTypeIcon } from "@/app/utils/cardIcons";
 
 export default function CardSelectionPage() {
-  const { validationError, isValidating, restaurantId, branchNumber } =
-    useValidateAccess();
+  const { validationError, restaurantId, branchNumber } = useValidateAccess();
   const { state, dispatch, loadTableData } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const searchParams = useSearchParams();
@@ -743,7 +742,7 @@ export default function CardSelectionPage() {
         onAnimationComplete={handleAnimationComplete}
       />
 
-      <div className="min-h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         {/* Fixed Header */}
         <div
           className="fixed top-0 left-0 right-0 z-50"

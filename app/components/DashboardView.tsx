@@ -26,7 +26,7 @@ export default function DashboardView() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
           <div className="w-full max-w-md">
             {/* Logo */}
@@ -96,7 +96,7 @@ export default function DashboardView() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <DashboardHeader />
 
       <div className="px-4 md:px-6 lg:px-8 w-full flex-1 flex flex-col">
@@ -173,7 +173,9 @@ export default function DashboardView() {
             </div>
 
             {/* Tab Content */}
-            <div className={`flex-1 flex flex-col pb-6 ${activeTab === "support" ? "relative" : ""}`}>
+            <div
+              className={`flex-1 flex flex-col pb-6 ${activeTab === "support" ? "relative" : ""}`}
+            >
               {activeTab === "profile" && <ProfileTab />}
               {activeTab === "cards" && <CardsTab />}
               {activeTab === "history" && <HistoryTab />}

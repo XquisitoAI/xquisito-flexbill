@@ -2,11 +2,10 @@
 
 import CartView from "@/app/components/CartView";
 import ValidationError from "@/app/components/ValidationError";
-import Loader from "@/app/components/UI/Loader";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 
 export default function CartPage() {
-  const { validationError, isValidating } = useValidateAccess();
+  const { validationError } = useValidateAccess();
 
   // Mostrar error de validación si existe
   if (validationError) {

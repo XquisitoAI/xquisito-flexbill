@@ -50,7 +50,7 @@ export default function ValidationError({ errorType }: ValidationErrorProps) {
   const errorInfo = errorMessages[errorType];
 
   return (
-    <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
         <div className="w-full max-w-md">
           {/* Logo */}

@@ -344,7 +344,7 @@ export default function TipSelectionPage() {
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-br from-[#0a8b9b] to-[#153f43] min-h-[100dvh] flex flex-col">
+      <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <div
           className="fixed top-0 left-0 right-0 z-50"
           style={{ zIndex: 999 }}

@@ -125,7 +125,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
   }
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="min-h-new bg-white relative">
       <img
         src={restaurant.banner_url || DEFAULT_IMAGES.RESTAURANT_BANNER}
         alt=""

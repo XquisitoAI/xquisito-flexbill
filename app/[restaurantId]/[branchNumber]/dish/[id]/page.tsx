@@ -804,7 +804,7 @@ export default function DishDetailPage() {
   // Si hubo error cargando el platillo
   if (dishError === "error") {
     return (
-      <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
           <div className="w-full max-w-md">
             {/* Logo */}
@@ -860,7 +860,7 @@ export default function DishDetailPage() {
 
   if (!tableNumber || isNaN(parseInt(tableNumber))) {
     return (
-      <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
           <div className="w-full max-w-md">
             {/* Logo */}
@@ -917,7 +917,7 @@ export default function DishDetailPage() {
   // Si el platillo no fue encontrado o no hay datos
   if (dishError === "not_found" || !dishData) {
     return (
-      <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
           <div className="w-full max-w-md">
             {/* Logo */}
@@ -971,7 +971,7 @@ export default function DishDetailPage() {
   const { dish, section } = dishData;
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="min-h-new bg-white relative">
       <RestaurantClosedModal
         isOpen={showClosedModal}
         onClose={() => setShowClosedModal(false)}

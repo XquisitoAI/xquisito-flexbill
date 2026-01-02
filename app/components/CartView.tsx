@@ -67,8 +67,11 @@ export default function CartView() {
         console.error("Error submitting order:", error);
         // Si hay error, ocultar la animación y mostrar mensaje al usuario
         setShowOrderAnimation(false);
-        const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-        alert(`Error al enviar la orden: ${errorMessage}. Por favor intenta nuevamente.`);
+        const errorMessage =
+          error instanceof Error ? error.message : "Error desconocido";
+        alert(
+          `Error al enviar la orden: ${errorMessage}. Por favor intenta nuevamente.`
+        );
       } finally {
         setIsSubmitting(false);
       }
@@ -76,7 +79,7 @@ export default function CartView() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <MenuHeaderBack
         restaurant={restaurantData}
         tableNumber={tableState.tableNumber}

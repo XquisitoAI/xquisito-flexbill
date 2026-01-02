@@ -28,7 +28,8 @@ function AddCardContent() {
   const restaurantData = getRestaurantData();
   const isGuestUser = useIsGuest();
   const { guestId, tableNumber } = useGuest();
-  const { addPaymentMethod, refreshPaymentMethods, paymentMethods } = usePayment();
+  const { addPaymentMethod, refreshPaymentMethods, paymentMethods } =
+    usePayment();
   const { user } = useAuth();
 
   const [fullName, setFullName] = useState("");
@@ -106,7 +107,10 @@ function AddCardContent() {
       }
 
       // Use user's email/phone if authenticated, otherwise generate temporary guest email
-      const userEmail = user?.email || user?.phone || `guest-${guestId || Date.now()}@xquisito.temp`;
+      const userEmail =
+        user?.email ||
+        user?.phone ||
+        `guest-${guestId || Date.now()}@xquisito.temp`;
 
       const result = await apiService.addPaymentMethod({
         fullName,
@@ -241,7 +245,7 @@ function AddCardContent() {
         />
       )}
 
-      <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <MenuHeaderBack
           restaurant={restaurantData}
           tableNumber={state.tableNumber}

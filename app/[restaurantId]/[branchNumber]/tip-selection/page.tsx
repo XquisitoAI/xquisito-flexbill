@@ -420,10 +420,10 @@ export default function TipSelectionPage() {
 
   return (
     <div
-      className={`bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col ${
+      className={`min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col ${
         paymentType === "select-items"
-          ? "min-h-[100dvh] overflow-y-auto overflow-x-hidden"
-          : "min-h-[100dvh]"
+          ? " overflow-y-auto overflow-x-hidden"
+          : ""
       }`}
     >
       {/* Fixed Header - solo cuando NO es select-items */}
@@ -515,7 +515,9 @@ export default function TipSelectionPage() {
 
             <div
               className={`bg-white rounded-t-4xl relative z-10 flex flex-col pt-8 md:pt-10 lg:pt-12 pb-4 md:pb-6 ${
-                paymentType === "select-items" ? "pb-[240px]" : ""
+                paymentType === "select-items"
+                  ? `${isUnderMinimum ? "pb-[300px]" : "pb-[240px]"}`
+                  : ""
               }`}
             >
               {/* Seleccionar monto a pagar para choose-amount */}

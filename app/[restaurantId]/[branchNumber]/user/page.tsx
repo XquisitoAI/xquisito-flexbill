@@ -37,6 +37,14 @@ export default function UserPage() {
     }
   };
 
+  // Manejar presión de Enter/Intro
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && userName.trim() && !isSubmitting) {
+      e.preventDefault();
+      handleProceedToOrder();
+    }
+  };
+
   const handleProceedToOrder = async () => {
     if (userName.trim()) {
       setIsSubmitting(true);
@@ -87,7 +95,7 @@ export default function UserPage() {
 
   if (!tableNumber || isNaN(parseInt(tableNumber))) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-new bg-gray-50 flex items-center justify-center">
         <div className="text-center px-4 md:px-6 lg:px-8">
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-meduim text-gray-800 mb-4 md:mb-6">
             Mesa Inválida
@@ -101,7 +109,7 @@ export default function UserPage() {
   }
 
   return (
-    <div className="h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <MenuHeaderBack
         restaurant={restaurantData}
         tableNumber={state.tableNumber}
@@ -131,6 +139,7 @@ export default function UserPage() {
                   placeholder="Nombre"
                   value={userName}
                   onChange={handleNameChange}
+                  onKeyDown={handleKeyDown}
                   className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border-0 border-b border-black text-black text-2xl md:text-3xl lg:text-4xl text-center font-medium focus:outline-none focus:border-teal-500"
                 />
               </div>

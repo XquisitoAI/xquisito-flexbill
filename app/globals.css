@@ -355,6 +355,18 @@ svg {
   animation: pulse-button 1.5s ease-out infinite;
 }
 
+/* Fix para min-height en iOS/Safari - Evita espacio blanco/negro al hacer scroll */
+.min-h-new {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+@supports (min-height: 100dvh) {
+  .min-h-new {
+    min-height: 100dvh;
+  }
+}
+
 @layer components {
   .myradio {
     @apply w-4 h-4 bg-gray-100 border border-gray-300 rounded-full cursor-pointer;

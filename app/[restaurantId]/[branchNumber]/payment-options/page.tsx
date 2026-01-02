@@ -13,8 +13,7 @@ import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
 
 export default function PaymentOptionsPage() {
-  const { validationError, isValidating, restaurantId, branchNumber } =
-    useValidateAccess();
+  const { validationError, restaurantId, branchNumber } = useValidateAccess();
   const searchParams = useSearchParams();
 
   const { state, dispatch, loadTableData, loadActiveUsers } = useTable();
@@ -353,7 +352,7 @@ export default function PaymentOptionsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[100dvh] bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <MenuHeaderBack
           restaurant={restaurantData}
           tableNumber={state.tableNumber}

@@ -29,7 +29,6 @@ export default function OrderStatus() {
         navigateWithTable("/payment-options");
       } else {
         // User is guest, redirect to auth page
-        sessionStorage.setItem("signupFromOrder", "true");
         navigateWithTable("/auth-selection");
       }
     } finally {

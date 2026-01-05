@@ -8,8 +8,17 @@ import { useGuest, useIsGuest } from "@/app/context/GuestContext";
 import { useRestaurant } from "@/app/context/RestaurantContext";
 import { getRestaurantData } from "@/app/utils/restaurantData";
 import { apiService } from "@/app/utils/api";
-import { Receipt, X, Calendar, Utensils, CircleAlert } from "lucide-react";
+import {
+  Receipt,
+  X,
+  Calendar,
+  Utensils,
+  CircleAlert,
+  LogIn,
+  UserCircle2,
+} from "lucide-react";
 import { getCardTypeIcon } from "@/app/utils/cardIcons";
+import { useAuth } from "@/app/context/AuthContext";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
 import Loader from "@/app/components/UI/Loader";
@@ -17,6 +26,7 @@ import Loader from "@/app/components/UI/Loader";
 export default function PaymentSuccessPage() {
   const { validationError, isValidating, restaurantId } = useValidateAccess();
   const { restaurant } = useRestaurant();
+  const { isAuthenticated } = useAuth();
 
   const { state } = useTable();
   const { navigateWithTable } = useTableNavigation();
@@ -39,26 +49,67 @@ export default function PaymentSuccessPage() {
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [isBreakdownModalOpen, setIsBreakdownModalOpen] = useState(false);
   const [hasRated, setHasRated] = useState(false); // Track if user has already rated
+  const [isRegisterModalOpen, setIsRegisterModalOpen] =
+    useState(!isAuthenticated);
+
+  // Handler for sign up navigation
+  const handleSignUp = () => {
+    // Save the current URL to redirect back after registration
+    const currentUrl = window.location.pathname + window.location.search;
+    sessionStorage.setItem("xquisito-post-auth-redirect", currentUrl);
+
+    // Navigate to auth page
+    navigateWithTable("/auth");
+  };
+
+  // Bloquear scroll cuando los modales están abiertos
+  useEffect(() => {
+    if (isTicketModalOpen || isBreakdownModalOpen || isRegisterModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isTicketModalOpen, isBreakdownModalOpen, isRegisterModalOpen]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       console.log(
-        "🔍 Payment success page - checking storage for payment data"
+        "�� Payment success page - checking storage for payment data"
       );
 
       // Get payment ID from URL to identify this specific payment
       const urlPaymentId = paymentId || searchParams.get("transactionId");
 
-      // First check sessionStorage with payment ID (persistent on reload)
-      const sessionKey = urlPaymentId
-        ? `xquisito-payment-success-${urlPaymentId}`
-        : "xquisito-payment-success";
-
-      let storedPayment = sessionStorage.getItem(sessionKey);
-      let storageKey = sessionKey;
+      let storedPayment = null;
+      let storageKey = "";
       let fromSession = true;
 
-      // If not in sessionStorage, check localStorage (first time)
+      // First, try to find the current payment key reference
+      const currentKeyRef = sessionStorage.getItem("xquisito-current-payment-key");
+      if (currentKeyRef) {
+        storedPayment = sessionStorage.getItem(currentKeyRef);
+        storageKey = currentKeyRef;
+        console.log("📦 Found payment via current-payment-key:", currentKeyRef);
+      }
+
+      // If not found, search all sessionStorage keys for payment success data
+      if (!storedPayment) {
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && key.startsWith("xquisito-payment-success-")) {
+            storedPayment = sessionStorage.getItem(key);
+            storageKey = key;
+            console.log("📦 Found payment via sessionStorage search:", key);
+            break;
+          }
+        }
+      }
+
+      // If still not found, check localStorage (first time)
       if (!storedPayment) {
         fromSession = false;
 
@@ -373,19 +424,6 @@ export default function PaymentSuccessPage() {
                 />
                 Ver ticket de compra
               </button>
-              {/*
-              {!isSignedIn && (
-                <button
-                  onClick={() => {
-                    // Mark that user is coming from payment-success context
-                    sessionStorage.setItem("signupFromPaymentSuccess", "true");
-                    router.push("/sign-up");
-                  }}
-                  className="w-full text-black border border-black py-3 md:py-4 lg:py-5 rounded-full cursor-pointer transition-colors bg-white hover:bg-stone-100 text-base md:text-lg lg:text-xl"
-                >
-                  Crear una cuenta
-                </button>
-              )}*/}
             </div>
           </div>
         </div>
@@ -662,6 +700,87 @@ export default function PaymentSuccessPage() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Register Modal */}
+      {isRegisterModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/25 backdrop-blur-xs z-999 flex items-center justify-center animate-fade-in"
+          onClick={() => setIsRegisterModalOpen(false)}
+        >
+          <div
+            className="bg-[#173E44]/80 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] w-full mx-4 md:mx-12 lg:mx-28 rounded-4xl z-999 flex flex-col justify-center py-12 md:py-16 lg:py-20 min-h-[70vh] animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <div className="absolute top-3 md:top-4 lg:top-5 right-3 md:right-4 lg:right-5">
+              <button
+                onClick={() => setIsRegisterModalOpen(false)}
+                className="p-2 md:p-3 lg:p-4 hover:bg-white/10 rounded-lg md:rounded-xl transition-colors"
+              >
+                <X className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-white" />
+              </button>
+            </div>
+
+            {/* Logo */}
+            <div className="px-6 md:px-8 lg:px-10 flex items-center justify-center mb-6 md:mb-8 lg:mb-10">
+              <img
+                src="/iso-1-white.webp"
+                alt="Xquisito Logo"
+                className="size-20 md:size-24 lg:size-28"
+              />
+            </div>
+
+            {/* Title */}
+            <div className="px-6 md:px-8 lg:px-10 text-center mb-6 md:mb-8 lg:mb-10">
+              <h1 className="text-white text-xl md:text-2xl lg:text-3xl font-medium mb-2 md:mb-3 lg:mb-4">
+                ¡Tu pago fue procesado con éxito!
+              </h1>
+              <p className="text-white/80 text-sm md:text-base lg:text-lg">
+                Crea una cuenta para hacer pedidos más rápido la próxima vez
+              </p>
+            </div>
+
+            {/* Options */}
+            <div className="px-6 md:px-8 lg:px-10 space-y-3 md:space-y-4 lg:space-y-5">
+              {/* Sign Up Option */}
+              <button
+                onClick={handleSignUp}
+                className="w-full bg-white hover:bg-gray-50 text-black py-4 md:py-5 lg:py-6 px-4 md:px-5 lg:px-6 rounded-xl md:rounded-2xl transition-all duration-200 flex items-center gap-3 md:gap-4 lg:gap-5 active:scale-95"
+              >
+                <div className="bg-gradient-to-r from-[#34808C] to-[#173E44] p-2 md:p-2.5 lg:p-3 rounded-full group-hover:scale-110 transition-transform">
+                  <LogIn className="size-5 md:size-6 lg:size-7 text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h2 className="text-base md:text-lg lg:text-xl font-medium mb-0.5 md:mb-1">
+                    Crear cuenta
+                  </h2>
+                  <p className="text-xs md:text-sm lg:text-base text-gray-600">
+                    Regístrate y ahorra tiempo en futuros pedidos
+                  </p>
+                </div>
+              </button>
+
+              {/* Continue as Guest Option */}
+              <button
+                onClick={() => setIsRegisterModalOpen(false)}
+                className="w-full bg-white/10 hover:bg-white/20 border-2 border-white text-white py-4 md:py-5 lg:py-6 px-4 md:px-5 lg:px-6 rounded-xl md:rounded-2xl transition-all duration-200 flex items-center gap-3 md:gap-4 lg:gap-5 group active:scale-95"
+              >
+                <div className="bg-white/20 p-2 md:p-2.5 lg:p-3 rounded-full group-hover:scale-110 transition-transform">
+                  <UserCircle2 className="size-5 md:size-6 lg:size-7 text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h2 className="text-base md:text-lg lg:text-xl font-medium mb-0.5 md:mb-1">
+                    Continuar sin registrarme
+                  </h2>
+                  <p className="text-xs md:text-sm lg:text-base text-white/80">
+                    Ver los detalles de mi pago
+                  </p>
+                </div>
+              </button>
             </div>
           </div>
         </div>

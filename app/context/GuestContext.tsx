@@ -199,8 +199,13 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
   };
 
   const clearGuestSession = () => {
-    // Clear only guest-specific data, preserve table context for authenticated users
-    localStorage.removeItem("xquisito-guest-id");
+    // IMPORTANT: DO NOT remove guest-id immediately
+    // It's needed for payment methods migration which happens after cart migration
+    // The guest-id will be removed by PaymentContext after all migrations complete
+    console.log(
+      "ℹ️ Guest session clearing - preserving guest-id for payment methods migration"
+    );
+
     localStorage.removeItem("xquisito-guest-name");
 
     // Only clear table context if user is not authenticated
@@ -215,7 +220,7 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
     setGuestId(null);
     setGuestName(null);
 
-    console.log("🗑️ Guest session cleared, table context preserved for authenticated user");
+    console.log("🗑️ Guest session cleared, guest-id preserved for migrations, table context preserved for authenticated user");
   };
 
   const setGuestNameHandler = (name: string) => {

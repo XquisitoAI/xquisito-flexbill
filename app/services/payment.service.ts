@@ -241,4 +241,11 @@ export const paymentService = {
       }
     }
   },
+
+  // Migra los métodos de pago de guest a usuario autenticado
+  async migrateGuestPaymentMethods(
+    guestId: string
+  ): Promise<ApiResponse<{ migratedCount: number }>> {
+    return apiService.migrateGuestPaymentMethods(guestId);
+  },
 };

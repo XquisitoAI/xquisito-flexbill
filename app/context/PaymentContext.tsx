@@ -5,6 +5,7 @@ import { apiService, PaymentMethod } from '../utils/api';
 import { useGuest } from './GuestContext';
 import { useAuth } from './AuthContext';
 import { authService } from '../services/auth.service';
+import { paymentService } from '../services/payment.service';
 
 interface PaymentContextType {
   paymentMethods: PaymentMethod[];
@@ -15,6 +16,7 @@ interface PaymentContextType {
   removePaymentMethod: (paymentMethodId: string) => void;
   setDefaultPaymentMethod: (paymentMethodId: string) => Promise<void>;
   deletePaymentMethod: (paymentMethodId: string) => Promise<void>;
+  migrateGuestPaymentMethods: () => Promise<void>;
 }
 
 const PaymentContext = createContext<PaymentContextType | undefined>(undefined);
@@ -175,6 +177,53 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
     }
   };
 
+  const migrateGuestPaymentMethods = async () => {
+    const guestIdInStorage = localStorage.getItem('xquisito-guest-id');
+
+    if (!user || !guestIdInStorage) {
+      console.log('⚠️ Cannot migrate: missing user or guest-id');
+      return;
+    }
+
+    console.log('🔄 Starting payment methods migration from guest to user', {
+      guestId: guestIdInStorage,
+      userId: user.id,
+    });
+
+    try {
+      // Get Supabase auth token
+      const currentUser = await authService.getCurrentUser();
+      if (currentUser?.token) {
+        apiService.setAuthToken(currentUser.token);
+      }
+
+      const response = await paymentService.migrateGuestPaymentMethods(guestIdInStorage);
+
+      if (response.success) {
+        console.log(
+          '✅ Payment methods migrated successfully:',
+          response.data?.migratedCount || 0,
+          'methods'
+        );
+
+        // Refresh payment methods to show migrated ones
+        await refreshPaymentMethods();
+
+        // IMPORTANT: Only delete guest-id after ALL migrations complete
+        // This includes: guest orders linking (done in GuestContext) + payment methods migration
+        console.log(
+          '🗑️ All migrations completed - removing guest ID from localStorage'
+        );
+        localStorage.removeItem('xquisito-guest-id');
+        console.log('✅ Guest ID successfully removed');
+      } else {
+        console.error('❌ Payment methods migration failed:', response.error);
+      }
+    } catch (error) {
+      console.error('❌ Error migrating payment methods:', error);
+    }
+  };
+
   // Load payment methods when user context changes
   useEffect(() => {
     if (!authLoading) {
@@ -199,6 +248,23 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
     }
   }, [authLoading, isAuthenticated, user?.id, isGuest, guestId, setAsAuthenticated]);
 
+  // Auto-migrate guest payment methods when user logs in
+  useEffect(() => {
+    const autoMigrate = async () => {
+      const guestIdInStorage = localStorage.getItem('xquisito-guest-id');
+      if (user && guestIdInStorage && !authLoading) {
+        console.log(
+          '🔄 Auto-triggering payment methods migration after authentication'
+        );
+        // Wait for guest orders linking to complete first (handled in GuestContext)
+        // Then migrate payment methods
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await migrateGuestPaymentMethods();
+      }
+    };
+    autoMigrate();
+  }, [user?.id, authLoading]);
+
   const value: PaymentContextType = {
     paymentMethods,
     isLoading,
@@ -208,6 +274,7 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
     removePaymentMethod,
     setDefaultPaymentMethod,
     deletePaymentMethod,
+    migrateGuestPaymentMethods,
   };
 
   return (

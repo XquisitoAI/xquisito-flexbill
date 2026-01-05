@@ -324,6 +324,15 @@ class ApiService {
     });
   }
 
+  async migrateGuestPaymentMethods(
+    guestId: string
+  ): Promise<ApiResponse<{ migratedCount: number }>> {
+    return this.makeRequest("/payment-methods/migrate-from-guest", {
+      method: "POST",
+      body: JSON.stringify({ guestId }),
+    });
+  }
+
   // Payment Processing API
   async processPayment(paymentData: {
     paymentMethodId: string;

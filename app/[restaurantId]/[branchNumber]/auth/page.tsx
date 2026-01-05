@@ -115,7 +115,6 @@ export default function AuthPage() {
   useEffect(() => {
     if (tableNumber) {
       sessionStorage.setItem("pendingTableRedirect", tableNumber);
-      sessionStorage.setItem("signupFromPaymentFlow", "true");
     }
     if (restaurantId) {
       sessionStorage.setItem("pendingRestaurantId", restaurantId);
@@ -133,17 +132,24 @@ export default function AuthPage() {
 
   // Helper function to handle post-auth redirects
   const handleAuthRedirect = () => {
-    const isFromPaymentFlow = sessionStorage.getItem("signupFromPaymentFlow");
-    const isFromPaymentSuccess = sessionStorage.getItem(
-      "signupFromPaymentSuccess"
-    );
+    // Check for saved redirect URL (from payment-success modal)
+    const savedRedirect = sessionStorage.getItem("xquisito-post-auth-redirect");
+
+    if (savedRedirect) {
+      // Clear the saved redirect
+      sessionStorage.removeItem("xquisito-post-auth-redirect");
+
+      // Redirect to the saved URL
+      console.log("🔄 Redirecting to saved URL:", savedRedirect);
+      router.push(savedRedirect);
+      return;
+    }
+
     const isFromMenu = sessionStorage.getItem("signInFromMenu");
     const isFromOrder = sessionStorage.getItem("signupFromOrder");
 
     // Clear all session flags
     sessionStorage.removeItem("pendingTableRedirect");
-    sessionStorage.removeItem("signupFromPaymentFlow");
-    sessionStorage.removeItem("signupFromPaymentSuccess");
     sessionStorage.removeItem("signInFromMenu");
     sessionStorage.removeItem("signupFromOrder");
 
@@ -152,12 +158,6 @@ export default function AuthPage() {
       navigateWithTable("/payment-options");
     } else if (isFromMenu && tableNumber) {
       // User signed in from MenuView settings, redirect to dashboard
-      navigateWithTable("/dashboard");
-    } else if (isFromPaymentFlow && tableNumber) {
-      // User signed up during payment flow, redirect to payment-options
-      navigateWithTable("/payment-options");
-    } else if (isFromPaymentSuccess) {
-      // User signed up from payment-success, redirect to dashboard
       navigateWithTable("/dashboard");
     } else {
       // Default redirect to menu
@@ -428,9 +428,9 @@ export default function AuthPage() {
               <p className="text-gray-300 text-xs">
                 Ejemplo:{" "}
                 {countryCode === "+52"
-                  ? "551 234 5678"
+                  ? "500 555 0006"
                   : countryCode === "+1"
-                    ? "212 555 1234"
+                    ? "500 555 0006"
                     : "123 456 789"}
               </p>
             </div>

@@ -856,7 +856,12 @@ export default function TipSelectionPage() {
                         return (
                           <button
                             onClick={handleContinueToCardSelection}
-                            className="rounded-full cursor-pointer transition-all px-20 h-10 md:h-12 lg:h-12 flex items-center justify-center text-base md:text-lg lg:text-xl bg-gradient-to-r from-[#34808C] to-[#173E44] text-white animate-pulse-button active:scale-90"
+                            disabled={isDisabled}
+                            className={`rounded-full transition-all px-20 h-10 md:h-12 lg:h-12 flex items-center justify-center text-base md:text-lg lg:text-xl bg-gradient-to-r from-[#34808C] to-[#173E44] text-white ${
+                              isDisabled
+                                ? "opacity-50 cursor-not-allowed"
+                                : "animate-pulse-button active:scale-90 cursor-pointer"
+                            }`}
                           >
                             Pagar
                           </button>
@@ -1028,7 +1033,12 @@ export default function TipSelectionPage() {
                     return (
                       <button
                         onClick={handleContinueToCardSelection}
-                        className="rounded-full cursor-pointer h-10 md:h-12 lg:h-12 flex items-center justify-center px-20 text-base md:text-lg lg:text-xl active:scale-90 transition-all bg-gradient-to-r from-[#34808C] to-[#173E44] text-white animate-pulse-button"
+                        disabled={isDisabled}
+                        className={`rounded-full h-10 md:h-12 lg:h-12 flex items-center justify-center px-20 text-base md:text-lg lg:text-xl transition-all bg-gradient-to-r from-[#34808C] to-[#173E44] text-white ${
+                          isDisabled
+                            ? "opacity-50 cursor-not-allowed"
+                            : "animate-pulse-button active:scale-90 cursor-pointer"
+                        }`}
                       >
                         Pagar
                       </button>

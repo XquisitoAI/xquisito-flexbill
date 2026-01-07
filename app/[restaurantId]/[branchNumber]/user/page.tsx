@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useCart, CartItem } from "@/app/context/CartContext";
 import { useTable } from "@/app/context/TableContext";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
@@ -16,6 +16,7 @@ export default function UserPage() {
   const [showOrderAnimation, setShowOrderAnimation] = useState(false);
   const [orderedItems, setOrderedItems] = useState<CartItem[]>([]);
   const [orderUserName, setOrderUserName] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
   const { state: cartState, clearCart } = useCart();
   const { state, dispatch, submitOrder } = useTable();
   const { tableNumber, navigateWithTable } = useTableNavigation();
@@ -43,6 +44,18 @@ export default function UserPage() {
       e.preventDefault();
       handleProceedToOrder();
     }
+  };
+
+  // Manejar foco del input para scroll al teclado
+  const handleInputFocus = () => {
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }, 300);
   };
 
   const handleProceedToOrder = async () => {
@@ -109,7 +122,7 @@ export default function UserPage() {
   }
 
   return (
-    <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="fixed inset-0 bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col overflow-hidden">
       <MenuHeaderBack
         restaurant={restaurantData}
         tableNumber={state.tableNumber}
@@ -124,10 +137,10 @@ export default function UserPage() {
           </div>
         </div>
 
-        <div className="flex-1 h-full flex flex-col">
+        <div className="flex-1 flex flex-col">
           <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col px-6 md:px-8 lg:px-10">
-            <div className="flex-1 flex flex-col items-center w-full h-full pb-[120px] md:pb-[140px] lg:pb-[160px]">
-              <div className="pt-48 md:pt-56 lg:pt-64 mb-6 md:mb-8">
+            <div className="flex flex-col items-center w-full pt-32 md:pt-36 lg:pt-40">
+              <div className="mb-6 md:mb-8">
                 <h2 className="text-lg md:text-xl lg:text-2xl font-medium text-black">
                   Tu nombre
                 </h2>
@@ -135,11 +148,13 @@ export default function UserPage() {
 
               <div className="w-full">
                 <input
+                  ref={inputRef}
                   type="text"
                   placeholder="Nombre"
                   value={userName}
                   onChange={handleNameChange}
                   onKeyDown={handleKeyDown}
+                  onFocus={handleInputFocus}
                   className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border-0 border-b border-black text-black text-2xl md:text-3xl lg:text-4xl text-center font-medium focus:outline-none focus:border-teal-500"
                 />
               </div>

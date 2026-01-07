@@ -29,6 +29,22 @@ body {
     sans-serif;
 }
 
+/* Banner responsivo - coincide con admin-portal simulation */
+.banner-mobile {
+  background-size: cover; /* Desktop por defecto */
+}
+
+/* Móvil - altura optimizada (230px) para mejor proporción */
+@media (max-width: 768px) {
+  .banner-mobile {
+    /* Cover llena toda la altura del contenedor reducido */
+    background-size: cover !important;
+    background-position: center center !important; /* Centrado para mejor proporción con altura 230px */
+    background-repeat: no-repeat !important;
+    background-color: #f8f9fa;
+  }
+}
+
 /* Ocultar scrollbar pero mantener funcionalidad de scroll */
 .scrollbar-hide {
   -ms-overflow-style: none; /* IE and Edge */

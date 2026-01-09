@@ -42,6 +42,10 @@ export default function UserPage() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && userName.trim() && !isSubmitting) {
       e.preventDefault();
+      // Cerrar el teclado
+      if (inputRef.current) {
+        inputRef.current.blur();
+      }
       handleProceedToOrder();
     }
   };

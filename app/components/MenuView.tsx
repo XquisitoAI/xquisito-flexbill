@@ -125,16 +125,19 @@ function MenuView({ tableNumber }: MenuViewProps) {
   }
 
   return (
-    <div className="min-h-new bg-white relative">
-      <img
-        src={restaurant.banner_url || DEFAULT_IMAGES.RESTAURANT_BANNER}
-        alt=""
-        className="absolute top-0 left-0 w-full h-72 md:h-96 lg:h-[28rem] object-cover z-0"
-      />
+    <div className="min-h-screen bg-white relative">
+      <div
+        className="absolute top-0 left-0 w-full h-[230px] md:h-96 lg:h-[28rem] z-0 banner-mobile"
+        style={{
+          backgroundImage: `url(${restaurant.banner_url || DEFAULT_IMAGES.RESTAURANT_BANNER})`,
+          backgroundPosition: 'center top',
+          backgroundRepeat: 'no-repeat'
+        }}
+      ></div>
 
       <MenuHeader restaurant={restaurant} tableNumber={tableNumber} />
 
-      <main className="mt-48 md:mt-64 lg:mt-80 relative z-10">
+      <main className="mt-48 md:mt-64 lg:mt-80 relative z-10" style={{marginTop:'9rem'}}>
         <div className="bg-white rounded-t-4xl flex flex-col items-center px-6 md:px-8 lg:px-10">
           <div className="mt-6 md:mt-8 flex items-start justify-between w-full">
             {/* Settings Icon */}

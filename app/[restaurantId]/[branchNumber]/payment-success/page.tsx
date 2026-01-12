@@ -89,7 +89,9 @@ export default function PaymentSuccessPage() {
       let fromSession = true;
 
       // First, try to find the current payment key reference
-      const currentKeyRef = sessionStorage.getItem("xquisito-current-payment-key");
+      const currentKeyRef = sessionStorage.getItem(
+        "xquisito-current-payment-key"
+      );
       if (currentKeyRef) {
         storedPayment = sessionStorage.getItem(currentKeyRef);
         storageKey = currentKeyRef;
@@ -542,8 +544,14 @@ export default function PaymentSuccessPage() {
                       dishOrders.map((dish: any, index: number) => (
                         <div
                           key={dish.dish_order_id || index}
-                          className="flex justify-between items-start gap-3 md:gap-4 lg:gap-5"
+                          className="flex justify-between items-center gap-3 md:gap-4 lg:gap-5"
                         >
+                          {/* Image */}
+                          <img
+                            src={dish.images[0]}
+                            alt={dish.item}
+                            className="size-14 md:size-16 lg:size-20 object-cover rounded-lg md:rounded-xl flex-shrink-0"
+                          />
                           <div className="flex-1">
                             <p className="text-white font-medium text-base md:text-lg lg:text-xl">
                               {dish.quantity}x {dish.item}

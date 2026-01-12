@@ -567,6 +567,12 @@ export default function TipSelectionPage() {
               {/* Seleccionar artículos específicos */}
               {paymentType === "select-items" && (
                 <div className="mb-6 px-8 md:px-10 lg:px-12">
+                  {filteredUnpaidDishes.length > 0 && (
+                    <div className="text-black font-medium text-sm md:text-base lg:text-lg flex gap-10 md:gap-12 lg:gap-14 justify-end translate-y-4">
+                      <span>Cant.</span>
+                      <span>Precio</span>
+                    </div>
+                  )}
                   <div className="space-y-3">
                     {filteredUnpaidDishes.map((dish) => {
                       const isSelected = selectedItems.includes(
@@ -578,11 +584,11 @@ export default function TipSelectionPage() {
                           onClick={() =>
                             toggleItemSelection(dish.dish_order_id)
                           }
-                          className={`py-3 md:py-4 lg:py-5 px-2 md:px-3 lg:px-4 cursor-pointer transition-colors ${
+                          className={`py-3 md:py-4 lg:py-5 cursor-pointer transition-colors ${
                             isSelected ? "bg-teal-50" : "hover:bg-gray-50"
                           }`}
                         >
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 justify-between">
                             <div className="flex items-center gap-3">
                               <div className="flex-shrink-0">
                                 <div
@@ -627,9 +633,12 @@ export default function TipSelectionPage() {
                                 </h4>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-black text-sm md:text-base lg:text-lg">
-                                ${dish.total_price.toFixed(2)} MXN
+                            <div className="text-right flex gap-10 md:gap-12 lg:gap-14">
+                              <p className="text-black text-base md:text-lg lg:text-xl">
+                                {dish.quantity}
+                              </p>
+                              <p className="text-black w-14 md:w-16 lg:w-20 text-base md:text-lg lg:text-xl">
+                                ${dish.total_price.toFixed(2)}
                               </p>
                             </div>
                           </div>

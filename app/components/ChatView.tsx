@@ -207,7 +207,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Obtener contextos
-  const { restaurantId } = useRestaurant();
+  const { restaurantId, branchNumber } = useRestaurant();
   const { guestId, isGuest } = useGuest();
   const { user } = useAuth();
 
@@ -242,7 +242,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
         const currentGuestId = isGuest ? guestId : null;
 
         // Construir el mensaje con el contexto separado
-        const contextualMessage = `[CONTEXT: restaurant_id=${restaurantId || "null"}, user_id=${userId || "null"}, guest_id=${currentGuestId || "null"}]
+        const contextualMessage = `[CONTEXT: restaurant_id=${restaurantId || "null"}, user_id=${userId || "null"}, guest_id=${currentGuestId || "null"}, branch_number=${branchNumber || "null"}]
 [USER_MESSAGE: ${userMessage}]`;
 
         // Ocultar loading ya que veremos el texto aparecer

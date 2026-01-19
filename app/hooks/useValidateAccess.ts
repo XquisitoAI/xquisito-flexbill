@@ -3,6 +3,10 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useRestaurant } from "../context/RestaurantContext";
 import { useTable } from "../context/TableContext";
 import { restaurantService } from "../services/restaurant.service";
+import {
+  getValidationFromCache,
+  setValidationCache,
+} from "../utils/validationCache";
 
 export function useValidateAccess() {
   const router = useRouter();
@@ -46,14 +50,50 @@ export function useValidateAccess() {
       dispatch({ type: "SET_TABLE_NUMBER", payload: tableNumber });
 
       // Validar que el restaurante, sucursal y mesa existen y que el servicio "flex-bill" esté disponible
+      const restId = parseInt(restaurantId);
+      const branchNum = parseInt(branchNumber);
+      const tableNum = parseInt(tableNumber);
+      const service = "flex-bill";
+
       try {
+        // Primero verificar si hay un resultado en caché
+        const cachedResult = getValidationFromCache(
+          restId,
+          branchNum,
+          tableNum,
+          service
+        );
+
+        if (cachedResult !== null) {
+          // Usar resultado del caché
+          if (!cachedResult.valid) {
+            console.error("❌ Validation failed (cached):", cachedResult.error);
+            setValidationError(cachedResult.error || "VALIDATION_ERROR");
+          } else {
+            console.log("✅ Validation successful (cached)");
+            setValidationError(null);
+          }
+          setIsValidating(false);
+          return;
+        }
+
+        // Si no hay caché, hacer la llamada al API
         const validation =
           await restaurantService.validateRestaurantBranchTable(
-            parseInt(restaurantId),
-            parseInt(branchNumber),
-            parseInt(tableNumber),
-            "flex-bill"
+            restId,
+            branchNum,
+            tableNum,
+            service
           );
+
+        // Guardar resultado en caché
+        setValidationCache(
+          restId,
+          branchNum,
+          tableNum,
+          { valid: validation.valid, error: validation.error },
+          service
+        );
 
         if (!validation.valid) {
           console.error("❌ Validation failed:", validation.error);

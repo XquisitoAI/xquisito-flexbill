@@ -1018,18 +1018,31 @@ export default function DishDetailPage() {
               <img
                 key={index}
                 src={image}
-                alt=""
+                alt={`${dish.name} - Imagen ${index + 1}`}
                 className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-500 ${
                   index === currentImageIndex ? "opacity-100" : "opacity-0"
                 }`}
+                style={{
+                  filter: 'contrast(1.08) brightness(1.03)',
+                  imageRendering: 'crisp-edges',
+                  transform: 'scale(1.005)', // Ligero zoom para reducir bordes pixelados
+                }}
+                loading={index === 0 ? "eager" : "lazy"}
+                decoding="async"
               />
             ))
           ) : (
             <div className="absolute top-0 left-0 w-full h-full bg-gray-300 flex items-center justify-center">
               <img
                 src="/logo-short-green.webp"
-                alt="Logo"
+                alt="Logo del restaurante"
                 className="w-32 md:w-40 lg:w-48 h-32 md:h-40 lg:h-48 object-contain"
+                style={{
+                  imageRendering: 'crisp-edges',
+                  filter: 'contrast(1.05) brightness(1.02)',
+                }}
+                loading="eager"
+                decoding="async"
               />
             </div>
           )}

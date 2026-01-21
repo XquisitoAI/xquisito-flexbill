@@ -12,20 +12,22 @@ interface ChatViewProps {
 
 // Tipo para los eventos del stream
 interface StreamEvent {
-  type: "token" | "done" | "error" | "session";
+  type: "token" | "done" | "error" | "session" | "tool_start" | "tool_end";
   content?: string;
   session_id?: string;
+  tool_name?: string;
 }
 
-// Función para streaming con el agente
+// Función para streaming con el agente (muestra herramientas en tiempo real, texto completo al final)
 async function streamFromAgent(
   message: string,
   sessionId: string | null = null,
-  onToken: (token: string) => void,
-  onSessionId: (sessionId: string) => void
+  onToolStart: (toolName: string) => void,
+  onToolEnd: () => void,
+  onComplete: (response: string, newSessionId: string | null) => void
 ): Promise<void> {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/ai-agent/chat/stream`,
+    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/ai-agent/chat/stream`,
     {
       method: "POST",
       headers: {
@@ -49,6 +51,8 @@ async function streamFromAgent(
 
   const decoder = new TextDecoder();
   let buffer = "";
+  let fullResponse = "";
+  let receivedSessionId: string | null = null;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -64,20 +68,53 @@ async function streamFromAgent(
           const event: StreamEvent = JSON.parse(line.slice(6));
 
           if (event.type === "token" && event.content) {
-            onToken(event.content);
+            fullResponse += event.content;
           } else if (event.type === "session" && event.session_id) {
-            onSessionId(event.session_id);
+            receivedSessionId = event.session_id;
+          } else if (event.type === "tool_start" && event.tool_name) {
+            onToolStart(event.tool_name);
+          } else if (event.type === "tool_end") {
+            onToolEnd();
           } else if (event.type === "error") {
             throw new Error(event.content || "Error del agente");
           }
         } catch (e) {
-          // Si no es JSON válido, intentar extraer el contenido directamente
           console.warn("Error parseando evento:", line);
         }
       }
     }
   }
+
+  onComplete(fullResponse, receivedSessionId);
 }
+
+// Mapeo de nombres de herramientas a nombres amigables
+const toolDisplayNames: Record<string, string> = {
+  get_menu_items: "Consultando menú",
+  search_products: "Buscando productos",
+  get_order_status: "Verificando estado del pedido",
+  create_order: "Creando pedido",
+  get_restaurant_info: "Obteniendo información del restaurante",
+  calculate_total: "Calculando total",
+  generate_chart: "Generando gráfico",
+  generate_qr: "Generando código QR",
+};
+
+// Componente para mostrar herramienta en ejecución
+const ToolIndicator = memo(({ toolName }: { toolName: string | null }) => {
+  const displayName = toolName
+    ? toolDisplayNames[toolName] || `Ejecutando ${toolName}`
+    : null;
+
+  return (
+    <div className="flex items-center gap-1 text-sm text-gray-700">
+      {displayName && <span>{displayName}</span>}
+      <LoadingDots/>
+    </div>
+  );
+});
+
+ToolIndicator.displayName = "ToolIndicator";
 
 // Componente para los puntos de carga animados
 const LoadingDots = () => (
@@ -95,10 +132,10 @@ const LoadingDots = () => (
 );
 
 // Componente para renderizar mensajes con imágenes (memoizado para evitar re-renders innecesarios)
-const MessageContent = memo(({ content }: { content: string }) => {
-  // Si el contenido está vacío, mostrar puntos de carga
+const MessageContent = memo(({ content, activeTool }: { content: string; activeTool?: string | null }) => {
+  // Si el contenido está vacío, mostrar indicador de herramienta o puntos de carga
   if (!content) {
-    return <LoadingDots />;
+    return <ToolIndicator toolName={activeTool ?? null} />;
   }
 
   // Regex para detectar imágenes en formato Markdown: ![alt](url)
@@ -204,6 +241,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
   const [hasStartedChat, setHasStartedChat] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTool, setActiveTool] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Obtener contextos
@@ -245,34 +283,39 @@ export default function ChatView({ onBack }: ChatViewProps) {
         const contextualMessage = `[CONTEXT: restaurant_id=${restaurantId || "null"}, user_id=${userId || "null"}, guest_id=${currentGuestId || "null"}, branch_number=${branchNumber || "null"}]
 [USER_MESSAGE: ${userMessage}]`;
 
-        // Ocultar loading ya que veremos el texto aparecer
-        setIsLoading(false);
-
-        // Agregar mensaje vacío de Pepper que se irá llenando con el stream
+        // Agregar mensaje vacío de Pepper mientras se procesa
         setMessages((prev) => [...prev, { role: "pepper", content: "" }]);
 
-        // Llamar al agente con streaming
+        // Llamar al agente con streaming (solo para mostrar herramientas)
         await streamFromAgent(
           contextualMessage,
           sessionId,
-          // Callback para cada token recibido
-          (token) => {
+          // Callback para cuando inicia una herramienta
+          (toolName) => {
+            setActiveTool(toolName);
+          },
+          // Callback para cuando termina una herramienta
+          () => {
+            setActiveTool(null);
+          },
+          // Callback cuando se completa con la respuesta final
+          (fullResponse, newSessionId) => {
+            setIsLoading(false);
+            setActiveTool(null);
+            // Actualizar el mensaje de Pepper con la respuesta completa
             setMessages((prev) => {
               const lastIndex = prev.length - 1;
               const lastMessage = prev[lastIndex];
               if (lastMessage && lastMessage.role === "pepper") {
-                // Crear nuevo array con nuevo objeto para el último mensaje
                 return [
                   ...prev.slice(0, lastIndex),
-                  { ...lastMessage, content: lastMessage.content + token },
+                  { ...lastMessage, content: fullResponse },
                 ];
               }
               return prev;
             });
-          },
-          // Callback para el session_id
-          (newSessionId) => {
-            if (!sessionId) {
+            // Guardar session_id si es nuevo
+            if (newSessionId && !sessionId) {
               setSessionId(newSessionId);
             }
           }
@@ -280,6 +323,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
       } catch (error) {
         console.error("Error al comunicarse con Pepper:", error);
         setIsLoading(false);
+        setActiveTool(null);
         // Reemplazar el último mensaje (que está vacío o incompleto) con el error
         setMessages((prev) => {
           const lastIndex = prev.length - 1;
@@ -373,33 +417,28 @@ export default function ChatView({ onBack }: ChatViewProps) {
             </p>
           </div>
         )}
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`flex ${
-              msg.role === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
+        {messages.map((msg, index) => {
+          const isLastPepperMessage = msg.role === "pepper" && index === messages.length - 1;
+          return (
             <div
-              className={`max-w-[80%] rounded-xl md:rounded-2xl px-4 md:px-5 lg:px-6 py-2 md:py-3 lg:py-4 text-black text-base md:text-lg lg:text-xl ${
-                msg.role === "user" ? "bg-[#ebb2f4]" : "bg-gray-100"
+              key={index}
+              className={`flex ${
+                msg.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
-              <MessageContent content={msg.content} />
+              <div
+                className={`max-w-[80%] rounded-xl md:rounded-2xl px-4 md:px-5 lg:px-6 py-2 md:py-3 lg:py-4 text-black text-base md:text-lg lg:text-xl ${
+                  msg.role === "user" ? "bg-[#ebb2f4]" : "bg-gray-100"
+                }`}
+              >
+                <MessageContent
+                  content={msg.content}
+                  activeTool={isLastPepperMessage ? activeTool : null}
+                />
+              </div>
             </div>
-          </div>
-        ))}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-xl md:rounded-2xl px-4 md:px-5 lg:px-6 py-2 md:py-3 lg:py-4 text-black text-base md:text-lg lg:text-xl bg-gray-100">
-              <p className="flex items-center gap-1">
-                <span className="animate-bounce">.</span>
-                <span className="animate-bounce delay-100">.</span>
-                <span className="animate-bounce delay-200">.</span>
-              </p>
-            </div>
-          </div>
-        )}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 

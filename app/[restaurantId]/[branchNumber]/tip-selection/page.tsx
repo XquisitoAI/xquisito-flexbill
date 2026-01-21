@@ -344,7 +344,7 @@ export default function TipSelectionPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <div className="min-h-dvh bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <div
           className="fixed top-0 left-0 right-0 z-50"
           style={{ zIndex: 999 }}
@@ -420,7 +420,7 @@ export default function TipSelectionPage() {
 
   return (
     <div
-      className={`min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col ${
+      className={`min-h-dvh bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col ${
         paymentType === "select-items"
           ? " overflow-y-auto overflow-x-hidden"
           : ""
@@ -769,20 +769,23 @@ export default function TipSelectionPage() {
                     {showCustomTipInput && (
                       <div className="flex flex-col gap-2 mb-3">
                         <div className="relative w-full">
-                          <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-black text-sm">
+                          <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-black text-base">
                             $
                           </span>
                           <input
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
+                            pattern="[0-9]*\.?[0-9]*"
                             value={customTip}
-                            onChange={(e) =>
-                              handleCustomTipChange(e.target.value)
-                            }
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                handleCustomTipChange(value);
+                              }
+                            }}
                             placeholder="0.00"
-                            step="0.01"
-                            min="0"
                             autoFocus
-                            className="w-full pl-8 pr-4 py-1 md:py-1.5 lg:py-2 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black text-center bg-[#f9f9f9] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                            className="w-full pl-8 pr-4 py-1 md:py-1.5 lg:py-2 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black text-center text-base bg-[#f9f9f9]"
                           />
                         </div>
                       </div>
@@ -965,18 +968,23 @@ export default function TipSelectionPage() {
                 {showCustomTipInput && (
                   <div className="flex flex-col gap-2 mb-3">
                     <div className="relative w-full">
-                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-black text-sm">
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-black text-base">
                         $
                       </span>
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9]*\.?[0-9]*"
                         value={customTip}
-                        onChange={(e) => handleCustomTipChange(e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                            handleCustomTipChange(value);
+                          }
+                        }}
                         placeholder="0.00"
-                        step="0.01"
-                        min="0"
                         autoFocus
-                        className="w-full pl-8 pr-4 py-1 md:py-1.5 lg:py-2 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black text-center bg-[#f9f9f9] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                        className="w-full pl-8 pr-4 py-1 md:py-1.5 lg:py-2 border border-[#8e8e8e]/40 rounded-full focus:outline-none focus:ring focus:ring-gray-400 focus:border-transparent text-black text-center text-base bg-[#f9f9f9]"
                       />
                     </div>
                   </div>

@@ -398,6 +398,14 @@ svg {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Fix para teclado virtual en Safari iOS - Inputs numéricos */
+@supports (-webkit-touch-callout: none) {
+  /* Safari específico */
+  input[type="number"]:focus {
+    font-size: 16px; /* Previene zoom automático en iOS */
+  }
+}
+
 @layer components {
   .myradio {
     @apply w-4 h-4 bg-gray-100 border border-gray-300 rounded-full cursor-pointer;

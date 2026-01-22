@@ -10,6 +10,7 @@ import MenuHeaderBack from "@/app/components/headers/MenuHeaderBack";
 import OrderAnimation from "@/app/components/UI/OrderAnimation";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRestaurant } from "@/app/context/RestaurantContext";
+import { useGuest } from "@/app/context/GuestContext";
 import { DEFAULT_IMAGES } from "@/app/constants/images";
 
 export default function CartView() {
@@ -19,6 +20,7 @@ export default function CartView() {
   const restaurantData = getRestaurantData();
   const { user, isAuthenticated, isLoading, profile } = useAuth();
   const { restaurantId, branchNumber } = useRestaurant();
+  const { guestName } = useGuest();
   const [showOrderAnimation, setShowOrderAnimation] = useState(false);
   const [orderedItems, setOrderedItems] = useState<CartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,8 +35,15 @@ export default function CartView() {
       setOrderedItems(itemsToOrder);
       // Mostrar animación de orden INMEDIATAMENTE (sin enviar la orden aún)
       setShowOrderAnimation(true);
+    } else if (guestName) {
+      // Si NO está loggeado pero ya tiene nombre de invitado, proceder con la orden
+      console.log("📱 User not authenticated but has guest name, proceeding with order");
+      setIsSubmitting(true);
+      const itemsToOrder = [...cartState.items];
+      setOrderedItems(itemsToOrder);
+      setShowOrderAnimation(true);
     } else {
-      // Si NO está loggeado, navegar a la vista de usuario para capturar su nombre
+      // Si NO está loggeado y no tiene nombre, navegar a la vista de usuario para capturar su nombre
       console.log("📱 User not authenticated, redirecting to /user");
       navigateWithTable("/user");
     }
@@ -53,12 +62,23 @@ export default function CartView() {
 
   const handleConfirmOrder = async () => {
     // Esta función se ejecuta después de que expira el período de cancelación
-    if (!isLoading && isAuthenticated && user && orderedItems.length > 0) {
-      try {
-        const userName = profile?.firstName
+    if (orderedItems.length > 0) {
+      // Determinar el nombre del usuario (autenticado o invitado)
+      let userName: string;
+      if (isAuthenticated && user) {
+        userName = profile?.firstName
           ? `${profile.firstName}`.trim()
           : `Usuario ${user.id.substring(0, 8)}`;
+      } else if (guestName) {
+        userName = guestName;
+      } else {
+        console.error("No user name available for order");
+        setShowOrderAnimation(false);
+        setIsSubmitting(false);
+        return;
+      }
 
+      try {
         // Enviar la orden a la API con branchNumber
         await submitOrder(userName, orderedItems, branchNumber?.toString());
         // Limpiar el carrito de la base de datos después de la orden exitosa
@@ -269,10 +289,10 @@ export default function CartView() {
         </div>
       </div>
 
-      {/* OrderAnimation overlay - solo para usuarios loggeados */}
+      {/* OrderAnimation overlay - para usuarios loggeados o invitados con nombre */}
       {showOrderAnimation && (
         <OrderAnimation
-          userName={profile?.firstName || "Usuario"}
+          userName={profile?.firstName || guestName || "Usuario"}
           orderedItems={orderedItems}
           onContinue={handleContinueFromAnimation}
           onCancel={handleCancelOrder}

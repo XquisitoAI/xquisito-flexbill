@@ -18,13 +18,14 @@ interface StreamEvent {
   tool_name?: string;
 }
 
-// Función para streaming con el agente (muestra herramientas en tiempo real, texto completo al final)
+// Función para streaming con el agente (muestra herramientas y tokens en tiempo real)
 async function streamFromAgent(
   message: string,
   sessionId: string | null = null,
+  onToken: (token: string) => void,
+  onSessionId: (sessionId: string) => void,
   onToolStart: (toolName: string) => void,
-  onToolEnd: () => void,
-  onComplete: (response: string, newSessionId: string | null) => void
+  onToolEnd: () => void
 ): Promise<void> {
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/ai-agent/chat/stream`,
@@ -51,8 +52,6 @@ async function streamFromAgent(
 
   const decoder = new TextDecoder();
   let buffer = "";
-  let fullResponse = "";
-  let receivedSessionId: string | null = null;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -68,9 +67,9 @@ async function streamFromAgent(
           const event: StreamEvent = JSON.parse(line.slice(6));
 
           if (event.type === "token" && event.content) {
-            fullResponse += event.content;
+            onToken(event.content);
           } else if (event.type === "session" && event.session_id) {
-            receivedSessionId = event.session_id;
+            onSessionId(event.session_id);
           } else if (event.type === "tool_start" && event.tool_name) {
             onToolStart(event.tool_name);
           } else if (event.type === "tool_end") {
@@ -84,8 +83,6 @@ async function streamFromAgent(
       }
     }
   }
-
-  onComplete(fullResponse, receivedSessionId);
 }
 
 // Mapeo de nombres de herramientas a nombres amigables
@@ -99,22 +96,6 @@ const toolDisplayNames: Record<string, string> = {
   generate_chart: "Generando gráfico",
   generate_qr: "Generando código QR",
 };
-
-// Componente para mostrar herramienta en ejecución
-const ToolIndicator = memo(({ toolName }: { toolName: string | null }) => {
-  const displayName = toolName
-    ? toolDisplayNames[toolName] || `Ejecutando ${toolName}`
-    : null;
-
-  return (
-    <div className="flex items-center gap-1 text-sm text-gray-700">
-      {displayName && <span>{displayName}</span>}
-      <LoadingDots/>
-    </div>
-  );
-});
-
-ToolIndicator.displayName = "ToolIndicator";
 
 // Componente para los puntos de carga animados
 const LoadingDots = () => (
@@ -131,11 +112,47 @@ const LoadingDots = () => (
   </p>
 );
 
+// Componente para mostrar herramienta en ejecución
+const ToolIndicator = memo(({ toolName }: { toolName: string }) => {
+  const displayName = toolDisplayNames[toolName] || toolName;
+
+  return (
+    <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
+      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+      <span>{displayName}</span>
+    </div>
+  );
+});
+
+ToolIndicator.displayName = "ToolIndicator";
+
+// Componente combinado para loading y herramienta
+const LoadingIndicator = memo(({ activeTool }: { activeTool: string | null }) => {
+  return (
+    <div className="flex flex-col">
+      <LoadingDots />
+      {activeTool && <ToolIndicator toolName={activeTool} />}
+    </div>
+  );
+});
+
+LoadingIndicator.displayName = "LoadingIndicator";
+
 // Componente para renderizar mensajes con imágenes (memoizado para evitar re-renders innecesarios)
-const MessageContent = memo(({ content, activeTool }: { content: string; activeTool?: string | null }) => {
-  // Si el contenido está vacío, mostrar indicador de herramienta o puntos de carga
+const MessageContent = memo(({ content, activeTool, isStreaming }: { content: string; activeTool?: string | null; isStreaming?: boolean }) => {
+  // Si el contenido está vacío, mostrar indicador de carga
   if (!content) {
-    return <ToolIndicator toolName={activeTool ?? null} />;
+    return <LoadingIndicator activeTool={activeTool ?? null} />;
+  }
+
+  // Si está en streaming, mostrar texto plano sin procesar imágenes
+  if (isStreaming) {
+    return (
+      <div>
+        <p className="whitespace-pre-wrap">{content}</p>
+        {activeTool && <ToolIndicator toolName={activeTool} />}
+      </div>
+    );
   }
 
   // Regex para detectar imágenes en formato Markdown: ![alt](url)
@@ -241,6 +258,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
   const [hasStartedChat, setHasStartedChat] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -285,11 +303,32 @@ export default function ChatView({ onBack }: ChatViewProps) {
 
         // Agregar mensaje vacío de Pepper mientras se procesa
         setMessages((prev) => [...prev, { role: "pepper", content: "" }]);
+        setIsStreaming(true);
 
-        // Llamar al agente con streaming (solo para mostrar herramientas)
+        // Llamar al agente con streaming
         await streamFromAgent(
           contextualMessage,
           sessionId,
+          // Callback para cada token recibido - mostrar en tiempo real
+          (token) => {
+            setMessages((prev) => {
+              const lastIndex = prev.length - 1;
+              const lastMessage = prev[lastIndex];
+              if (lastMessage && lastMessage.role === "pepper") {
+                return [
+                  ...prev.slice(0, lastIndex),
+                  { ...lastMessage, content: lastMessage.content + token },
+                ];
+              }
+              return prev;
+            });
+          },
+          // Callback para el session_id
+          (newSessionId) => {
+            if (!sessionId) {
+              setSessionId(newSessionId);
+            }
+          },
           // Callback para cuando inicia una herramienta
           (toolName) => {
             setActiveTool(toolName);
@@ -297,31 +336,14 @@ export default function ChatView({ onBack }: ChatViewProps) {
           // Callback para cuando termina una herramienta
           () => {
             setActiveTool(null);
-          },
-          // Callback cuando se completa con la respuesta final
-          (fullResponse, newSessionId) => {
-            setIsLoading(false);
-            setActiveTool(null);
-            // Actualizar el mensaje de Pepper con la respuesta completa
-            setMessages((prev) => {
-              const lastIndex = prev.length - 1;
-              const lastMessage = prev[lastIndex];
-              if (lastMessage && lastMessage.role === "pepper") {
-                return [
-                  ...prev.slice(0, lastIndex),
-                  { ...lastMessage, content: fullResponse },
-                ];
-              }
-              return prev;
-            });
-            // Guardar session_id si es nuevo
-            if (newSessionId && !sessionId) {
-              setSessionId(newSessionId);
-            }
           }
         );
+
+        setIsStreaming(false);
+        setIsLoading(false);
       } catch (error) {
         console.error("Error al comunicarse con Pepper:", error);
+        setIsStreaming(false);
         setIsLoading(false);
         setActiveTool(null);
         // Reemplazar el último mensaje (que está vacío o incompleto) con el error
@@ -434,6 +456,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
                 <MessageContent
                   content={msg.content}
                   activeTool={isLastPepperMessage ? activeTool : null}
+                  isStreaming={isLastPepperMessage && isStreaming}
                 />
               </div>
             </div>

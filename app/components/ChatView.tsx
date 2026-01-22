@@ -87,14 +87,16 @@ async function streamFromAgent(
 
 // Mapeo de nombres de herramientas a nombres amigables
 const toolDisplayNames: Record<string, string> = {
-  get_menu_items: "Consultando menú",
-  search_products: "Buscando productos",
-  get_order_status: "Verificando estado del pedido",
-  create_order: "Creando pedido",
-  get_restaurant_info: "Obteniendo información del restaurante",
-  calculate_total: "Calculando total",
-  generate_chart: "Generando gráfico",
-  generate_qr: "Generando código QR",
+  extracts_image_urls: "Obteniendo imagen",
+  retrieves_restaurant_information: "Obteniendo información del restaurante",
+  extract_restaurant_dish: "Obteniendo estadísticas del platillo",
+  herramienta_para_limpiar: "Limpiando carrito",
+  extrae_datos_completos: "Obteniendo el menu",
+  query_supabase_restaurant: "Obteniendo estadísticas del restaurante",
+  actualiza_la_cantidad: "Actualizando carrito",
+  remove_item_from: "Eliminando del carrito",
+  add_items_to: "Agregando al carrito",
+  herramienta_de_supabase: "Obteniendo carrito",
 };
 
 // Componente para los puntos de carga animados
@@ -112,47 +114,83 @@ const LoadingDots = () => (
   </p>
 );
 
-// Componente para mostrar herramienta en ejecución
+// Spinner SVG igual al de user/page.tsx
+const Spinner = () => (
+  <svg
+    className="h-4 w-4 text-[#ebb2f4]"
+    style={{ animation: "spin 1s linear infinite" }}
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <circle
+      className="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+    />
+    <path
+      className="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    />
+    <style jsx>{`
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    `}</style>
+  </svg>
+);
+
+// Componente para mostrar herramienta en ejecución (diálogo separado)
 const ToolIndicator = memo(({ toolName }: { toolName: string }) => {
   const displayName = toolDisplayNames[toolName] || toolName;
 
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
-      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-      <span>{displayName}</span>
+    <div className="flex justify-start">
+      <div className="max-w-[80%] rounded-xl md:rounded-2xl px-4 md:px-5 lg:px-6 py-2 md:py-3 lg:py-4 text-black text-base md:text-lg lg:text-xl bg-gray-100 flex items-center gap-2">
+        <Spinner />
+        <span className="text-gray-500">{displayName}</span>
+      </div>
     </div>
   );
 });
 
 ToolIndicator.displayName = "ToolIndicator";
 
-// Componente combinado para loading y herramienta
-const LoadingIndicator = memo(({ activeTool }: { activeTool: string | null }) => {
-  return (
-    <div className="flex flex-col">
-      <LoadingDots />
-      {activeTool && <ToolIndicator toolName={activeTool} />}
-    </div>
-  );
-});
-
-LoadingIndicator.displayName = "LoadingIndicator";
+// Función para detectar si hay una URL de imagen incompleta al final del contenido
+const hasIncompleteImageUrl = (text: string): boolean => {
+  // Detectar markdown de imagen incompleto: ![...] o ![...]( o ![...](url incompleta
+  if (/!\[[^\]]*\]?\(?[^)]*$/.test(text)) {
+    return true;
+  }
+  // Detectar URL de imagen incompleta al final (empieza con http pero no termina con extensión de imagen completa)
+  if (/https?:\/\/[^\s]*$/.test(text)) {
+    const urlMatch = text.match(/https?:\/\/[^\s]*$/);
+    if (urlMatch) {
+      const partialUrl = urlMatch[0];
+      // Si parece que está escribiendo una URL de imagen pero no está completa
+      if (!/\.(jpg|jpeg|png|gif|webp|svg|avif)(\?[^\s]*)?$/i.test(partialUrl)) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
 
 // Componente para renderizar mensajes con imágenes (memoizado para evitar re-renders innecesarios)
-const MessageContent = memo(({ content, activeTool, isStreaming }: { content: string; activeTool?: string | null; isStreaming?: boolean }) => {
-  // Si el contenido está vacío, mostrar indicador de carga
+const MessageContent = memo(({ content, isStreaming }: { content: string; isStreaming?: boolean }) => {
+  // Si el contenido está vacío, mostrar puntos de carga
   if (!content) {
-    return <LoadingIndicator activeTool={activeTool ?? null} />;
+    return <LoadingDots />;
   }
 
-  // Si está en streaming, mostrar texto plano sin procesar imágenes
-  if (isStreaming) {
-    return (
-      <div>
-        <p className="whitespace-pre-wrap">{content}</p>
-        {activeTool && <ToolIndicator toolName={activeTool} />}
-      </div>
-    );
+  // Si está en streaming o hay una URL de imagen incompleta, mostrar texto plano
+  if (isStreaming || hasIncompleteImageUrl(content)) {
+    return <p className="whitespace-pre-wrap">{content}</p>;
   }
 
   // Regex para detectar imágenes en formato Markdown: ![alt](url)
@@ -267,15 +305,14 @@ export default function ChatView({ onBack }: ChatViewProps) {
   const { guestId, isGuest } = useGuest();
   const { user } = useAuth();
 
-  // Auto-scroll cuando cambian los mensajes (solo cuando hay nuevos mensajes)
+  // Auto-scroll cuando cambian los mensajes, durante streaming, o cuando hay tool activa
   useEffect(() => {
-    if (messages.length > 0) {
-      // Usar requestAnimationFrame para asegurar que el DOM esté actualizado
+    if (messages.length > 0 || activeTool) {
       requestAnimationFrame(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       });
     }
-  }, [messages.length]);
+  }, [messages, activeTool]);
 
   const handleSend = async () => {
     if (message.trim() && !isLoading) {
@@ -455,13 +492,13 @@ export default function ChatView({ onBack }: ChatViewProps) {
               >
                 <MessageContent
                   content={msg.content}
-                  activeTool={isLastPepperMessage ? activeTool : null}
                   isStreaming={isLastPepperMessage && isStreaming}
                 />
               </div>
             </div>
           );
         })}
+        {activeTool && <ToolIndicator toolName={activeTool} />}
         <div ref={messagesEndRef} />
       </div>
 

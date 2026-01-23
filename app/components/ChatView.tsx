@@ -182,9 +182,17 @@ const hasIncompleteImageUrl = (text: string): boolean => {
 };
 
 // Componente para renderizar mensajes con imágenes (memoizado para evitar re-renders innecesarios)
-const MessageContent = memo(({ content, isStreaming }: { content: string; isStreaming?: boolean }) => {
-  // Si el contenido está vacío, mostrar puntos de carga
+const MessageContent = memo(({ content, isStreaming, activeTool }: { content: string; isStreaming?: boolean; activeTool?: string | null }) => {
+  // Si el contenido está vacío, mostrar herramienta o puntos de carga
   if (!content) {
+    if (activeTool) {
+      return (
+        <div className="flex items-center gap-2">
+          <Spinner />
+          <span className="text-gray-500">{toolDisplayNames[activeTool] || activeTool}</span>
+        </div>
+      );
+    }
     return <LoadingDots />;
   }
 
@@ -493,12 +501,12 @@ export default function ChatView({ onBack }: ChatViewProps) {
                 <MessageContent
                   content={msg.content}
                   isStreaming={isLastPepperMessage && isStreaming}
+                  activeTool={isLastPepperMessage ? activeTool : null}
                 />
               </div>
             </div>
           );
         })}
-        {activeTool && <ToolIndicator toolName={activeTool} />}
         <div ref={messagesEndRef} />
       </div>
 

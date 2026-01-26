@@ -21,10 +21,9 @@ import { getCardTypeIcon } from "@/app/utils/cardIcons";
 import { useAuth } from "@/app/context/AuthContext";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
-import Loader from "@/app/components/UI/Loader";
 
 export default function PaymentSuccessPage() {
-  const { validationError, isValidating, restaurantId } = useValidateAccess();
+  const { validationError, restaurantId } = useValidateAccess();
   const { restaurant } = useRestaurant();
   const { isAuthenticated } = useAuth();
 
@@ -78,7 +77,7 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       console.log(
-        "�� Payment success page - checking storage for payment data"
+        "�� Payment success page - checking storage for payment data",
       );
 
       // Get payment ID from URL to identify this specific payment
@@ -90,7 +89,7 @@ export default function PaymentSuccessPage() {
 
       // First, try to find the current payment key reference
       const currentKeyRef = sessionStorage.getItem(
-        "xquisito-current-payment-key"
+        "xquisito-current-payment-key",
       );
       if (currentKeyRef) {
         storedPayment = sessionStorage.getItem(currentKeyRef);
@@ -219,7 +218,7 @@ export default function PaymentSuccessPage() {
       // For select-items, filter only the selected items
       const selectedItemIds = paymentDetails?.selectedItems || [];
       return allDishOrders.filter((dish: any) =>
-        selectedItemIds.includes(dish.dish_order_id?.toString())
+        selectedItemIds.includes(dish.dish_order_id?.toString()),
       );
     } else if (paymentType === "full-bill") {
       // For full-bill, show all orders
@@ -297,7 +296,7 @@ export default function PaymentSuccessPage() {
             restaurant_id: parseInt(restaurantId),
             rating: rating,
           }),
-        }
+        },
       );
 
       const data = await response.json();
@@ -438,51 +437,53 @@ export default function PaymentSuccessPage() {
           onClick={() => setIsTicketModalOpen(false)}
         >
           <div
-            className="bg-[#173E44]/80 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] w-full mx-4 md:mx-12 lg:mx-28 rounded-4xl overflow-y-auto z-999 max-h-[85vh]"
+            className="bg-[#173E44]/80 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] w-full mx-4 md:mx-12 lg:mx-28 rounded-4xl z-999 max-h-[77vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-full flex justify-end">
-              <button
-                onClick={() => setIsTicketModalOpen(false)}
-                className="p-2 md:p-3 lg:p-4 hover:bg-white/10 rounded-lg md:rounded-xl transition-colors justify-end flex items-end mt-3 md:mt-4 lg:mt-5 mr-3 md:mr-4 lg:mr-5"
-              >
-                <X className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-white" />
-              </button>
-            </div>
+            {/* Header - Fixed */}
+            <div className="shrink-0">
+              <div className="w-full flex justify-end">
+                <button
+                  onClick={() => setIsTicketModalOpen(false)}
+                  className="p-2 md:p-3 lg:p-4 hover:bg-white/10 rounded-lg md:rounded-xl transition-colors justify-end flex items-end mt-3 md:mt-4 lg:mt-5 mr-3 md:mr-4 lg:mr-5"
+                >
+                  <X className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-white" />
+                </button>
+              </div>
 
-            {/* Header */}
-            <div className="px-6 md:px-8 lg:px-10 flex items-center justify-center mb-4 md:mb-5 lg:mb-6">
-              <div className="flex flex-col justify-center items-center gap-3 md:gap-4 lg:gap-5">
-                {restaurant?.logo_url ? (
-                  <img
-                    src={restaurant.logo_url}
-                    alt={restaurant.name}
-                    className="size-20 md:size-24 lg:size-28 object-cover rounded-lg md:rounded-xl"
-                  />
-                ) : (
-                  <Receipt className="size-20 md:size-24 lg:size-28 text-white" />
-                )}
-                <div className="flex flex-col items-center justify-center">
-                  <h2 className="text-xl md:text-2xl lg:text-3xl text-white font-bold">
-                    {restaurant?.name || restaurantData.name}
-                  </h2>
-                  <p className="text-sm md:text-base lg:text-lg text-white/80">
-                    Mesa {state.tableNumber || tableNumber || "N/A"}
-                  </p>
-                  <p className="text-xs md:text-sm text-white/70 mt-1">
-                    {new Date().toLocaleTimeString("es-MX", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
+              <div className="px-6 md:px-8 lg:px-10 flex items-center justify-center mb-4 md:mb-5 lg:mb-6">
+                <div className="flex flex-col justify-center items-center gap-3 md:gap-4 lg:gap-5">
+                  {restaurant?.logo_url ? (
+                    <img
+                      src={restaurant.logo_url}
+                      alt={restaurant.name}
+                      className="size-20 md:size-24 lg:size-28 object-cover rounded-lg md:rounded-xl"
+                    />
+                  ) : (
+                    <Receipt className="size-20 md:size-24 lg:size-28 text-white" />
+                  )}
+                  <div className="flex flex-col items-center justify-center">
+                    <h2 className="text-xl md:text-2xl lg:text-3xl text-white font-bold">
+                      {restaurant?.name || restaurantData.name}
+                    </h2>
+                    <p className="text-sm md:text-base lg:text-lg text-white/80">
+                      Mesa {state.tableNumber || tableNumber || "N/A"}
+                    </p>
+                    <p className="text-xs md:text-sm text-white/70 mt-1">
+                      {new Date().toLocaleTimeString("es-MX", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Content */}
-            <div className="px-6 md:px-8 lg:px-10 space-y-4 md:space-y-5 lg:space-y-6">
+            {/* Scrollable Content - Detalles del pago + Items de la orden */}
+            <div className="flex-1 overflow-y-auto px-6 md:px-8 lg:px-10">
               {/* Order Info */}
-              <div className="border-t border-white/20 pt-4 md:pt-5 lg:pt-6">
+              <div className="border-t border-white/20 py-4 md:py-5 lg:py-6">
                 <h3 className="font-medium text-xl md:text-2xl lg:text-3xl text-white mb-3 md:mb-4 lg:mb-5">
                   Detalles del pago
                 </h3>
@@ -518,7 +519,7 @@ export default function PaymentSuccessPage() {
                         <div className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 flex items-center justify-center">
                           {getCardTypeIcon(
                             paymentDetails.cardBrand || "unknown",
-                            "small"
+                            "small",
                           )}
                         </div>
                       </div>
@@ -534,7 +535,7 @@ export default function PaymentSuccessPage() {
               {(dishOrders.length > 0 ||
                 paymentType === "choose-amount" ||
                 paymentType === "equal-shares") && (
-                <div className="border-t border-white/20 pt-4 md:pt-5 lg:pt-6">
+                <div className="border-t border-white/20 py-4 md:py-5 lg:py-6">
                   <h3 className="font-medium text-xl md:text-2xl lg:text-3xl text-white mb-3 md:mb-4 lg:mb-5">
                     Items de la orden
                   </h3>
@@ -606,9 +607,11 @@ export default function PaymentSuccessPage() {
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Total Summary with Info Button */}
-              <div className="flex justify-between items-center border-t border-white/20 pt-4 md:pt-5 lg:pt-6 mb-6 md:mb-8 lg:mb-10">
+            {/* Total Summary - Fixed at bottom */}
+            <div className="shrink-0 px-6 md:px-8 lg:px-10">
+              <div className="flex justify-between items-center border-t border-white/20 pt-4 md:pt-5 lg:pt-6 pb-6 md:pb-8 lg:pb-10">
                 <div className="flex items-center gap-2 md:gap-3 lg:gap-4">
                   <span className="text-lg md:text-xl lg:text-2xl font-medium text-white">
                     Total

@@ -37,7 +37,9 @@ export default function CartView() {
       setShowOrderAnimation(true);
     } else if (guestName) {
       // Si NO está loggeado pero ya tiene nombre de invitado, proceder con la orden
-      console.log("📱 User not authenticated but has guest name, proceeding with order");
+      console.log(
+        "📱 User not authenticated but has guest name, proceeding with order",
+      );
       setIsSubmitting(true);
       const itemsToOrder = [...cartState.items];
       setOrderedItems(itemsToOrder);
@@ -90,7 +92,7 @@ export default function CartView() {
         const errorMessage =
           error instanceof Error ? error.message : "Error desconocido";
         alert(
-          `Error al enviar la orden: ${errorMessage}. Por favor intenta nuevamente.`
+          `Error al enviar la orden: ${errorMessage}. Por favor intenta nuevamente.`,
         );
       } finally {
         setIsSubmitting(false);
@@ -226,7 +228,7 @@ export default function CartView() {
                               <p className="text-base md:text-lg lg:text-xl text-black">
                                 $
                                 {(item.price + (item.extraPrice || 0)).toFixed(
-                                  2
+                                  2,
                                 )}
                               </p>
                             </div>
@@ -255,7 +257,7 @@ export default function CartView() {
             {/* Fixed bottom section */}
             {cartState.items.length > 0 && (
               <div
-                className="fixed bottom-0 left-0 bg-white right-0 mx-4 md:mx-6 lg:mx-8 px-6 md:px-8 lg:px-10 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+                className="fixed bottom-0 left-0 bg-white right-0 mx-4 md:mx-6 lg:mx-8 px-6 md:px-8 lg:px-10 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
                 style={{
                   paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
                 }}

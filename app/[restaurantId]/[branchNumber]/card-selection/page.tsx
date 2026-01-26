@@ -38,7 +38,7 @@ export default function CardSelectionPage() {
     if (tableFromUrl && !state.tableNumber) {
       console.log(
         "🔧 Card selection: Setting table number from URL:",
-        tableFromUrl
+        tableFromUrl,
       );
       dispatch({ type: "SET_TABLE_NUMBER", payload: tableFromUrl });
     }
@@ -64,19 +64,19 @@ export default function CardSelectionPage() {
   const tipAmount = parseFloat(searchParams.get("tipAmount") || "0"); // Propina
   const ivaTip = parseFloat(searchParams.get("ivaTip") || "0"); // IVA propina (no pagado por cliente)
   const xquisitoCommissionClient = parseFloat(
-    searchParams.get("xquisitoCommissionClient") || "0"
+    searchParams.get("xquisitoCommissionClient") || "0",
   );
   const ivaXquisitoClient = parseFloat(
-    searchParams.get("ivaXquisitoClient") || "0"
+    searchParams.get("ivaXquisitoClient") || "0",
   );
   const xquisitoCommissionRestaurant = parseFloat(
-    searchParams.get("xquisitoCommissionRestaurant") || "0"
+    searchParams.get("xquisitoCommissionRestaurant") || "0",
   );
   const xquisitoCommissionTotal = parseFloat(
-    searchParams.get("xquisitoCommissionTotal") || "0"
+    searchParams.get("xquisitoCommissionTotal") || "0",
   );
   const ecartCommissionTotal = parseFloat(
-    searchParams.get("ecartCommissionTotal") || "0"
+    searchParams.get("ecartCommissionTotal") || "0",
   );
   const userName = searchParams.get("userName");
   const selectedItemsParam = searchParams.get("selectedItems");
@@ -123,7 +123,7 @@ export default function CardSelectionPage() {
     string | null
   >(null);
   const [paymentMethodType, setPaymentMethodType] = useState<"saved" | "new">(
-    "new"
+    "new",
   );
   const [paymentAttempts, setPaymentAttempts] = useState(0);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -160,7 +160,7 @@ export default function CardSelectionPage() {
         "from userName:",
         userName,
         "state.currentUserName:",
-        state.currentUserName
+        state.currentUserName,
       );
     }
 
@@ -172,7 +172,7 @@ export default function CardSelectionPage() {
     // Configurar items seleccionados para select-items
     if (paymentType === "select-items" && selectedItemsParam) {
       setSelectedItems(
-        selectedItemsParam.split(",").filter((item) => item.trim() !== "")
+        selectedItemsParam.split(",").filter((item) => item.trim() !== ""),
       );
     }
   }, [userName, state.currentUserName, user, paymentType, selectedItemsParam]);
@@ -209,7 +209,7 @@ export default function CardSelectionPage() {
 
   // Platillos no pagados
   const unpaidDishes = dishOrders.filter(
-    (dish) => dish.payment_status === "not_paid" || !dish.payment_status
+    (dish) => dish.payment_status === "not_paid" || !dish.payment_status,
   );
 
   const unpaidAmount = unpaidDishes.reduce((sum, dish) => {
@@ -233,7 +233,7 @@ export default function CardSelectionPage() {
   const handlePaymentSuccess = async (
     paymentId: string,
     amount: number,
-    paymentType: string
+    paymentType: string,
   ): Promise<void> => {
     try {
       setIsProcessing(true);
@@ -256,13 +256,13 @@ export default function CardSelectionPage() {
         await paymentService.payUserDishes(
           dishOrders,
           userName,
-          realPaymentMethodId
+          realPaymentMethodId,
         );
       } else if (paymentType === "select-items") {
         // Pagar solo los platillos seleccionados específicamente
         await paymentService.paySelectedDishes(
           selectedItems,
-          realPaymentMethodId
+          realPaymentMethodId,
         );
       } else if (paymentType === "equal-shares") {
         // Para división equitativa, usar paySplitAmount para rastrear qué usuario pagó
@@ -339,7 +339,7 @@ export default function CardSelectionPage() {
             currency: "MXN",
           });
           console.log(
-            "✅ Payment transaction recorded successfully (background)"
+            "✅ Payment transaction recorded successfully (background)",
           );
         } catch (transactionError) {
           console.error("❌ Error in background operations:", transactionError);
@@ -354,7 +354,7 @@ export default function CardSelectionPage() {
       if (typeof window !== "undefined") {
         // Get payment method details
         const selectedMethod = allPaymentMethods.find(
-          (pm) => pm.id === selectedPaymentMethodId
+          (pm) => pm.id === selectedPaymentMethodId,
         );
 
         const successData = {
@@ -389,16 +389,16 @@ export default function CardSelectionPage() {
 
         console.log(
           "💾 Storing payment success data for payment-success page:",
-          successData
+          successData,
         );
         localStorage.setItem(
           "xquisito-completed-payment",
-          JSON.stringify(successData)
+          JSON.stringify(successData),
         );
       }
 
       console.log(
-        "✅ Critical payment operations completed, ready to show animation"
+        "✅ Critical payment operations completed, ready to show animation",
       );
     } catch (error) {
       console.error("❌ Error processing payment success:", error);
@@ -410,7 +410,7 @@ export default function CardSelectionPage() {
     // Navigate after animation completes
     const paymentId = "completed";
     navigateWithTable(
-      `/payment-success?paymentId=${paymentId}&amount=${baseAmount}&type=${paymentType}&processed=true`
+      `/payment-success?paymentId=${paymentId}&amount=${baseAmount}&type=${paymentType}&processed=true`,
     );
   }, [navigateWithTable, baseAmount, paymentType]);
 
@@ -428,14 +428,14 @@ export default function CardSelectionPage() {
       if (isGuest && guestId) {
         apiService.setGuestInfo(
           guestId,
-          state.tableNumber || tableNumber || undefined
+          state.tableNumber || tableNumber || undefined,
         );
       }
 
       // Si se seleccionó la tarjeta del sistema, procesar pago directamente sin EcartPay
       if (selectedPaymentMethodId === "system-default-card") {
         console.log(
-          "💳 Sistema: Procesando pago con tarjeta del sistema (sin EcartPay)"
+          "💳 Sistema: Procesando pago con tarjeta del sistema (sin EcartPay)",
         );
 
         // Simular un pago exitoso y procesar directamente
@@ -455,7 +455,7 @@ export default function CardSelectionPage() {
       if (!paymentMethodsResult.success) {
         throw new Error(
           paymentMethodsResult.error?.message ||
-            "Failed to fetch payment methods"
+            "Failed to fetch payment methods",
         );
       }
 
@@ -497,13 +497,13 @@ export default function CardSelectionPage() {
           id: pm.id,
           isDefault: pm.isDefault,
           cardType: pm.cardType,
-        }))
+        })),
       );
 
       if (!isGuest && selectedPaymentMethodId) {
         // Usuario registrado: usar tarjeta seleccionada
         paymentMethodToUse = paymentMethods.find(
-          (pm) => pm.id === selectedPaymentMethodId
+          (pm) => pm.id === selectedPaymentMethodId,
         );
         console.log("- paymentMethodToUse (selected):", paymentMethodToUse);
         if (!paymentMethodToUse) {
@@ -515,7 +515,7 @@ export default function CardSelectionPage() {
           paymentMethods.find((pm) => pm.isDefault) || paymentMethods[0];
         console.log(
           "- paymentMethodToUse (default/first):",
-          paymentMethodToUse
+          paymentMethodToUse,
         );
       }
 
@@ -536,7 +536,7 @@ export default function CardSelectionPage() {
       if (!paymentResult.success) {
         console.error("❌ Payment failed:", paymentResult.error);
         throw new Error(
-          paymentResult.error?.message || "Payment processing failed"
+          paymentResult.error?.message || "Payment processing failed",
         );
       }
 
@@ -548,7 +548,7 @@ export default function CardSelectionPage() {
         (payment && !payment.payLink && !order?.payLink)
       ) {
         console.log(
-          "💳 Direct payment successful, proceeding to handlePaymentSuccess"
+          "💳 Direct payment successful, proceeding to handlePaymentSuccess",
         );
         await handlePaymentSuccess(payment.id, baseAmount, paymentType); // Usar baseAmount, no totalAmountWithTip
 
@@ -564,7 +564,7 @@ export default function CardSelectionPage() {
         if (typeof window !== "undefined") {
           // Get payment method details
           const selectedMethod = paymentMethods.find(
-            (pm) => pm.id === selectedPaymentMethodId
+            (pm) => pm.id === selectedPaymentMethodId,
           );
 
           const paymentData = {
@@ -593,7 +593,7 @@ export default function CardSelectionPage() {
           console.log("💾 Storing payment data in localStorage:", paymentData);
           localStorage.setItem(
             "xquisito-pending-payment",
-            JSON.stringify(paymentData)
+            JSON.stringify(paymentData),
           );
         }
 
@@ -603,7 +603,7 @@ export default function CardSelectionPage() {
         const shouldRedirect = confirm(
           `Tu método de pago requiere verificación a través de EcartPay.\n\n` +
             `Esto es normal en modo de pruebas. En producción, este paso usualmente se omite.\n\n` +
-            `Haz clic en OK para completar la verificación, o Cancelar para intentar de nuevo.`
+            `Haz clic en OK para completar la verificación, o Cancelar para intentar de nuevo.`,
         );
 
         if (shouldRedirect) {
@@ -618,7 +618,7 @@ export default function CardSelectionPage() {
         const paymentId = payment?.id || order?.id || "completed";
         console.log(
           "✅ Payment completed successfully (no verification needed):",
-          paymentId
+          paymentId,
         );
         await handlePaymentSuccess(paymentId, baseAmount, paymentType); // Usar baseAmount, no totalAmountWithTip
 
@@ -650,7 +650,7 @@ export default function CardSelectionPage() {
       xquisitoRestaurantCharge: xquisitoRestaurantCharge.toString(),
       xquisitoCommissionTotal: xquisitoCommissionTotal.toString(),
       type: paymentType,
-      scan: "true", // Auto-abrir scanner
+      scan: "false", // Auto-abrir scanner
       ...(userName && { userName }),
     });
 
@@ -689,7 +689,7 @@ export default function CardSelectionPage() {
 
     // Obtener el tipo de tarjeta seleccionada
     const selectedMethod = allPaymentMethods.find(
-      (pm) => pm.id === selectedPaymentMethodId
+      (pm) => pm.id === selectedPaymentMethodId,
     );
     const cardBrand = selectedMethod?.cardBrand;
 
@@ -805,7 +805,7 @@ export default function CardSelectionPage() {
                   {/* Payment Options - Solo mostrar si es tarjeta de crédito */}
                   {(() => {
                     const selectedMethod = allPaymentMethods.find(
-                      (pm) => pm.id === selectedPaymentMethodId
+                      (pm) => pm.id === selectedPaymentMethodId,
                     );
                     return selectedMethod?.cardType === "credit" ? (
                       <div
@@ -1071,7 +1071,7 @@ export default function CardSelectionPage() {
                       <span className="text-black font-medium">
                         $
                         {(xquisitoCommissionClient + ivaXquisitoClient).toFixed(
-                          2
+                          2,
                         )}{" "}
                         MXN
                       </span>
@@ -1116,7 +1116,7 @@ export default function CardSelectionPage() {
               <div className="px-6 py-4">
                 {(() => {
                   const selectedMethod = allPaymentMethods.find(
-                    (pm) => pm.id === selectedPaymentMethodId
+                    (pm) => pm.id === selectedPaymentMethodId,
                   );
                   const cardBrand = selectedMethod?.cardBrand;
 
@@ -1191,7 +1191,7 @@ export default function CardSelectionPage() {
                       {/* Opciones MSI */}
                       {(() => {
                         const availableOptions = msiOptions.filter(
-                          (option) => totalAmountCharged >= option.minAmount
+                          (option) => totalAmountCharged >= option.minAmount,
                         );
                         const hasUnavailableOptions =
                           availableOptions.length < msiOptions.length;
@@ -1222,12 +1222,12 @@ export default function CardSelectionPage() {
                                   <div className="flex items-center justify-between">
                                     <div className="flex-1">
                                       <p className="font-medium text-black text-base md:text-lg">
+                                        ${monthlyPayment.toFixed(2)} MXN x{" "}
                                         {option.months} meses
                                       </p>
                                       <p className="text-xs md:text-sm text-gray-600">
-                                        ${monthlyPayment.toFixed(2)} MXN
-                                        mensuales · Total $
-                                        {totalWithCommission.toFixed(2)} MXN
+                                        Total ${totalWithCommission.toFixed(2)}{" "}
+                                        MXN
                                       </p>
                                     </div>
                                     <div

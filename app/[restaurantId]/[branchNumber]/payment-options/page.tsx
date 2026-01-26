@@ -25,7 +25,7 @@ export default function PaymentOptionsPage() {
     if (tableFromUrl && !state.tableNumber) {
       console.log(
         "🔧 Payment options: Setting table number from URL:",
-        tableFromUrl
+        tableFromUrl,
       );
       dispatch({ type: "SET_TABLE_NUMBER", payload: tableFromUrl });
     }
@@ -42,14 +42,14 @@ export default function PaymentOptionsPage() {
       "🔄 Loading split status for table:",
       state.tableNumber,
       "branch:",
-      branchNumber
+      branchNumber,
     );
 
     try {
       const response = await paymentService.getSplitPaymentStatus(
         restaurantId.toString(),
         branchNumber.toString(),
-        state.tableNumber.toString()
+        state.tableNumber.toString(),
       );
       console.log("📡 Split status API response:", response);
 
@@ -92,7 +92,7 @@ export default function PaymentOptionsPage() {
         } else {
           // Ya hay datos, recargar activeUsers y split status (pueden haber cambiado por pagos)
           console.log(
-            "✅ Payment options: Data already loaded, reloading active users and split status"
+            "✅ Payment options: Data already loaded, reloading active users and split status",
           );
           await loadActiveUsers();
           await loadSplitStatus();
@@ -111,7 +111,7 @@ export default function PaymentOptionsPage() {
   useEffect(() => {
     if (state.tableNumber && state.splitPayments) {
       console.log(
-        "🔔 Split payments changed in context, reloading split status..."
+        "🔔 Split payments changed in context, reloading split status...",
       );
       console.log("- Table number:", state.tableNumber);
       console.log("- Split payments length:", state.splitPayments.length);
@@ -129,10 +129,10 @@ export default function PaymentOptionsPage() {
 
   // Platillos no pagados y pagados
   const unpaidDishes = dishOrders.filter(
-    (dish) => dish.payment_status === "not_paid" || !dish.payment_status
+    (dish) => dish.payment_status === "not_paid" || !dish.payment_status,
   );
   const paidDishes = dishOrders.filter(
-    (dish) => dish.payment_status === "paid"
+    (dish) => dish.payment_status === "paid",
   );
 
   // Usar tableSummary.data.data si está disponible, sino calcular desde dishOrders
@@ -205,7 +205,7 @@ export default function PaymentOptionsPage() {
 
     // Fallback: usar usuarios con platillos no pagados
     const usersFromDishes = Array.from(
-      new Set(unpaidDishes.map((dish) => dish.guest_name).filter(Boolean))
+      new Set(unpaidDishes.map((dish) => dish.guest_name).filter(Boolean)),
     );
 
     console.log("🔍 No split status, using dishes:");
@@ -219,7 +219,7 @@ export default function PaymentOptionsPage() {
   // pero excluir a los que ya pagaron (tienen registros en active_table_users con pagos > 0)
   const usersForSplitOption = (() => {
     const usersWithUnpaidDishes = Array.from(
-      new Set(unpaidDishes.map((dish) => dish.guest_name).filter(Boolean))
+      new Set(unpaidDishes.map((dish) => dish.guest_name).filter(Boolean)),
     );
 
     // Si tenemos activeUsers, filtrar los que ya pagaron completamente
@@ -237,7 +237,7 @@ export default function PaymentOptionsPage() {
 
       // Excluir usuarios que ya pagaron
       return usersWithUnpaidDishes.filter(
-        (userName) => !usersPaid.includes(userName)
+        (userName) => !usersPaid.includes(userName),
       );
     }
 
@@ -250,23 +250,23 @@ export default function PaymentOptionsPage() {
     "- usersForSplitOption:",
     usersForSplitOption,
     "length:",
-    usersForSplitOption.length
+    usersForSplitOption.length,
   );
 
   // Platillos del usuario actual
   const currentUserDishes = dishOrders.filter(
-    (dish) => dish.guest_name === state.currentUserName
+    (dish) => dish.guest_name === state.currentUserName,
   );
 
   const currentUserUnpaidDishes = currentUserDishes.filter(
-    (dish) => dish.payment_status === "not_paid" || !dish.payment_status
+    (dish) => dish.payment_status === "not_paid" || !dish.payment_status,
   );
 
   const currentUserUnpaidAmount = currentUserUnpaidDishes.reduce(
     (sum, dish) => {
       return sum + (dish.total_price || 0);
     },
-    0
+    0,
   );
 
   // Verificar si hay división activa
@@ -559,7 +559,7 @@ export default function PaymentOptionsPage() {
 
             {/* Total - Fixed to bottom */}
             {unpaidAmount > 0 && (
-              <div className="fixed bottom-0 left-0 right-0 bg-white mx-4 md:mx-6 lg:mx-8 px-6 md:px-8 lg:px-10 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+              <div className="fixed bottom-0 left-0 right-0 bg-white mx-4 md:mx-6 lg:mx-8 px-6 md:px-8 lg:px-10 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                 <div className="py-4 md:py-8 lg:py-12 space-y-2 md:space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-lg md:text-2xl lg:text-3xl font-medium text-black">

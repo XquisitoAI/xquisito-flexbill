@@ -199,8 +199,8 @@ const hasIncompleteImageUrl = (text: string): boolean => {
   return false;
 };
 
-// Componente para renderizar mensajes con imágenes (memoizado para evitar re-renders innecesarios)
-const MessageContent = memo(({ content, isStreaming, activeTool }: { content: string; isStreaming?: boolean; activeTool?: string | null }) => {
+// Componente para renderizar mensajes con imágenes (sin memo para garantizar re-render con nuevas URLs)
+const MessageContent = ({ content, isStreaming, activeTool }: { content: string; isStreaming?: boolean; activeTool?: string | null }) => {
   // Si el contenido está vacío, mostrar herramienta o puntos de carga
   if (!content) {
     if (activeTool) {
@@ -214,8 +214,15 @@ const MessageContent = memo(({ content, isStreaming, activeTool }: { content: st
     return <LoadingDots />;
   }
 
-  // Si está en streaming o hay una URL de imagen incompleta, mostrar texto plano
-  if (isStreaming || hasIncompleteImageUrl(content)) {
+  // Si está en streaming, ocultar URLs de imagen parciales o completas (no mostrarlas como texto)
+  if (isStreaming) {
+    // Remover cualquier URL de imagen (completa o incompleta) del final del contenido durante streaming
+    const contentWithoutImageUrl = content.replace(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|svg|avif)[^\s]*$/gi, '').replace(/https?:\/\/[^\s]*$/gi, '');
+    return <p className="whitespace-pre-wrap">{contentWithoutImageUrl}</p>;
+  }
+
+  // Si hay una URL de imagen incompleta (no en streaming), mostrar texto plano
+  if (hasIncompleteImageUrl(content)) {
     return <p className="whitespace-pre-wrap">{content}</p>;
   }
 
@@ -278,11 +285,12 @@ const MessageContent = memo(({ content, isStreaming, activeTool }: { content: st
       }
     }
 
-    // Agregar la imagen
+    // Agregar la imagen con key basada en URL y timestamp para evitar caché
+    const imageUrl = m.url.includes('?') ? `${m.url}&t=${Date.now()}` : `${m.url}?t=${Date.now()}`;
     elements.push(
       <img
-        key={key++}
-        src={m.url}
+        key={m.url}
+        src={imageUrl}
         alt={m.alt || "Imagen del agente"}
         className="rounded-lg max-w-full h-auto"
         loading="lazy"
@@ -310,14 +318,12 @@ const MessageContent = memo(({ content, isStreaming, activeTool }: { content: st
   }
 
   return <div className="space-y-2">{elements}</div>;
-});
-
-MessageContent.displayName = "MessageContent";
+};
 
 export default function ChatView({ onBack }: ChatViewProps) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<
-    Array<{ role: "user" | "pepper"; content: string }>
+    Array<{ id: string; role: "user" | "pepper"; content: string }>
   >([]);
   const [hasStartedChat, setHasStartedChat] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -347,7 +353,8 @@ export default function ChatView({ onBack }: ChatViewProps) {
       }
 
       const userMessage = message;
-      setMessages([...messages, { role: "user", content: userMessage }]);
+      const userMessageId = crypto.randomUUID();
+      setMessages([...messages, { id: userMessageId, role: "user", content: userMessage }]);
       setMessage("");
       setIsLoading(true);
 
@@ -365,7 +372,8 @@ export default function ChatView({ onBack }: ChatViewProps) {
 [USER_MESSAGE: ${userMessage}]`;
 
         // Agregar mensaje vacío de Pepper mientras se procesa
-        setMessages((prev) => [...prev, { role: "pepper", content: "" }]);
+        const pepperMessageId = crypto.randomUUID();
+        setMessages((prev) => [...prev, { id: pepperMessageId, role: "pepper", content: "" }]);
         setIsStreaming(true);
 
         // Llamar al agente con streaming
@@ -520,7 +528,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
           const isLastPepperMessage = msg.role === "pepper" && index === messages.length - 1;
           return (
             <div
-              key={index}
+              key={msg.id}
               className={`flex ${
                 msg.role === "user" ? "justify-end" : "justify-start"
               }`}

@@ -7,7 +7,7 @@ import ValidationError from "@/app/components/ValidationError";
 
 export default function PepperPage() {
   const router = useRouter();
-  const { validationError, isValidating } = useValidateAccess();
+  const { validationError } = useValidateAccess();
 
   const handleBack = () => {
     router.back();

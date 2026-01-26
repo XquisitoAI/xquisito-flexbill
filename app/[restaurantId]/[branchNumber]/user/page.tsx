@@ -96,7 +96,7 @@ export default function UserPage() {
         await submitOrder(
           orderUserName,
           orderedItems,
-          branchNumber?.toString()
+          branchNumber?.toString(),
         );
         // Limpiar el carrito de la base de datos después de la orden exitosa
         await clearCart();
@@ -133,7 +133,7 @@ export default function UserPage() {
       />
 
       <div className="px-4 md:px-6 lg:px-8 w-full flex-1 flex flex-col">
-        <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
+        <div className="left-4 right-4 bg-linear-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
           <div className="py-6 md:py-8 lg:py-10 px-8 md:px-10 lg:px-12 flex flex-col justify-center">
             <h2 className="font-medium text-white text-3xl md:text-4xl lg:text-5xl leading-7 md:leading-9 lg:leading-tight mt-2 md:mt-3 mb-6 md:mb-8">
               Ingresa tu nombre para continuar
@@ -159,7 +159,7 @@ export default function UserPage() {
                   onChange={handleNameChange}
                   onKeyDown={handleKeyDown}
                   onFocus={handleInputFocus}
-                  className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border-0 border-b border-black text-black text-2xl md:text-3xl lg:text-4xl text-center font-medium focus:outline-none focus:border-teal-500"
+                  className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border-0 border-b-[1.3px] border-black !rounded-none text-black text-2xl md:text-3xl lg:text-4xl text-center font-medium focus:outline-none focus:border-teal-500"
                 />
               </div>
             </div>

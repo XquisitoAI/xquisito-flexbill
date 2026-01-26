@@ -192,6 +192,29 @@ body {
   animation: simple-fade-in 0.4s ease-in forwards;
 }
 
+@keyframes fade-in-out {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.animate-fade-in-out {
+  animation: fade-in-out 3s ease-in-out forwards;
+}
+
 .pulse-ring {
   position: absolute;
   width: 96px;
@@ -427,7 +450,6 @@ textarea {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  border-radius: 0.5rem;
   font-size: 16px; /* Previene zoom en iOS */
 }
 

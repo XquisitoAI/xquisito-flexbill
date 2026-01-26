@@ -56,7 +56,7 @@ export default function OrderStatus() {
           options: field.selectedOptions
             .map((opt: any) => `${opt.optionName}:${opt.price}`)
             .sort(),
-        })) || []
+        })) || [],
       );
       const key = `${dish.guest_name}|${dish.item}|${customFieldsKey}`;
 
@@ -98,7 +98,7 @@ export default function OrderStatus() {
   const paidTotalItems = paidDishes.length;
   const paidTotalPrice = paidDishes.reduce(
     (sum, dish) => sum + dish.total_price,
-    0
+    0,
   );
 
   // Cargar datos cuando se monta el componente o cambia el número de mesa
@@ -296,21 +296,21 @@ export default function OrderStatus() {
                                                   {field.selectedOptions
                                                     .filter(
                                                       (opt: any) =>
-                                                        opt.price > 0
+                                                        opt.price > 0,
                                                     )
                                                     .map(
                                                       (
                                                         opt: any,
-                                                        optIdx: number
+                                                        optIdx: number,
                                                       ) => (
                                                         <p key={optIdx}>
                                                           {opt.optionName} $
                                                           {opt.price.toFixed(2)}
                                                         </p>
-                                                      )
+                                                      ),
                                                     )}
                                                 </div>
-                                              )
+                                              ),
                                             )}
                                           </div>
                                         )}
@@ -423,21 +423,21 @@ export default function OrderStatus() {
                                                   {field.selectedOptions
                                                     .filter(
                                                       (opt: any) =>
-                                                        opt.price > 0
+                                                        opt.price > 0,
                                                     )
                                                     .map(
                                                       (
                                                         opt: any,
-                                                        optIdx: number
+                                                        optIdx: number,
                                                       ) => (
                                                         <p key={optIdx}>
                                                           {opt.optionName} $
                                                           {opt.price.toFixed(2)}
                                                         </p>
-                                                      )
+                                                      ),
                                                     )}
                                                 </div>
-                                              )
+                                              ),
                                             )}
                                           </div>
                                         )}
@@ -487,7 +487,7 @@ export default function OrderStatus() {
                 {/* Fixed bottom section */}
                 {unpaidDishes.length > 0 && tableRemainingAmount > 0 && (
                   <div
-                    className="fixed bottom-0 left-0 right-0 bg-white mx-4 md:mx-6 lg:mx-8 px-6 md:px-8 lg:px-10 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+                    className="fixed bottom-0 left-0 right-0 bg-white mx-4 md:mx-6 lg:mx-8 px-6 md:px-8 lg:px-10 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
                     style={{
                       paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
                     }}

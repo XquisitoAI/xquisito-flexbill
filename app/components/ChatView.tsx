@@ -10,12 +10,15 @@ interface ChatViewProps {
   onBack: () => void;
 }
 
-// Tipo para los eventos del stream
+// Tipo para los eventos del stream (basado en la API real de AI Spine)
 interface StreamEvent {
-  type: "token" | "done" | "error" | "session" | "tool_start" | "tool_end";
+  type: "token" | "done" | "error" | "conversation_start" | "thinking_start" | "thinking_end" | "node_start" | "node_end" | "final_response" | "tool_start" | "tool_end";
   content?: string;
   session_id?: string;
   tool_name?: string;
+  node_name?: string;
+  node_type?: string;
+  phase?: string;
 }
 
 // Función para streaming con el agente (muestra herramientas y tokens en tiempo real)
@@ -25,7 +28,8 @@ async function streamFromAgent(
   onToken: (token: string) => void,
   onSessionId: (sessionId: string) => void,
   onToolStart: (toolName: string) => void,
-  onToolEnd: () => void
+  onToolEnd: () => void,
+  onFinalResponse?: (content: string) => void
 ): Promise<void> {
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/ai-agent/chat/stream`,
@@ -68,12 +72,25 @@ async function streamFromAgent(
 
           if (event.type === "token" && event.content) {
             onToken(event.content);
-          } else if (event.type === "session" && event.session_id) {
+          } else if (event.type === "conversation_start" && event.session_id) {
+            // Session ID viene en conversation_start
             onSessionId(event.session_id);
+          } else if (event.type === "thinking_start") {
+            // Mostrar indicador de "pensando"
+            onToolStart("thinking");
+          } else if (event.type === "thinking_end") {
+            onToolEnd();
           } else if (event.type === "tool_start" && event.tool_name) {
             onToolStart(event.tool_name);
           } else if (event.type === "tool_end") {
             onToolEnd();
+          } else if (event.type === "final_response" && event.content) {
+            // La respuesta final viene completa - reemplazar, no agregar
+            if (onFinalResponse) {
+              onFinalResponse(event.content);
+            } else {
+              onToken(event.content);
+            }
           } else if (event.type === "error") {
             throw new Error(event.content || "Error del agente");
           }
@@ -87,6 +104,7 @@ async function streamFromAgent(
 
 // Mapeo de nombres de herramientas a nombres amigables
 const toolDisplayNames: Record<string, string> = {
+  thinking: "Pensando...",
   extracts_image_urls: "Obteniendo imagen",
   retrieves_restaurant_information: "Obteniendo información del restaurante",
   extract_restaurant_dish: "Obteniendo estadísticas del platillo",
@@ -381,6 +399,20 @@ export default function ChatView({ onBack }: ChatViewProps) {
           // Callback para cuando termina una herramienta
           () => {
             setActiveTool(null);
+          },
+          // Callback para respuesta final (reemplazar, no agregar)
+          (content) => {
+            setMessages((prev) => {
+              const lastIndex = prev.length - 1;
+              const lastMessage = prev[lastIndex];
+              if (lastMessage && lastMessage.role === "pepper") {
+                return [
+                  ...prev.slice(0, lastIndex),
+                  { ...lastMessage, content: content },
+                ];
+              }
+              return prev;
+            });
           }
         );
 

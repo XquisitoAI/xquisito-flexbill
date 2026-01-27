@@ -203,10 +203,7 @@ export default function MenuHeaderBack({
   };
 
   return (
-    <header
-      className="container mx-auto px-5 md:px-8 lg:px-10 pt-5 md:pt-7 lg:pt-9 relative"
-      style={{ zIndex: 100 }}
-    >
+    <header className="container mx-auto px-5 md:px-8 lg:px-10 pt-5 md:pt-7 lg:pt-9 z-10">
       <div className="relative flex items-center justify-between z-10">
         {/* Back */}
         <div className="flex items-center z-10">

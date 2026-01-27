@@ -352,7 +352,7 @@ export default function PaymentOptionsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <div className="min-h-dvh bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <MenuHeaderBack
           restaurant={restaurantData}
           tableNumber={state.tableNumber}
@@ -367,7 +367,7 @@ export default function PaymentOptionsPage() {
             </div>
           </div>
 
-          <div className="flex-1 h-full flex flex-col overflow-hidden relative">
+          <div className="flex-1 h-full flex flex-col overflow-hidden">
             <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col overflow-hidden">
               <div className="flex-1 overflow-y-auto px-6 md:px-8 lg:px-10 pb-[140px] md:pb-[160px] lg:pb-[180px]">
                 <div className="flex flex-col mt-4 md:mt-6 space-y-0">
@@ -411,7 +411,7 @@ export default function PaymentOptionsPage() {
   }
 
   return (
-    <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="min-h-dvh bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <MenuHeaderBack
         restaurant={restaurantData}
         tableNumber={state.tableNumber}
@@ -426,7 +426,7 @@ export default function PaymentOptionsPage() {
           </div>
         </div>
 
-        <div className="flex-1 h-full flex flex-col overflow-hidden relative">
+        <div className="flex-1 h-full flex flex-col overflow-hidden">
           <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col overflow-hidden">
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto px-6 md:px-8 lg:px-10 pb-[140px] md:pb-[160px] lg:pb-[180px]">

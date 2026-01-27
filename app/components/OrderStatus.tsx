@@ -143,7 +143,7 @@ export default function OrderStatus() {
   }, [state.dishOrders?.length, state.tableSummary, state.error]); // Only log meaningful changes
 
   return (
-    <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="min-h-dvh bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <MenuHeaderBackOrder
         restaurant={restaurantData}
         tableNumber={state.tableNumber}
@@ -161,7 +161,7 @@ export default function OrderStatus() {
           </div>
         </div>
 
-        <div className="flex-1 h-full flex flex-col overflow-hidden relative">
+        <div className="flex-1 h-full flex flex-col overflow-hidden">
           <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col overflow-hidden">
             {/* Table Closed Message */}
             {state.tableSummary?.data?.data?.status === "paid" ? (

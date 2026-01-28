@@ -1096,7 +1096,7 @@ export default function CardSelectionPage() {
             ></div>
 
             {/* Modal */}
-            <div className="relative bg-white rounded-t-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="relative bg-white rounded-t-4xl w-full mx-4 max-h-[70vh] overflow-y-auto">
               {/* Titulo */}
               <div className="px-6 pt-4 sticky top-0 bg-white z-10">
                 <div className="flex items-center justify-between pb-4 border-b border-[#8e8e8e]">

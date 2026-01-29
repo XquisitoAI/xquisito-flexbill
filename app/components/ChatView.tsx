@@ -104,7 +104,6 @@ async function streamFromAgent(
 
 // Mapeo de nombres de herramientas a nombres amigables
 const toolDisplayNames: Record<string, string> = {
-  thinking: "Pensando...",
   extracts_image_urls: "Obteniendo imagen",
   retrieves_restaurant_information: "Obteniendo información del restaurante",
   extract_restaurant_dish: "Obteniendo estadísticas del platillo",
@@ -186,12 +185,12 @@ const hasIncompleteImageUrl = (text: string): boolean => {
     return true;
   }
   // Detectar URL de imagen incompleta al final (empieza con http pero no termina con extensión de imagen completa)
-  if (/https?:\/\/[^\s]*$/.test(text)) {
-    const urlMatch = text.match(/https?:\/\/[^\s]*$/);
+  if (/https?:\/\/[^\s)]*$/.test(text)) {
+    const urlMatch = text.match(/https?:\/\/[^\s)]*$/);
     if (urlMatch) {
       const partialUrl = urlMatch[0];
       // Si parece que está escribiendo una URL de imagen pero no está completa
-      if (!/\.(jpg|jpeg|png|gif|webp|svg|avif)(\?[^\s]*)?$/i.test(partialUrl)) {
+      if (!/\.(jpg|jpeg|png|gif|webp|svg|avif)(\?[^\s)]*)?$/i.test(partialUrl)) {
         return true;
       }
     }
@@ -214,16 +213,29 @@ const MessageContent = ({ content, isStreaming, activeTool }: { content: string;
     return <LoadingDots />;
   }
 
-  // Si está en streaming, ocultar URLs de imagen parciales o completas (no mostrarlas como texto)
+  // Si está en streaming, reemplazar URLs de imagen con LoadingDots inline
   if (isStreaming) {
-    // Remover cualquier URL de imagen (completa o incompleta) del final del contenido durante streaming
-    const contentWithoutImageUrl = content.replace(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|svg|avif)[^\s]*$/gi, '').replace(/https?:\/\/[^\s]*$/gi, '');
-    return <p className="whitespace-pre-wrap">{contentWithoutImageUrl}</p>;
-  }
+    const IMAGE_PLACEHOLDER = '\u0000IMG\u0000';
+    let processed = content
+      .replace(/!\[[^\]]*\]\(https?:\/\/[^\s)]+\.(?:jpg|jpeg|png|gif|webp|svg|avif)(?:\?[^\s)]*)?\)/gi, IMAGE_PLACEHOLDER)
+      .replace(/!\[[^\]]*\]?\(?https?:\/\/[^\s)]*$/, IMAGE_PLACEHOLDER)
+      .replace(/(?<![(\[])(https?:\/\/[^\s)]+\.(?:jpg|jpeg|png|gif|webp|svg|avif)(?:\?[^\s)]*)?)/gi, IMAGE_PLACEHOLDER);
+    if (hasIncompleteImageUrl(processed)) {
+      processed = processed.replace(/https?:\/\/[^\s)]*$/, IMAGE_PLACEHOLDER);
+    }
 
-  // Si hay una URL de imagen incompleta (no en streaming), mostrar texto plano
-  if (hasIncompleteImageUrl(content)) {
-    return <p className="whitespace-pre-wrap">{content}</p>;
+    const parts = processed.split(IMAGE_PLACEHOLDER);
+    const elements: React.ReactNode[] = [];
+    parts.forEach((part, i) => {
+      if (part) {
+        elements.push(<span key={`t${i}`} className="whitespace-pre-wrap">{part}</span>);
+      }
+      if (i < parts.length - 1) {
+        elements.push(<LoadingDots key={`d${i}`} />);
+      }
+    });
+
+    return <div>{elements}</div>;
   }
 
   // Regex para detectar imágenes en formato Markdown: ![alt](url)
@@ -368,7 +380,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
         const currentGuestId = isGuest ? guestId : null;
 
         // Construir el mensaje con el contexto separado
-        const contextualMessage = `[CONTEXT: restaurant_id=${restaurantId || "null"}, user_id=${userId || "null"}, guest_id=${currentGuestId || "null"}, branch_number=${branchNumber || "null"}]
+        const contextualMessage = `[CONTEXT: service=flex_bill, restaurant_id=${restaurantId || "null"}, user_id=${userId || "null"}, guest_id=${currentGuestId || "null"}, branch_number=${branchNumber || "null"}]
 [USER_MESSAGE: ${userMessage}]`;
 
         // Agregar mensaje vacío de Pepper mientras se procesa

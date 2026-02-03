@@ -130,13 +130,18 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
       localStorage.setItem("xquisito-table-number", tableParam);
       localStorage.setItem("xquisito-guest-id", guestIdToUse);
 
+      // Restore guest name from localStorage if available
+      const storedGuestName = localStorage.getItem("xquisito-guest-name");
+
       setIsGuest(true);
       setGuestId(guestIdToUse);
       setTableNumber(tableParam);
+      setGuestName(storedGuestName);
       apiService.setTableNumber(tableParam);
       console.log("👤 Guest session configured:", {
         guestId: guestIdToUse,
         tableNumber: tableParam,
+        guestName: storedGuestName,
         wasRestored: !!storedGuestId,
       });
       return;

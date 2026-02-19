@@ -33,13 +33,16 @@ interface TableSummaryPayload {
 }
 
 interface UserJoinedPayload {
-  user: ActiveUser;
-  timestamp: string;
+  userId?: string;
+  guestId?: string;
+  guestName?: string;
+  tableNumber?: string;
 }
 
 interface UserLeftPayload {
-  userId: string;
-  timestamp: string;
+  userId?: string;
+  guestId?: string;
+  tableNumber?: string;
 }
 
 interface SplitUpdatePayload {
@@ -126,12 +129,26 @@ export function useTableRealtime(options: UseTableRealtimeOptions) {
 
     const handleUserJoined = (data: UserJoinedPayload) => {
       console.log("👤 Received user joined:", data);
-      onUserJoined?.(data.user);
+      // Transformar el payload del servidor al formato ActiveUser
+      const user: ActiveUser = {
+        restaurant_id: 0, // Se actualizará con datos reales del contexto
+        branch_number: 0,
+        table_number: parseInt(data.tableNumber || "0"),
+        user_id: data.userId || data.guestId,
+        guest_name: data.guestName || "Invitado",
+        total_paid_individual: 0,
+        total_paid_amount: 0,
+        total_paid_split: 0,
+        is_in_split: false,
+        updated_at: new Date().toISOString(),
+      };
+      onUserJoined?.(user);
     };
 
     const handleUserLeft = (data: UserLeftPayload) => {
       console.log("👋 Received user left:", data);
-      onUserLeft?.(data.userId);
+      const userId = data.userId || data.guestId || "";
+      onUserLeft?.(userId);
     };
 
     const handleSplitUpdate = (data: SplitUpdatePayload) => {

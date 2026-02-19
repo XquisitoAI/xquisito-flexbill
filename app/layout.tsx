@@ -7,6 +7,7 @@ import { GuestProvider } from "./context/GuestContext";
 import { PaymentProvider } from "./context/PaymentContext";
 import { RestaurantProvider } from "./context/RestaurantContext";
 import { AuthProvider } from "./context/AuthContext";
+import { SocketProvider } from "./context/SocketContext";
 
 const helveticaNeue = localFont({
   src: [
@@ -125,13 +126,15 @@ export default function RootLayout({
       >
         <AuthProvider>
           <RestaurantProvider>
-            <CartProvider>
-              <TableProvider>
-                <GuestProvider>
-                  <PaymentProvider>{children}</PaymentProvider>
-                </GuestProvider>
-              </TableProvider>
-            </CartProvider>
+            <GuestProvider>
+              <SocketProvider>
+                <CartProvider>
+                  <TableProvider>
+                    <PaymentProvider>{children}</PaymentProvider>
+                  </TableProvider>
+                </CartProvider>
+              </SocketProvider>
+            </GuestProvider>
           </RestaurantProvider>
         </AuthProvider>
       </body>

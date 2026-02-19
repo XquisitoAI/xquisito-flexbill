@@ -25,7 +25,7 @@ export default function TipSelectionPage() {
     if (tableFromUrl && !state.tableNumber) {
       console.log(
         "🔧 Tip selection: Setting table number from URL:",
-        tableFromUrl
+        tableFromUrl,
       );
       dispatch({ type: "SET_TABLE_NUMBER", payload: tableFromUrl });
     }
@@ -73,7 +73,7 @@ export default function TipSelectionPage() {
       const response = await paymentService.getSplitPaymentStatus(
         restaurantId.toString(),
         branchNumber.toString(),
-        state.tableNumber.toString()
+        state.tableNumber.toString(),
       );
       if (response.success) {
         setSplitStatus(response.data.data);
@@ -104,7 +104,7 @@ export default function TipSelectionPage() {
         } else {
           // Ya hay datos, solo cargar split status
           console.log(
-            "✅ Tip selection: Data already loaded, loading split status only"
+            "✅ Tip selection: Data already loaded, loading split status only",
           );
           await loadSplitStatus();
           setIsLoading(false);
@@ -116,6 +116,16 @@ export default function TipSelectionPage() {
     };
     loadData();
   }, [state.tableNumber, state.dishOrders, state.tableSummary]);
+
+  // Recargar split status cuando cambien los split payments en el contexto (tiempo real)
+  useEffect(() => {
+    if (state.tableNumber && state.splitPayments) {
+      console.log(
+        "🔄 Tip selection: Split payments changed, reloading split status...",
+      );
+      loadSplitStatus();
+    }
+  }, [state.splitPayments]);
 
   // Inicializar customPaymentAmount para choose-amount
   useEffect(() => {
@@ -129,15 +139,15 @@ export default function TipSelectionPage() {
 
   // Platillos no pagados y pagados
   const unpaidDishes = dishOrders.filter(
-    (dish) => dish.payment_status === "not_paid" || !dish.payment_status
+    (dish) => dish.payment_status === "not_paid" || !dish.payment_status,
   );
   const paidDishes = dishOrders.filter(
-    (dish) => dish.payment_status === "paid"
+    (dish) => dish.payment_status === "paid",
   );
 
   // Obtener usuarios únicos de platillos no pagados
   const unpaidUsersSet = new Set(
-    unpaidDishes.map((dish) => dish.guest_name).filter(Boolean)
+    unpaidDishes.map((dish) => dish.guest_name).filter(Boolean),
   );
   const unpaidUsers = Array.from(unpaidUsersSet);
 
@@ -164,14 +174,14 @@ export default function TipSelectionPage() {
   const currentUserUnpaidDishes = dishOrders.filter(
     (dish) =>
       dish.guest_name === userName &&
-      (dish.payment_status === "not_paid" || !dish.payment_status)
+      (dish.payment_status === "not_paid" || !dish.payment_status),
   );
 
   const currentUserUnpaidAmount = currentUserUnpaidDishes.reduce(
     (sum, dish) => {
       return sum + (dish.total_price || 0);
     },
-    0
+    0,
   );
 
   // Obtener usuarios únicos considerando split status si está activo
@@ -187,7 +197,7 @@ export default function TipSelectionPage() {
 
     // Fallback: usar usuarios con platillos no pagados
     return Array.from(
-      new Set(unpaidDishes.map((dish) => dish.guest_name).filter(Boolean))
+      new Set(unpaidDishes.map((dish) => dish.guest_name).filter(Boolean)),
     );
   })();
 
@@ -267,7 +277,7 @@ export default function TipSelectionPage() {
     setSelectedItems((prev) =>
       prev.includes(itemId)
         ? prev.filter((id) => id !== itemId)
-        : [...prev, itemId]
+        : [...prev, itemId],
     );
   };
 
@@ -576,7 +586,7 @@ export default function TipSelectionPage() {
                   <div className="space-y-3">
                     {filteredUnpaidDishes.map((dish) => {
                       const isSelected = selectedItems.includes(
-                        dish.dish_order_id
+                        dish.dish_order_id,
                       );
                       return (
                         <div
@@ -779,7 +789,7 @@ export default function TipSelectionPage() {
                             value={customTip}
                             onChange={(e) => {
                               const value = e.target.value;
-                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                              if (value === "" || /^\d*\.?\d*$/.test(value)) {
                                 handleCustomTipChange(value);
                               }
                             }}
@@ -978,7 +988,7 @@ export default function TipSelectionPage() {
                         value={customTip}
                         onChange={(e) => {
                           const value = e.target.value;
-                          if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                          if (value === "" || /^\d*\.?\d*$/.test(value)) {
                             handleCustomTipChange(value);
                           }
                         }}

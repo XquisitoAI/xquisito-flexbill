@@ -33,7 +33,7 @@ export default function MenuHeaderBackPay({
   const pathname = usePathname();
   const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
   const [usersImages, setUsersImages] = useState<Record<string, UserImageData>>(
-    {}
+    {},
   );
   const { user, profile, isLoading } = useAuth();
 
@@ -51,13 +51,13 @@ export default function MenuHeaderBackPay({
 
     if (Array.isArray(state.activeUsers)) {
       state.activeUsers.forEach((u) => {
-        if (u.user_id) userIds.add(u.user_id);
+        if (u && u.user_id) userIds.add(u.user_id);
       });
     }
 
     if (Array.isArray(state.dishOrders)) {
       state.dishOrders.forEach((order) => {
-        if (order.user_id) userIds.add(order.user_id);
+        if (order && order.user_id) userIds.add(order.user_id);
       });
     }
 
@@ -102,7 +102,7 @@ export default function MenuHeaderBackPay({
   // Agregar de activeUsers
   if (Array.isArray(state.activeUsers)) {
     state.activeUsers.forEach((activeUser) => {
-      if (activeUser.guest_name) {
+      if (activeUser && activeUser.guest_name) {
         participantsMap.set(activeUser.guest_name, {
           guest_name: activeUser.guest_name,
           user_id: activeUser.user_id || null,
@@ -114,7 +114,7 @@ export default function MenuHeaderBackPay({
   // Agregar de dishOrders (solo si no existe ya)
   if (Array.isArray(state.dishOrders)) {
     state.dishOrders.forEach((order) => {
-      if (order.guest_name && !participantsMap.has(order.guest_name)) {
+      if (order && order.guest_name && !participantsMap.has(order.guest_name)) {
         participantsMap.set(order.guest_name, {
           guest_name: order.guest_name,
           user_id: order.user_id || null,
@@ -350,20 +350,22 @@ export default function MenuHeaderBackPay({
                           const userOrders = Array.isArray(state.dishOrders)
                             ? state.dishOrders.filter(
                                 (order) =>
-                                  order.guest_name === participant.guest_name
+                                  order &&
+                                  order.guest_name === participant.guest_name,
                               )
                             : [];
 
                           const dishCount = userOrders.length;
                           const totalValue = userOrders.reduce(
-                            (sum, order) => sum + order.total_price,
-                            0
+                            (sum, order) => sum + (order?.total_price || 0),
+                            0,
                           );
 
                           // También mostrar información de activeUsers si está disponible
                           const activeUser = Array.isArray(state.activeUsers)
                             ? state.activeUsers.find(
-                                (u) => u.guest_name === participant.guest_name
+                                (u) =>
+                                  u && u.guest_name === participant.guest_name,
                               )
                             : null;
 

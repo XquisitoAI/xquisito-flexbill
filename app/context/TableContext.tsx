@@ -5,6 +5,7 @@ import React, {
   useContext,
   useReducer,
   useEffect,
+  useCallback,
   ReactNode,
 } from "react";
 import { MenuItemData } from "../interfaces/menuItemData";
@@ -24,6 +25,7 @@ interface NestedDataResponse<T> {
 import { useAuth } from "./AuthContext";
 import { useRestaurant } from "./RestaurantContext";
 import { paymentService } from "../services/payment.service";
+import { useTableRealtime } from "../hooks/useTableRealtime";
 
 // Interfaz para un item del carrito (mantiene la misma funcionalidad)
 export interface CartItem extends MenuItemData {
@@ -111,7 +113,7 @@ const calculateTotals = (items: CartItem[]) => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce(
     (sum, item) => sum + (item.price + (item.extraPrice || 0)) * item.quantity,
-    0
+    0,
   );
   return { totalItems, totalPrice };
 };
@@ -130,7 +132,7 @@ function tableReducer(state: TableState, action: TableAction): TableState {
       // Función helper para comparar custom fields
       const areCustomFieldsEqual = (
         cf1?: CartItem["customFields"],
-        cf2?: CartItem["customFields"]
+        cf2?: CartItem["customFields"],
       ) => {
         if (!cf1 && !cf2) return true;
         if (!cf1 || !cf2) return false;
@@ -152,7 +154,7 @@ function tableReducer(state: TableState, action: TableAction): TableState {
       const existingItem = state.currentUserItems.find(
         (item) =>
           item.id === action.payload.id &&
-          areCustomFieldsEqual(item.customFields, action.payload.customFields)
+          areCustomFieldsEqual(item.customFields, action.payload.customFields),
       );
 
       let newItems: CartItem[];
@@ -161,7 +163,7 @@ function tableReducer(state: TableState, action: TableAction): TableState {
           item.id === action.payload.id &&
           areCustomFieldsEqual(item.customFields, action.payload.customFields)
             ? { ...item, quantity: item.quantity + 1 }
-            : item
+            : item,
         );
       } else {
         newItems = [
@@ -182,7 +184,7 @@ function tableReducer(state: TableState, action: TableAction): TableState {
 
     case "REMOVE_ITEM_FROM_CURRENT_USER": {
       const newItems = state.currentUserItems.filter(
-        (item) => item.id !== action.payload
+        (item) => item.id !== action.payload,
       );
       const { totalItems, totalPrice } = calculateTotals(newItems);
 
@@ -198,7 +200,7 @@ function tableReducer(state: TableState, action: TableAction): TableState {
       // Función helper para comparar custom fields (reutilizada)
       const areCustomFieldsEqual = (
         cf1?: CartItem["customFields"],
-        cf2?: CartItem["customFields"]
+        cf2?: CartItem["customFields"],
       ) => {
         if (!cf1 && !cf2) return true;
         if (!cf1 || !cf2) return false;
@@ -222,7 +224,7 @@ function tableReducer(state: TableState, action: TableAction): TableState {
           item.id === action.payload.id &&
           areCustomFieldsEqual(item.customFields, action.payload.customFields)
             ? { ...item, quantity: action.payload.quantity }
-            : item
+            : item,
         )
         .filter((item) => item.quantity > 0);
 
@@ -302,7 +304,7 @@ function tableReducer(state: TableState, action: TableAction): TableState {
       const updatedOrders = state.dishOrders.map((order) =>
         order.dish_order_id === action.payload.dishId
           ? { ...order, status: action.payload.status }
-          : order
+          : order,
       );
       return {
         ...state,
@@ -314,7 +316,7 @@ function tableReducer(state: TableState, action: TableAction): TableState {
       const updatedOrders = state.dishOrders.map((order) =>
         order.dish_order_id === action.payload.dishId
           ? { ...order, payment_status: action.payload.paymentStatus }
-          : order
+          : order,
       );
       return {
         ...state,
@@ -335,7 +337,7 @@ const TableContext = createContext<{
   submitOrder: (
     userName?: string,
     cartItems?: CartItem[],
-    branchNumber?: string
+    branchNumber?: string,
   ) => Promise<void>;
   // Nuevas funciones para el sistema de platillos
   loadTableData: () => Promise<void>;
@@ -344,20 +346,27 @@ const TableContext = createContext<{
   loadActiveUsers: () => Promise<void>;
   loadSplitPayments: () => Promise<void>;
   // Funciones de pago
-  payDishOrder: (dishId: string, paymentMethodId?: string | null) => Promise<void>;
-  payTableAmount: (amount: number, userId?: string, guestName?: string) => Promise<void>;
+  payDishOrder: (
+    dishId: string,
+    paymentMethodId?: string | null,
+  ) => Promise<void>;
+  payTableAmount: (
+    amount: number,
+    userId?: string,
+    guestName?: string,
+  ) => Promise<void>;
   // Funciones de división de cuenta
   initializeSplitBill: (
     numberOfPeople: number,
     userIds?: string[],
-    guestNames?: string[]
+    guestNames?: string[],
   ) => Promise<void>;
   paySplitAmount: (userId?: string, guestName?: string) => Promise<void>;
   recalculateSplitBill: () => Promise<void>;
   // Función para actualizar estado de platillo (cocina)
   updateDishStatus: (
     dishId: string,
-    status: DishOrder["status"]
+    status: DishOrder["status"],
   ) => Promise<void>;
 } | null>(null);
 
@@ -370,6 +379,122 @@ export function TableProvider({ children }: { children: ReactNode }) {
   // Ref para evitar cargas duplicadas
   const lastLoadedTable = React.useRef<string | null>(null);
   const isLoadingRef = React.useRef(false);
+
+  // Cargar resumen de la mesa (definido primero para usar en otros callbacks)
+  const loadTableSummary = useCallback(async () => {
+    if (!state.tableNumber || !restaurantId || !branchNumber) return;
+
+    try {
+      const response = await tableService.getTableSummary(
+        restaurantId.toString(),
+        branchNumber.toString(),
+        state.tableNumber,
+      );
+
+      if (response.success && response.data) {
+        dispatch({ type: "SET_TABLE_SUMMARY", payload: response });
+      } else {
+        dispatch({
+          type: "SET_ERROR",
+          payload: response.error?.message || "Failed to load table summary",
+        });
+      }
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
+    }
+  }, [state.tableNumber, restaurantId, branchNumber]);
+
+  // Cargar órdenes de platillos
+  const loadDishOrders = useCallback(async () => {
+    if (!state.tableNumber || !restaurantId || !branchNumber) return;
+
+    try {
+      const response = await tableService.getTableOrders(
+        restaurantId.toString(),
+        branchNumber.toString(),
+        state.tableNumber,
+      );
+
+      if (response.success && Array.isArray(response?.data?.data)) {
+        const dishOrders = response.data.data;
+        dispatch({ type: "SET_DISH_ORDERS", payload: dishOrders });
+      } else {
+        dispatch({
+          type: "SET_ERROR",
+          payload: response.error?.message || "Failed to load dish orders",
+        });
+      }
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
+    }
+  }, [state.tableNumber, restaurantId, branchNumber]);
+
+  // Cargar usuarios activos
+  const loadActiveUsers = useCallback(async () => {
+    if (!state.tableNumber || !restaurantId || !branchNumber) return;
+
+    try {
+      const response = await tableService.getActiveUsers(
+        restaurantId.toString(),
+        branchNumber.toString(),
+        state.tableNumber,
+      );
+
+      if (response.success && response.data) {
+        dispatch({ type: "SET_ACTIVE_USERS", payload: response.data });
+      }
+    } catch (error) {
+      console.error("Error loading active users:", error);
+    }
+  }, [state.tableNumber, restaurantId, branchNumber]);
+
+  // Cargar pagos divididos
+  const loadSplitPayments = useCallback(async () => {
+    if (!state.tableNumber || !restaurantId || !branchNumber) return;
+
+    try {
+      const response = await paymentService.getSplitPaymentStatus(
+        restaurantId.toString(),
+        branchNumber.toString(),
+        state.tableNumber,
+      );
+
+      if (response.success && response.data) {
+        const splitPayments = response.data.split_payments || [];
+        dispatch({ type: "SET_SPLIT_PAYMENTS", payload: splitPayments });
+        dispatch({
+          type: "SET_SPLIT_BILL_ACTIVE",
+          payload: splitPayments.length > 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading split payments:", error);
+    }
+  }, [state.tableNumber, restaurantId, branchNumber]);
+
+  // Cargar todos los datos de la mesa
+  const loadTableData = useCallback(async () => {
+    if (!state.tableNumber) return;
+
+    dispatch({ type: "SET_LOADING", payload: true });
+
+    try {
+      await Promise.all([
+        loadTableSummary(),
+        loadDishOrders(),
+        loadActiveUsers(),
+        loadSplitPayments(),
+      ]);
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Error loading table data" });
+    }
+  }, [
+    state.tableNumber,
+    loadTableSummary,
+    loadDishOrders,
+    loadActiveUsers,
+    loadSplitPayments,
+  ]);
 
   // Cargar todos los datos cuando se establece el número de mesa
   useEffect(() => {
@@ -386,117 +511,91 @@ export function TableProvider({ children }: { children: ReactNode }) {
         isLoadingRef.current = false;
       });
     }
-  }, [state.tableNumber]);
+  }, [state.tableNumber, loadTableData]);
 
-  // Cargar todos los datos de la mesa
-  const loadTableData = async () => {
-    if (!state.tableNumber) return;
+  // Callbacks para eventos de socket en tiempo real
+  const handleDishCreated = useCallback(
+    (dish: DishOrder) => {
+      console.log("🔄 handleDishCreated - Agregando platillo:", dish);
+      dispatch({
+        type: "SET_DISH_ORDERS",
+        payload: [...state.dishOrders, dish],
+      });
+    },
+    [state.dishOrders],
+  );
 
-    dispatch({ type: "SET_LOADING", payload: true });
+  const handleDishStatusChanged = useCallback(
+    (dishId: string, status: DishOrder["status"]) => {
+      console.log("🔄 handleDishStatusChanged:", dishId, status);
+      dispatch({ type: "UPDATE_DISH_STATUS", payload: { dishId, status } });
+    },
+    [],
+  );
 
-    try {
-      await Promise.all([
-        loadTableSummary(),
-        loadDishOrders(),
-        loadActiveUsers(),
-        loadSplitPayments(),
-      ]);
-    } catch (error) {
-      dispatch({ type: "SET_ERROR", payload: "Error loading table data" });
-    }
-  };
+  const handleDishPaid = useCallback((dishId: string) => {
+    console.log("🔄 handleDishPaid:", dishId);
+    dispatch({
+      type: "UPDATE_DISH_PAYMENT_STATUS",
+      payload: { dishId, paymentStatus: "paid" },
+    });
+  }, []);
 
-  // Cargar resumen de la mesa
-  const loadTableSummary = async () => {
-    if (!state.tableNumber || !restaurantId || !branchNumber) return;
+  const handleSummaryUpdate = useCallback(() => {
+    console.log("🔄 handleSummaryUpdate - Recargando summary");
+    loadTableSummary();
+  }, [loadTableSummary]);
 
-    try {
-      const response = await tableService.getTableSummary(
-        restaurantId.toString(),
-        branchNumber.toString(),
-        state.tableNumber
-      );
-
-      if (response.success && response.data) {
-        dispatch({ type: "SET_TABLE_SUMMARY", payload: response });
-      } else {
-        dispatch({
-          type: "SET_ERROR",
-          payload: response.error?.message || "Failed to load table summary",
-        });
+  const handleUserJoined = useCallback(
+    (user: ActiveUser) => {
+      console.log("🔄 handleUserJoined:", user);
+      // Validar que user no sea undefined
+      if (!user) {
+        console.warn("⚠️ handleUserJoined received undefined user, ignoring");
+        return;
       }
-    } catch (error) {
-      dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
-    }
-  };
+      dispatch({
+        type: "SET_ACTIVE_USERS",
+        payload: [...state.activeUsers, user],
+      });
+    },
+    [state.activeUsers],
+  );
 
-  // Cargar órdenes de platillos
-  const loadDishOrders = async () => {
-    if (!state.tableNumber || !restaurantId || !branchNumber) return;
-
-    try {
-      const response = await tableService.getTableOrders(
-        restaurantId.toString(),
-        branchNumber.toString(),
-        state.tableNumber
+  const handleUserLeft = useCallback(
+    (userId: string) => {
+      console.log("🔄 handleUserLeft:", userId);
+      const updatedUsers = state.activeUsers.filter(
+        (u) => u && u.user_id !== userId && u.guest_name !== userId,
       );
+      dispatch({ type: "SET_ACTIVE_USERS", payload: updatedUsers });
+    },
+    [state.activeUsers],
+  );
 
-      if (response.success && Array.isArray(response?.data?.data)) {
-        const dishOrders = response.data.data;
-        dispatch({ type: "SET_DISH_ORDERS", payload: dishOrders });
-      } else {
-        dispatch({
-          type: "SET_ERROR",
-          payload: response.error?.message || "Failed to load dish orders",
-        });
-      }
-    } catch (error) {
-      dispatch({ type: "SET_ERROR", payload: "Network error occurred" });
-    }
-  };
+  const handleSplitUpdate = useCallback((splitPayments: SplitPayment[]) => {
+    console.log("🔄 handleSplitUpdate:", splitPayments);
+    dispatch({ type: "SET_SPLIT_PAYMENTS", payload: splitPayments });
+  }, []);
 
-  // Cargar usuarios activos
-  const loadActiveUsers = async () => {
-    if (!state.tableNumber || !restaurantId || !branchNumber) return;
+  const handleFullRefresh = useCallback(() => {
+    console.log("🔄 handleFullRefresh - Recargando todos los datos");
+    loadTableData();
+  }, [loadTableData]);
 
-    try {
-      const response = await tableService.getActiveUsers(
-        restaurantId.toString(),
-        branchNumber.toString(),
-        state.tableNumber
-      );
-
-      if (response.success && response.data) {
-        dispatch({ type: "SET_ACTIVE_USERS", payload: response.data });
-      }
-    } catch (error) {
-      console.error("Error loading active users:", error);
-    }
-  };
-
-  // Cargar pagos divididos
-  const loadSplitPayments = async () => {
-    if (!state.tableNumber || !restaurantId || !branchNumber) return;
-
-    try {
-      const response = await paymentService.getSplitPaymentStatus(
-        restaurantId.toString(),
-        branchNumber.toString(),
-        state.tableNumber
-      );
-
-      if (response.success && response.data) {
-        const splitPayments = response.data.split_payments || [];
-        dispatch({ type: "SET_SPLIT_PAYMENTS", payload: splitPayments });
-        dispatch({
-          type: "SET_SPLIT_BILL_ACTIVE",
-          payload: splitPayments.length > 0,
-        });
-      }
-    } catch (error) {
-      console.error("Error loading split payments:", error);
-    }
-  };
+  // Hook de socket para tiempo real
+  const { isSocketConnected } = useTableRealtime({
+    tableNumber: state.tableNumber || null,
+    enabled: !!state.tableNumber,
+    onDishCreated: handleDishCreated,
+    onDishStatusChanged: handleDishStatusChanged,
+    onDishPaid: handleDishPaid,
+    onSummaryUpdate: handleSummaryUpdate,
+    onUserJoined: handleUserJoined,
+    onUserLeft: handleUserLeft,
+    onSplitUpdate: handleSplitUpdate,
+    onFullRefresh: handleFullRefresh,
+  });
 
   // Función para enviar orden (adaptada al nuevo sistema)
   // Función helper para recalcular el split bill automáticamente
@@ -508,7 +607,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
       const splitResponse = await paymentService.getSplitPaymentStatus(
         restaurantId.toString(),
         branchNumber.toString(),
-        state.tableNumber
+        state.tableNumber,
       );
 
       if (splitResponse.success && splitResponse.data?.data) {
@@ -516,7 +615,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
         const activeUsersResponse = await tableService.getActiveUsers(
           restaurantId.toString(),
           branchNumber.toString(),
-          state.tableNumber
+          state.tableNumber,
         );
 
         if (activeUsersResponse.success && activeUsersResponse.data?.data) {
@@ -537,7 +636,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
             await initializeSplitBill(
               totalUsers,
               userIds.length > 0 ? userIds : undefined,
-              guestNames.length > 0 ? guestNames : undefined
+              guestNames.length > 0 ? guestNames : undefined,
             );
 
             // Recargar tableSummary después del recálculo
@@ -549,7 +648,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
         const activeUsersResponse = await tableService.getActiveUsers(
           restaurantId.toString(),
           branchNumber.toString(),
-          state.tableNumber
+          state.tableNumber,
         );
 
         if (activeUsersResponse.success && activeUsersResponse.data?.data) {
@@ -569,7 +668,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
             await initializeSplitBill(
               totalUsers,
               userIds.length > 0 ? userIds : undefined,
-              guestNames.length > 0 ? guestNames : undefined
+              guestNames.length > 0 ? guestNames : undefined,
             );
 
             // Recargar tableSummary después de la inicialización
@@ -585,7 +684,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const submitOrder = async (
     userName?: string,
     cartItems?: CartItem[],
-    branchNumberParam?: string
+    branchNumberParam?: string,
   ) => {
     const finalUserName = userName || state.currentUserName;
     // Usar cartItems pasados como parámetro, o fallback a state.currentUserItems (legacy)
@@ -652,13 +751,13 @@ export function TableProvider({ children }: { children: ReactNode }) {
           guestId, // guestId solo si es invitado
           item.images,
           item.customFields, // custom fields seleccionados
-          item.extraPrice // precio extra por custom fields
+          item.extraPrice, // precio extra por custom fields
         );
 
         if (!response.success) {
           console.error("❌ Error creando orden:", response.error);
           throw new Error(
-            response.error?.message || "Failed to create dish order"
+            response.error?.message || "Failed to create dish order",
           );
         }
         console.log("✅ Orden creada exitosamente para:", item.name);
@@ -691,7 +790,10 @@ export function TableProvider({ children }: { children: ReactNode }) {
   };
 
   // Nuevas funciones de pago
-  const payDishOrder = async (dishId: string, paymentMethodId?: string | null) => {
+  const payDishOrder = async (
+    dishId: string,
+    paymentMethodId?: string | null,
+  ) => {
     if (!state.tableNumber) return;
 
     dispatch({ type: "SET_LOADING", payload: true });
@@ -718,7 +820,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const payTableAmount = async (
     amount: number,
     userId?: string,
-    guestName?: string
+    guestName?: string,
   ) => {
     if (!state.tableNumber || !branchNumber) return;
 
@@ -752,7 +854,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
         amount,
         userId: finalUserId,
         guestName: finalGuestName,
-        paymentMethodId: null
+        paymentMethodId: null,
       });
 
       if (response.success) {
@@ -776,7 +878,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const initializeSplitBill = async (
     numberOfPeople: number,
     userIds?: string[],
-    guestNames?: string[]
+    guestNames?: string[],
   ) => {
     if (!state.tableNumber) return;
 
@@ -792,7 +894,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
         const activeUsersResponse = await tableService.getActiveUsers(
           restaurantId?.toString() || "1",
           branchNumber?.toString() || "1",
-          state.tableNumber
+          state.tableNumber,
         );
 
         if (activeUsersResponse.success && activeUsersResponse.data?.data) {
@@ -815,7 +917,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
         state.tableNumber,
         numberOfPeople,
         finalUserIds,
-        finalGuestNames
+        finalGuestNames,
       );
 
       if (response.success) {
@@ -845,7 +947,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
         tableNumber: state.tableNumber,
         userId,
         guestName,
-        paymentMethodId: null
+        paymentMethodId: null,
       });
 
       if (response.success) {
@@ -866,7 +968,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   // Función para actualizar estado de platillo (cocina)
   const updateDishStatus = async (
     dishId: string,
-    status: DishOrder["status"]
+    status: DishOrder["status"],
   ) => {
     try {
       const response = await tableService.updateDishStatus(dishId, status);

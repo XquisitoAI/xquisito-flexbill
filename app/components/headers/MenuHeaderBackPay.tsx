@@ -193,9 +193,6 @@ export default function MenuHeaderBackPay({
       "bg-amber-500",
       "bg-sky-500",
       "bg-fuchsia-500",
-      "bg-slate-500",
-      "bg-zinc-500",
-      "bg-neutral-500",
     ];
     let hash = 0;
     for (let i = 0; i < name.length; i++) {

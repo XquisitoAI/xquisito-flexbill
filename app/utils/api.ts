@@ -54,7 +54,7 @@ class ApiService {
         // Mark that user was authenticated
         sessionStorage.setItem("was_authenticated", "true");
         console.log(
-          "🔑 ApiService - Auth token restored from localStorage on init"
+          "🔑 ApiService - Auth token restored from localStorage on init",
         );
       }
     }
@@ -71,7 +71,7 @@ class ApiService {
     }
     console.log(
       "🔑 ApiService - Auth token set:",
-      token ? token.substring(0, 20) + "..." : "undefined"
+      token ? token.substring(0, 20) + "..." : "undefined",
     );
   }
 
@@ -90,7 +90,7 @@ class ApiService {
     endpoint: string,
     options: RequestInit = {},
     authToken?: string,
-    isRetry: boolean = false
+    isRetry: boolean = false,
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseURL}${endpoint}`;
@@ -108,7 +108,7 @@ class ApiService {
           // Mark that user was authenticated
           sessionStorage.setItem("was_authenticated", "true");
           console.log(
-            "🔄 makeRequest - Auth token lazy-loaded from localStorage"
+            "🔄 makeRequest - Auth token lazy-loaded from localStorage",
           );
         }
       }
@@ -151,7 +151,7 @@ class ApiService {
         ...options,
         headers,
       });
-      
+
       const data = await response.json();
 
       // Handle 401 Unauthorized - Token expired
@@ -174,7 +174,7 @@ class ApiService {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ refresh_token: refreshToken }),
-              }
+              },
             );
 
             const refreshData = await refreshResponse.json();
@@ -193,7 +193,7 @@ class ApiService {
               this.authToken = newAccessToken;
 
               console.log(
-                "✅ Token refreshed successfully, retrying original request"
+                "✅ Token refreshed successfully, retrying original request",
               );
 
               // Retry the original request with the new token
@@ -201,7 +201,7 @@ class ApiService {
                 endpoint,
                 options,
                 newAccessToken,
-                true
+                true,
               );
             } else {
               console.log("❌ Token refresh failed, logging out user");
@@ -287,14 +287,14 @@ class ApiService {
   // Generic request method for external use
   async request<T = any>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<ApiResponse<T>> {
     return this.makeRequest<T>(endpoint, options);
   }
 
   // Payment Methods API
   async addPaymentMethod(
-    paymentData: AddPaymentMethodRequest
+    paymentData: AddPaymentMethodRequest,
   ): Promise<ApiResponse<{ paymentMethod: PaymentMethod }>> {
     return this.makeRequest("/payment-methods", {
       method: "POST",
@@ -309,7 +309,7 @@ class ApiService {
   }
 
   async deletePaymentMethod(
-    paymentMethodId: string
+    paymentMethodId: string,
   ): Promise<ApiResponse<{ message: string }>> {
     return this.makeRequest(`/payment-methods/${paymentMethodId}`, {
       method: "DELETE",
@@ -317,7 +317,7 @@ class ApiService {
   }
 
   async setDefaultPaymentMethod(
-    paymentMethodId: string
+    paymentMethodId: string,
   ): Promise<ApiResponse<{ message: string }>> {
     return this.makeRequest(`/payment-methods/${paymentMethodId}/default`, {
       method: "PUT",
@@ -325,7 +325,7 @@ class ApiService {
   }
 
   async migrateGuestPaymentMethods(
-    guestId: string
+    guestId: string,
   ): Promise<ApiResponse<{ migratedCount: number }>> {
     return this.makeRequest("/payment-methods/migrate-from-guest", {
       method: "POST",
@@ -410,7 +410,7 @@ class ApiService {
   setGuestInfo(
     guestId?: string,
     tableNumber?: string,
-    restaurantId?: string
+    restaurantId?: string,
   ): void {
     if (typeof window !== "undefined") {
       if (guestId) {
@@ -473,10 +473,10 @@ class ApiService {
   async getTableSummary(
     restaurantId: string,
     branchNumber: string,
-    tableNumber: string
+    tableNumber: string,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/summary`
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/summary`,
     );
   }
 
@@ -486,10 +486,10 @@ class ApiService {
   async getTableOrders(
     restaurantId: string,
     branchNumber: string,
-    tableNumber: string
+    tableNumber: string,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/orders`
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/orders`,
     );
   }
 
@@ -499,10 +499,10 @@ class ApiService {
   async getActiveUsers(
     restaurantId: string,
     branchNumber: string,
-    tableNumber: string
+    tableNumber: string,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/active-users`
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/active-users`,
     );
   }
 
@@ -518,10 +518,10 @@ class ApiService {
    */
   async checkTableAvailability(
     restaurantId: string,
-    tableNumber: string
+    tableNumber: string,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/tables/${tableNumber}/availability`
+      `/restaurants/${restaurantId}/tables/${tableNumber}/availability`,
     );
   }
 
@@ -552,7 +552,7 @@ class ApiService {
         price: number;
       }>;
     }>,
-    extraPrice?: number
+    extraPrice?: number,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
       `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/dishes`,
@@ -569,7 +569,7 @@ class ApiService {
           customFields,
           extraPrice,
         }),
-      }
+      },
     );
   }
 
@@ -578,7 +578,7 @@ class ApiService {
    */
   async updateDishStatus(
     dishId: string,
-    status: string
+    status: string,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(`/dishes/${dishId}/status`, {
       method: "PUT",
@@ -595,7 +595,7 @@ class ApiService {
    */
   async payDishOrder(
     dishId: string,
-    paymentMethodId?: string | null
+    paymentMethodId?: string | null,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(`/dishes/${dishId}/pay`, {
       method: "POST",
@@ -613,7 +613,7 @@ class ApiService {
     amount: number,
     userId?: string | null,
     guestName?: string | null,
-    paymentMethodId?: string | null
+    paymentMethodId?: string | null,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
       `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/pay`,
@@ -625,7 +625,7 @@ class ApiService {
           guestName,
           paymentMethodId,
         }),
-      }
+      },
     );
   }
 
@@ -642,7 +642,7 @@ class ApiService {
     tableNumber: string,
     numberOfPeople: number,
     userIds?: string[] | null,
-    guestNames?: string[] | null
+    guestNames?: string[] | null,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
       `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/split-bill`,
@@ -653,7 +653,7 @@ class ApiService {
           userIds,
           guestNames,
         }),
-      }
+      },
     );
   }
 
@@ -666,7 +666,7 @@ class ApiService {
     tableNumber: string,
     userId?: string | null,
     guestName?: string | null,
-    paymentMethodId?: string | null
+    paymentMethodId?: string | null,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
       `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/pay-split`,
@@ -677,7 +677,7 @@ class ApiService {
           guestName,
           paymentMethodId,
         }),
-      }
+      },
     );
   }
 
@@ -687,10 +687,10 @@ class ApiService {
   async getSplitPaymentStatus(
     restaurantId: string,
     branchNumber: string,
-    tableNumber: string
+    tableNumber: string,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
-      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/split-status`
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/split-status`,
     );
   }
 
@@ -701,7 +701,8 @@ class ApiService {
     guestId: string,
     userId: string,
     tableNumber?: string,
-    restaurantId?: string
+    restaurantId?: string,
+    userName?: string,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(`/orders/link-user`, {
       method: "PUT",
@@ -710,6 +711,7 @@ class ApiService {
         userId,
         tableNumber,
         restaurantId,
+        userName,
       }),
     });
   }

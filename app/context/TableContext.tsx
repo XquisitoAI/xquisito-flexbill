@@ -715,8 +715,15 @@ export function TableProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
+      // Esperar a que auth termine de cargar
+      if (isLoading) {
+        console.log("⏳ Auth todavía cargando, esperando...");
+        dispatch({ type: "SET_LOADING", payload: false });
+        throw new Error("Por favor espera mientras verificamos tu sesión");
+      }
+
       // Determinar si el usuario está autenticado
-      const isAuthenticated = !isLoading && user;
+      const isAuthenticated = !!user;
       const userId = isAuthenticated ? user.id : null;
 
       // Solo usar guestId si NO está autenticado

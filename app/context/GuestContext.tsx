@@ -58,6 +58,8 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
 
     console.log("🔍 GuestContext: Auth loaded, processing session", {
       hasUser: !!user,
+      hasProfile: !!profile,
+      profileName: profile?.firstName,
       hasTableParam: !!tableParam,
       hasStoredGuest: !!storedGuestId,
     });
@@ -69,19 +71,28 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
       );
 
       // Step 1: Link guest orders if they exist and haven't been linked yet
+      // IMPORTANTE: Esperar a que el profile cargue para tener el nombre correcto
       if (storedGuestId && user?.id && !hasLinkedOrders) {
+        // Si el usuario está autenticado pero el perfil no ha cargado, esperar
+        if (!profile?.firstName) {
+          console.log(
+            "⏳ GuestContext: Waiting for profile to load before linking orders...",
+          );
+          return; // Esperar a que el profile cargue
+        }
+
+        const userName =
+          profile.firstName && profile.lastName
+            ? `${profile.firstName} ${profile.lastName}`
+            : profile.firstName;
+
         console.log("🔗 Linking guest orders to authenticated user:", {
           guestId: storedGuestId,
           userId: user.id,
           tableNumber: storedTableNumber,
           restaurantId: storedRestaurantId,
+          userName: userName,
         });
-
-        // Obtener nombre del perfil para actualizar los pedidos vinculados
-        const userName =
-          profile?.firstName && profile?.lastName
-            ? `${profile.firstName} ${profile.lastName}`
-            : profile?.firstName || undefined;
 
         apiService
           .linkGuestOrdersToUser(
@@ -94,7 +105,8 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
           .then((response) => {
             if (response.success) {
               console.log(
-                "✅ Guest orders linked successfully:",
+                "✅ Guest orders linked successfully with userName:",
+                userName,
                 response.data,
               );
               setHasLinkedOrders(true);
@@ -183,7 +195,7 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
     console.log(
       "ℹ️ No table parameter and no valid guest session - staying as non-guest",
     );
-  }, [isLoaded, user, searchParams, hasLinkedOrders]);
+  }, [isLoaded, user, profile, searchParams, hasLinkedOrders]);
 
   const setAsGuest = (newTableNumber?: string) => {
     // Generate guest ID through apiService (which handles localStorage)

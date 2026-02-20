@@ -725,11 +725,19 @@ export function TableProvider({ children }: { children: ReactNode }) {
           ? localStorage.getItem("xquisito-guest-id")
           : null;
 
+      // Si está autenticado pero el perfil no ha cargado, esperar
+      if (isAuthenticated && !profile?.firstName) {
+        console.log("⏳ Esperando a que cargue el perfil del usuario...");
+        dispatch({ type: "SET_LOADING", payload: false });
+        throw new Error("Por favor espera mientras cargamos tu perfil");
+      }
+
       // Usar nombre real del perfil si está autenticado, sino el proporcionado
+      // IMPORTANTE: Si está autenticado, SIEMPRE usar el nombre del perfil
       const displayName = isAuthenticated
         ? profile?.firstName && profile?.lastName
           ? `${profile.firstName} ${profile.lastName}`
-          : profile?.firstName || finalUserName
+          : profile!.firstName!
         : finalUserName;
 
       // Guardar nombre para vinculación posterior (solo si no está autenticado)

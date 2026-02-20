@@ -26,20 +26,26 @@ const OrderAnimation = ({
   const { navigateWithTable } = useTableNavigation();
   const { state: tableState } = useTable();
   const { restaurant, loading } = useRestaurant();
-  const { profile } = useAuth();
+  const { profile, user, isLoading: authLoading } = useAuth();
   const [animationState, setAnimationState] = useState<
     "circle" | "content" | "greenCircle" | "success"
   >("circle");
   const [logoColorful, setLogoColorful] = useState(false);
   const [showCancelButton, setShowCancelButton] = useState(true);
 
-  const displayName =
-    userName || tableState.currentUserName || profile?.firstName || "Usuario";
+  // Si está autenticado, SIEMPRE usar el nombre del perfil (nunca el nombre de invitado anterior)
+  const isAuthenticated = !authLoading && !!user;
+  const isProfileLoading = isAuthenticated && !profile?.firstName;
+  const displayName = isAuthenticated
+    ? profile?.firstName && profile?.lastName
+      ? `${profile.firstName} ${profile.lastName}`
+      : profile?.firstName || "Cargando..."
+    : userName || tableState.currentUserName || "Usuario";
   const displayItems = orderedItems || [];
   const displayRestaurant = restaurant?.name || "Restaurante";
 
   const userImage = profile?.photoUrl;
-  const hasUserImage = !!userImage;
+  const hasUserImage = !!userImage && !isProfileLoading;
 
   // Prevenir recarga de página durante la animación
   useEffect(() => {
@@ -206,7 +212,10 @@ const OrderAnimation = ({
                 {/* Usuario */}
                 <div className="py-4 md:py-6 lg:py-7">
                   <div className="flex items-center gap-3 md:gap-4">
-                    {hasUserImage ? (
+                    {isProfileLoading ? (
+                      /* Avatar con animación de carga mientras carga el perfil */
+                      <div className="size-10 md:size-12 lg:size-14 rounded-full border border-gray-300 bg-gray-200 animate-pulse flex-shrink-0" />
+                    ) : hasUserImage ? (
                       <img
                         src={userImage}
                         alt={displayName}
@@ -220,9 +229,14 @@ const OrderAnimation = ({
                       </div>
                     )}
                     <div>
-                      <span className="text-black text-base md:text-lg lg:text-xl font-medium">
-                        {displayName}
-                      </span>
+                      {isProfileLoading ? (
+                        /* Nombre con animación de carga */
+                        <div className="h-5 md:h-6 w-32 bg-gray-200 rounded animate-pulse mb-1" />
+                      ) : (
+                        <span className="text-black text-base md:text-lg lg:text-xl font-medium">
+                          {displayName}
+                        </span>
+                      )}
                       <p className="text-xs md:text-sm lg:text-base text-gray-500">
                         Nombre
                       </p>

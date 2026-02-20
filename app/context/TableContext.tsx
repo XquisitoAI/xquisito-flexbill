@@ -584,6 +584,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   }, [loadTableData]);
 
   // Hook de socket para tiempo real
+  // Nota: onUserJoined deshabilitado - usuarios solo aparecen cuando ordenan (desde DB)
   const { isSocketConnected } = useTableRealtime({
     tableNumber: state.tableNumber || null,
     enabled: !!state.tableNumber,
@@ -591,7 +592,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
     onDishStatusChanged: handleDishStatusChanged,
     onDishPaid: handleDishPaid,
     onSummaryUpdate: handleSummaryUpdate,
-    onUserJoined: handleUserJoined,
+    // onUserJoined: handleUserJoined, // Deshabilitado: solo mostrar usuarios que han ordenado
     onUserLeft: handleUserLeft,
     onSplitUpdate: handleSplitUpdate,
     onFullRefresh: handleFullRefresh,

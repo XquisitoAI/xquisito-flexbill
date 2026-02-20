@@ -45,9 +45,6 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
   // Consolidated effect: Handle authentication state and guest/table context
   useEffect(() => {
     if (!isLoaded) {
-      console.log(
-        "⏳ GuestContext: Waiting for auth to load before handling guest session",
-      );
       return; // CRITICAL: Wait for auth to load - THIS PREVENTS RACE CONDITIONS
     }
 
@@ -56,28 +53,14 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
     const storedTableNumber = localStorage.getItem("xquisito-table-number");
     const storedRestaurantId = localStorage.getItem("xquisito-restaurant-id");
 
-    console.log("🔍 GuestContext: Auth loaded, processing session", {
-      hasUser: !!user,
-      hasProfile: !!profile,
-      profileName: profile?.firstName,
-      hasTableParam: !!tableParam,
-      hasStoredGuest: !!storedGuestId,
-    });
-
     if (user) {
       // PRIORITY 1: User is authenticated
-      console.log(
-        "🔐 Authenticated user detected - managing session transition",
-      );
 
       // Step 1: Link guest orders if they exist and haven't been linked yet
       // IMPORTANTE: Esperar a que el profile cargue para tener el nombre correcto
       if (storedGuestId && user?.id && !hasLinkedOrders) {
         // Si el usuario está autenticado pero el perfil no ha cargado, esperar
         if (!profile?.firstName) {
-          console.log(
-            "⏳ GuestContext: Waiting for profile to load before linking orders...",
-          );
           return; // Esperar a que el profile cargue
         }
 
@@ -85,14 +68,6 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
           profile.firstName && profile.lastName
             ? `${profile.firstName} ${profile.lastName}`
             : profile.firstName;
-
-        console.log("🔗 Linking guest orders to authenticated user:", {
-          guestId: storedGuestId,
-          userId: user.id,
-          tableNumber: storedTableNumber,
-          restaurantId: storedRestaurantId,
-          userName: userName,
-        });
 
         apiService
           .linkGuestOrdersToUser(
@@ -104,11 +79,6 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
           )
           .then((response) => {
             if (response.success) {
-              console.log(
-                "✅ Guest orders linked successfully with userName:",
-                userName,
-                response.data,
-              );
               setHasLinkedOrders(true);
             } else {
               console.error("❌ Failed to link guest orders:", response.error);
@@ -121,7 +91,6 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
 
       // Step 2: Clear guest session but preserve table context
       if (isGuest) {
-        console.log("🗑️ Clearing guest session for authenticated user");
         clearGuestSession();
       }
 
@@ -130,10 +99,6 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
         localStorage.setItem("xquisito-table-number", tableParam);
         apiService.setTableNumber(tableParam);
         setTableNumber(tableParam);
-        console.log(
-          "📍 Table context preserved for authenticated user:",
-          tableParam,
-        );
       }
 
       // Ensure we're not in guest mode
@@ -146,12 +111,6 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
     // PRIORITY 2: No authenticated user - handle guest session
     // Priority 2a: If URL has table parameter, set up guest session
     if (tableParam) {
-      console.log(
-        "👤 Table parameter detected:",
-        tableParam,
-        "- Setting up guest session",
-      );
-
       // Use existing guest ID if available, or create new one
       const guestIdToUse = storedGuestId || generateGuestId();
 
@@ -167,12 +126,6 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
       setTableNumber(tableParam);
       setGuestName(storedGuestName);
       apiService.setTableNumber(tableParam);
-      console.log("👤 Guest session configured:", {
-        guestId: guestIdToUse,
-        tableNumber: tableParam,
-        guestName: storedGuestName,
-        wasRestored: !!storedGuestId,
-      });
       return;
     }
 
@@ -183,18 +136,10 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
       setGuestId(storedGuestId);
       setTableNumber(storedTableNumber);
       setGuestName(storedGuestName);
-      console.log("🔄 Restored guest session:", {
-        guestId: storedGuestId,
-        tableNumber: storedTableNumber,
-        guestName: storedGuestName,
-      });
       return;
     }
 
     // Priority 3: No table param and no valid stored session - stay as non-guest
-    console.log(
-      "ℹ️ No table parameter and no valid guest session - staying as non-guest",
-    );
   }, [isLoaded, user, profile, searchParams, hasLinkedOrders]);
 
   const setAsGuest = (newTableNumber?: string) => {
@@ -212,11 +157,6 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
       apiService.setTableNumber(newTableNumber);
       setTableNumber(newTableNumber);
     }
-
-    console.log("👤 Set as guest user:", {
-      guestId: generatedGuestId,
-      tableNumber: newTableNumber,
-    });
   };
 
   const setAsAuthenticated = (userId: string) => {
@@ -224,21 +164,16 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
     const currentUser = authService.getCurrentUser();
     if (currentUser?.token) {
       apiService.setAuthToken(currentUser.token);
-      console.log("🔑 Auth token set in ApiService for user:", userId);
     }
 
     // Clear guest session when user authenticates
     clearGuestSession();
-    console.log("🔐 Set as authenticated user:", userId);
   };
 
   const clearGuestSession = () => {
     // IMPORTANT: DO NOT remove guest-id immediately
     // It's needed for payment methods migration which happens after cart migration
     // The guest-id will be removed by PaymentContext after all migrations complete
-    console.log(
-      "ℹ️ Guest session clearing - preserving guest-id for payment methods migration",
-    );
 
     localStorage.removeItem("xquisito-guest-name");
 
@@ -253,16 +188,11 @@ function GuestProviderInternal({ children }: GuestProviderProps) {
     setIsGuest(false);
     setGuestId(null);
     setGuestName(null);
-
-    console.log(
-      "🗑️ Guest session cleared, guest-id preserved for migrations, table context preserved for authenticated user",
-    );
   };
 
   const setGuestNameHandler = (name: string) => {
     setGuestName(name);
     localStorage.setItem("xquisito-guest-name", name);
-    console.log("👤 Guest name set:", name);
   };
 
   // Helper function to generate guest ID

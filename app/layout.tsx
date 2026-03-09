@@ -120,15 +120,15 @@ export default async function RootLayout({
 }>) {
   const headersList = await headers();
   const nonce = headersList.get("x-nonce") ?? undefined;
-  void nonce;
 
   return (
     <html lang="es">
-      <head></head>
-      <body
-        className={`${helveticaNeue.variable} antialiased`}
-        style={{ fontFamily: "var(--font-helvetica-neue)" }}
-      >
+      <head>
+        <style nonce={nonce}>{`
+          body { font-family: var(--font-helvetica-neue); }
+        `}</style>
+      </head>
+      <body className={`${helveticaNeue.variable} antialiased`}>
         <AuthProvider>
           <RestaurantProvider>
             <GuestProvider>

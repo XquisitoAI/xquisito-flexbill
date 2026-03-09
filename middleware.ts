@@ -13,7 +13,7 @@ export function middleware(request: NextRequest) {
   const cspHeader = `
     default-src 'self';
     script-src 'self' 'nonce-${nonce}';
-    style-src 'self' 'unsafe-inline';
+    style-src 'self' 'nonce-${nonce}';
     img-src 'self' data: blob: ${backendUrl} https://*.supabase.co;
     font-src 'self';
     connect-src 'self' ${backendUrl} wss://${backendUrl.replace("https://", "")}${devUrls};

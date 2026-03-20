@@ -252,14 +252,13 @@ export default function OrderStatus() {
                         <div className="divide-y divide-[#8e8e8e]/50">
                           {groupedUnpaidDishes.map((dish, dishIndex) => {
                             const statusMap: Record<string, string> = {
-                              pending: "En preparación",
-                              preparing: "En preparación",
-                              ready: "En camino",
+                              pending: "Recibido",
+                              preparing: "Recibido",
+                              ready: "Listo",
                               delivered: "Entregado",
                             };
                             const status =
-                              statusMap[dish.status as string] ||
-                              "En preparación";
+                              statusMap[dish.status as string] || "Recibido";
 
                             return (
                               <div
@@ -314,25 +313,21 @@ export default function OrderStatus() {
                                             )}
                                           </div>
                                         )}
-                                      {/*
-                                      <div className="mt-1">
-                                        <div className="space-y-1">
-                                          <p className="text-xs text-[#8e8e8e]">
-                                            <span>Status:</span>
-                                            <span
-                                              className={`ml-1 ${
-                                                status === "Entregado"
-                                                  ? "text-green-600"
-                                                  : status === "En camino"
-                                                    ? "text-blue-600"
-                                                    : "text-orange-600"
-                                              }`}
-                                            >
-                                              {status}
-                                            </span>
-                                          </p>
-                                        </div>
-                                      </div>*/}
+                                      <div className="mt-1 md:mt-1.5 lg:mt-2">
+                                        <span
+                                          className={`inline-block px-2 md:px-3 lg:px-4 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm lg:text-base font-medium rounded-full border ${
+                                            dish.status === "pending"
+                                              ? "bg-yellow-100 text-yellow-800 border-yellow-300"
+                                              : dish.status === "preparing"
+                                                ? "bg-orange-100 text-orange-800 border-orange-300"
+                                                : dish.status === "ready"
+                                                  ? "bg-blue-100 text-blue-800 border-blue-300"
+                                                  : "bg-green-100 text-green-800 border-green-300"
+                                          }`}
+                                        >
+                                          {status}
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
                                   <div className="text-right flex gap-10 md:gap-12 lg:gap-14">

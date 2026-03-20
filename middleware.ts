@@ -4,19 +4,21 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
 
-  const backendUrl =
-    process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
-    "https://xquisito-backend-production.up.railway.app";
   const isDev = process.env.NODE_ENV === "development";
-  const devUrls = isDev ? " http://localhost:5000 ws://localhost:5000" : "";
+  const backendUrl = isDev
+    ? "http://localhost:5000"
+    : process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
+      "https://xquisito-backend-production.up.railway.app";
+  const backendHost = backendUrl.replace(/https?:\/\//, "");
+  const wsProtocol = isDev ? "ws" : "wss";
 
   const cspHeader = `
     default-src 'self';
     script-src 'self' 'nonce-${nonce}';
-    style-src 'self' 'nonce-${nonce}';
+    style-src 'self' 'unsafe-inline';
     img-src 'self' data: blob: ${backendUrl} https://*.supabase.co;
     font-src 'self';
-    connect-src 'self' ${backendUrl} wss://${backendUrl.replace("https://", "")}${devUrls};
+    connect-src 'self' ${backendUrl} ${wsProtocol}://${backendHost};
     frame-src 'none';
     object-src 'none';
     base-uri 'self';

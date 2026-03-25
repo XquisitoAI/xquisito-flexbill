@@ -252,8 +252,8 @@ export default function OrderStatus() {
                         <div className="divide-y divide-[#8e8e8e]/50">
                           {groupedUnpaidDishes.map((dish, dishIndex) => {
                             const statusMap: Record<string, string> = {
-                              pending: "Recibido",
-                              preparing: "Recibido",
+                              pending: "Preparando",
+                              preparing: "Preparando",
                               ready: "Listo",
                               delivered: "Entregado",
                             };

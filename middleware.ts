@@ -14,7 +14,7 @@ export function middleware(request: NextRequest) {
 
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https:;
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: blob: ${backendUrl} https://*.supabase.co;
     font-src 'self';

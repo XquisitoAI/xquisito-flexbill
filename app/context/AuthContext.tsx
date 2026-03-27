@@ -30,6 +30,7 @@ interface Profile {
   birthDate?: string;
   gender?: string;
   photoUrl?: string;
+  userContext?: string;
   accountType: string;
   createdAt?: string;
   updatedAt?: string;

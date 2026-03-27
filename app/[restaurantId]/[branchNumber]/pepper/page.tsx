@@ -18,5 +18,9 @@ export default function PepperPage() {
     return <ValidationError errorType={validationError as any} />;
   }
 
-  return <ChatView onBack={handleBack} />;
+  return (
+    <div className="h-screen flex flex-col bg-white">
+      <ChatView onBack={handleBack} />
+    </div>
+  );
 }

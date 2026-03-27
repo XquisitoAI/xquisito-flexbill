@@ -86,14 +86,16 @@ export function useValidateAccess() {
             service
           );
 
-        // Guardar resultado en caché
-        setValidationCache(
-          restId,
-          branchNum,
-          tableNum,
-          { valid: validation.valid, error: validation.error },
-          service
-        );
+        // Solo cachear validaciones exitosas, no los errores
+        if (validation.valid) {
+          setValidationCache(
+            restId,
+            branchNum,
+            tableNum,
+            { valid: true },
+            service
+          );
+        }
 
         if (!validation.valid) {
           console.error("❌ Validation failed:", validation.error);

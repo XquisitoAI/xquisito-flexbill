@@ -118,6 +118,7 @@ async function streamFromAgent(
 
 // Mapeo de nombres de herramientas a nombres amigables
 const toolDisplayNames: Record<string, string> = {
+  thinking: "Pensando",
   extracts_image_urls: "Obteniendo imagen",
   retrieves_restaurant_information: "Obteniendo información del restaurante",
   extract_restaurant_dish: "Obteniendo estadísticas del platillo",
@@ -611,7 +612,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
       <div
         className={`flex-1 overflow-y-auto ${
           hasStartedChat
-            ? "p-4 md:p-6 lg:p-8 space-y-3 md:space-y-4 lg:space-y-5"
+            ? "p-4 md:p-6 lg:p-8 pb-24 md:pb-28 lg:pb-32 space-y-3 md:space-y-4 lg:space-y-5"
             : "flex items-center justify-center"
         }`}
       >
@@ -667,13 +668,13 @@ export default function ChatView({ onBack }: ChatViewProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
+      {/* Input - fixed at bottom, moves up with keyboard */}
       <div
         ref={inputContainerRef}
-        className="shrink-0 flex justify-center py-4 md:py-5 lg:py-6 px-4 md:px-6 lg:px-8 transition-transform duration-150"
-        style={{ transform: `translateY(-${keyboardHeight}px)` }}
+        className="fixed inset-x-0 flex justify-center py-4 md:py-5 lg:py-6 px-4 md:px-6 lg:px-8 z-[60] transition-[bottom] duration-150"
+        style={{ bottom: `${keyboardHeight}px` }}
       >
-        <div className="flex items-center gap-2 md:gap-3 lg:gap-4 bg-white/60 rounded-full px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 border border-white/40 w-full">
+        <div className="flex items-center gap-2 md:gap-3 lg:gap-4 bg-white/90 backdrop-blur-md rounded-full px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 border border-white/40 w-full max-w-2xl shadow-lg">
           <input
             type="text"
             value={message}

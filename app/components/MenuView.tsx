@@ -24,33 +24,24 @@ function MenuView({ tableNumber }: MenuViewProps) {
   const [isPepperClosing, setIsPepperClosing] = useState(false);
   const [modalHeight, setModalHeight] = useState<number | null>(null);
 
-  // Capturar altura y posición inicial cuando se abre el modal
-  const [modalTop, setModalTop] = useState<number | null>(null);
+  // Contrarrestar el scroll de iOS Safari cuando aparece el teclado
   const [viewportOffset, setViewportOffset] = useState(0);
 
   useEffect(() => {
-    if (showPepperChat && !modalHeight) {
-      const height = Math.round(window.innerHeight * 0.88);
-      const top = window.innerHeight - height;
-      setModalHeight(height);
-      setModalTop(top);
-    }
     if (!showPepperChat) {
       setModalHeight(null);
-      setModalTop(null);
       setViewportOffset(0);
+      return;
     }
-  }, [showPepperChat, modalHeight]);
 
-  // Contrarrestar el scroll del viewport cuando aparece el teclado en iOS
-  useEffect(() => {
-    if (!showPepperChat) return;
+    // Capturar altura inicial (antes del teclado)
+    setModalHeight(Math.round(window.innerHeight * 0.88));
 
     const vv = window.visualViewport;
     if (!vv) return;
 
     const handleViewportChange = () => {
-      // offsetTop indica cuánto ha "scrolleado" Safari por el teclado
+      // offsetTop = cuánto ha "subido" el viewport por el teclado
       setViewportOffset(vv.offsetTop);
     };
 
@@ -340,11 +331,14 @@ function MenuView({ tableNumber }: MenuViewProps) {
             onClick={closePepperChat}
           />
           <div
-            className="fixed inset-x-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/30"
+            className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/30"
             style={{
-              top: modalTop ? `${modalTop + viewportOffset}px` : "12vh",
-              bottom: "auto",
               height: modalHeight ? `${modalHeight}px` : "88vh",
+              // Contrarrestar el scroll de iOS: cuando sube el viewport, empujamos el modal hacia abajo
+              transform:
+                viewportOffset > 0
+                  ? `translateY(${viewportOffset}px)`
+                  : undefined,
               background: "rgba(255, 255, 255, 0.82)",
               backdropFilter: "blur(24px)",
               WebkitBackdropFilter: "blur(24px)",

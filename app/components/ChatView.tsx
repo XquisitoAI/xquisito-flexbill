@@ -404,6 +404,27 @@ export default function ChatView({ onBack }: ChatViewProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Detectar altura del teclado para mover el input hacia arriba
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleResize = () => {
+      // Calcular cuánto espacio ocupa el teclado
+      const keyboardH = Math.max(0, window.innerHeight - vv.height);
+      setKeyboardHeight(keyboardH);
+    };
+
+    vv.addEventListener("resize", handleResize);
+    vv.addEventListener("scroll", handleResize);
+
+    return () => {
+      vv.removeEventListener("resize", handleResize);
+      vv.removeEventListener("scroll", handleResize);
+    };
+  }, []);
 
   // Estado persistente de la conversación
   const {
@@ -646,8 +667,13 @@ export default function ChatView({ onBack }: ChatViewProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="shrink-0 flex justify-center py-4 md:py-5 lg:py-6 px-4 md:px-6 lg:px-8">
+      {/* Input - sube cuando aparece el teclado */}
+      <div
+        className="shrink-0 flex justify-center py-4 md:py-5 lg:py-6 px-4 md:px-6 lg:px-8 transition-[margin] duration-150"
+        style={{
+          marginBottom: keyboardHeight > 0 ? `${keyboardHeight}px` : undefined,
+        }}
+      >
         <div className="flex items-center gap-2 md:gap-3 lg:gap-4 bg-white/90 backdrop-blur-md rounded-full px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 border border-white/40 w-full max-w-2xl shadow-lg">
           <input
             type="text"

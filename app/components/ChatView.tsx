@@ -402,7 +402,29 @@ export default function ChatView({ onBack }: ChatViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeTool, setActiveTool] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputContainerRef = useRef<HTMLDivElement>(null);
+
+  // Ajustar el input cuando el teclado virtual aparece en iOS Safari
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleResize = () => {
+      const height = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKeyboardHeight(height);
+    };
+
+    vv.addEventListener("resize", handleResize);
+    vv.addEventListener("scroll", handleResize);
+    handleResize();
+
+    return () => {
+      vv.removeEventListener("resize", handleResize);
+      vv.removeEventListener("scroll", handleResize);
+    };
+  }, []);
 
   // Estado persistente de la conversación
   const {
@@ -646,7 +668,11 @@ export default function ChatView({ onBack }: ChatViewProps) {
       </div>
 
       {/* Input */}
-      <div className="shrink-0 flex justify-center py-4 md:py-5 lg:py-6 px-4 md:px-6 lg:px-8">
+      <div
+        ref={inputContainerRef}
+        className="shrink-0 flex justify-center py-4 md:py-5 lg:py-6 px-4 md:px-6 lg:px-8 transition-transform duration-150"
+        style={{ transform: `translateY(-${keyboardHeight}px)` }}
+      >
         <div className="flex items-center gap-2 md:gap-3 lg:gap-4 bg-white/60 rounded-full px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 border border-white/40 w-full">
           <input
             type="text"

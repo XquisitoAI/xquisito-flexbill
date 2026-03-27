@@ -4,6 +4,7 @@ import MenuHeader from "@/app/components/headers/MenuHeader";
 import MenuCategory from "@/app/components/MenuCategory";
 import ErrorScreen from "@/app/components/ErrorScreen";
 import Loader from "@/app/components/UI/Loader";
+import ChatView from "@/app/components/ChatView";
 import { Search, ShoppingCart, Settings } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/app/context/AuthContext";
@@ -19,6 +20,16 @@ interface MenuViewProps {
 function MenuView({ tableNumber }: MenuViewProps) {
   const [filter, setFilter] = useState("Todo");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showPepperChat, setShowPepperChat] = useState(false);
+  const [isPepperClosing, setIsPepperClosing] = useState(false);
+
+  const closePepperChat = () => {
+    setIsPepperClosing(true);
+    setTimeout(() => {
+      setShowPepperChat(false);
+      setIsPepperClosing(false);
+    }, 380);
+  };
   const { profile, isAuthenticated } = useAuth();
   const { navigateWithTable } = useTableNavigation();
   const { state: cartState } = useCart();
@@ -62,7 +73,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
   };
 
   const handlePepperClick = () => {
-    navigateWithTable("/pepper");
+    setShowPepperChat(true);
   };
 
   const handleCartClick = () => {
@@ -259,6 +270,57 @@ function MenuView({ tableNumber }: MenuViewProps) {
             </span>
           </div>
         </div>
+      )}
+
+      {/* Pepper Chat Modal */}
+      {showPepperChat && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
+            style={{
+              animation: isPepperClosing
+                ? "fadeOut 0.38s cubic-bezier(0.32, 0.72, 0, 1) forwards"
+                : "fadeIn 0.38s cubic-bezier(0.32, 0.72, 0, 1)",
+            }}
+            onClick={closePepperChat}
+          />
+          <div
+            className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/30"
+            style={{
+              height: "88svh",
+              background: "rgba(255, 255, 255, 0.82)",
+              backdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(24px)",
+              animation: isPepperClosing
+                ? "slideDown 0.38s cubic-bezier(0.32, 0.72, 0, 1) forwards"
+                : "slideUp 0.38s cubic-bezier(0.32, 0.72, 0, 1)",
+            }}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1 shrink-0">
+              <div className="w-10 h-1 rounded-full bg-gray-300/80" />
+            </div>
+            <ChatView onBack={closePepperChat} />
+          </div>
+          <style>{`
+            @keyframes slideUp {
+              from { transform: translateY(100%); opacity: 0.6; }
+              to   { transform: translateY(0);    opacity: 1; }
+            }
+            @keyframes slideDown {
+              from { transform: translateY(0);    opacity: 1; }
+              to   { transform: translateY(100%); opacity: 0.6; }
+            }
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to   { opacity: 1; }
+            }
+            @keyframes fadeOut {
+              from { opacity: 1; }
+              to   { opacity: 0; }
+            }
+          `}</style>
+        </>
       )}
     </div>
   );

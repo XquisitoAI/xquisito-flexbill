@@ -8,6 +8,7 @@ import { PaymentProvider } from "./context/PaymentContext";
 import { RestaurantProvider } from "./context/RestaurantContext";
 import { AuthProvider } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext";
+import { PepperProvider } from "./context/PepperContext";
 
 const helveticaNeue = localFont({
   src: [
@@ -109,7 +110,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   minimumScale: 1,
   viewportFit: "cover",
-  interactiveWidget: "resizes-content",
+  interactiveWidget: "resizes-visual",
 };
 
 export default function RootLayout({
@@ -127,6 +128,7 @@ export default function RootLayout({
       <body className={`${helveticaNeue.variable} antialiased`}>
         <AuthProvider>
           <RestaurantProvider>
+            <PepperProvider>
             <GuestProvider>
               <SocketProvider>
                 <CartProvider>
@@ -136,6 +138,7 @@ export default function RootLayout({
                 </CartProvider>
               </SocketProvider>
             </GuestProvider>
+            </PepperProvider>
           </RestaurantProvider>
         </AuthProvider>
       </body>

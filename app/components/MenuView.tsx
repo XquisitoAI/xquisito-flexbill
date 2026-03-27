@@ -6,7 +6,7 @@ import ErrorScreen from "@/app/components/ErrorScreen";
 import Loader from "@/app/components/UI/Loader";
 import ChatView from "@/app/components/ChatView";
 import { Search, ShoppingCart, Settings } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { useCart } from "@/app/context/CartContext";
@@ -22,6 +22,36 @@ function MenuView({ tableNumber }: MenuViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showPepperChat, setShowPepperChat] = useState(false);
   const [isPepperClosing, setIsPepperClosing] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Ajustar el modal cuando el teclado virtual aparece en iOS
+  useEffect(() => {
+    if (!showPepperChat) return;
+
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const update = () => {
+      const el = modalRef.current;
+      if (!el) return;
+      const keyboardHeight = Math.max(0, window.innerHeight - vv.height);
+      el.style.bottom = `${keyboardHeight}px`;
+      el.style.height = keyboardHeight > 0
+        ? `${vv.height - 40}px`
+        : "88svh";
+    };
+
+    vv.addEventListener("resize", update);
+    update();
+
+    return () => {
+      vv.removeEventListener("resize", update);
+      if (modalRef.current) {
+        modalRef.current.style.bottom = "0px";
+        modalRef.current.style.height = "88svh";
+      }
+    };
+  }, [showPepperChat]);
 
   const closePepperChat = () => {
     setIsPepperClosing(true);
@@ -285,6 +315,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
             onClick={closePepperChat}
           />
           <div
+            ref={modalRef}
             className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/30"
             style={{
               height: "88svh",

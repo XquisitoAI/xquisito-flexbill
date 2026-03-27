@@ -22,6 +22,18 @@ function MenuView({ tableNumber }: MenuViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showPepperChat, setShowPepperChat] = useState(false);
   const [isPepperClosing, setIsPepperClosing] = useState(false);
+  const [modalHeight, setModalHeight] = useState<number | null>(null);
+
+  // Capturar altura inicial cuando se abre el modal (antes de que aparezca el teclado)
+  useEffect(() => {
+    if (showPepperChat && !modalHeight) {
+      // Usar 88% de la altura visible actual
+      setModalHeight(Math.round(window.innerHeight * 0.88));
+    }
+    if (!showPepperChat) {
+      setModalHeight(null);
+    }
+  }, [showPepperChat, modalHeight]);
 
   // Bloquear scroll del body cuando el chat está abierto
   useEffect(() => {
@@ -302,7 +314,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
           <div
             className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/30"
             style={{
-              height: "88svh",
+              height: modalHeight ? `${modalHeight}px` : "88svh",
               background: "rgba(255, 255, 255, 0.82)",
               backdropFilter: "blur(24px)",
               WebkitBackdropFilter: "blur(24px)",

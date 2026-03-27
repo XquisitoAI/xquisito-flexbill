@@ -24,14 +24,19 @@ function MenuView({ tableNumber }: MenuViewProps) {
   const [isPepperClosing, setIsPepperClosing] = useState(false);
   const [modalHeight, setModalHeight] = useState<number | null>(null);
 
-  // Capturar altura inicial cuando se abre el modal (antes de que aparezca el teclado)
+  // Capturar altura y posición inicial cuando se abre el modal
+  const [modalTop, setModalTop] = useState<number | null>(null);
+
   useEffect(() => {
     if (showPepperChat && !modalHeight) {
-      // Usar 88% de la altura visible actual
-      setModalHeight(Math.round(window.innerHeight * 0.88));
+      const height = Math.round(window.innerHeight * 0.88);
+      const top = window.innerHeight - height;
+      setModalHeight(height);
+      setModalTop(top);
     }
     if (!showPepperChat) {
       setModalHeight(null);
+      setModalTop(null);
     }
   }, [showPepperChat, modalHeight]);
 
@@ -312,9 +317,11 @@ function MenuView({ tableNumber }: MenuViewProps) {
             onClick={closePepperChat}
           />
           <div
-            className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/30"
+            className="fixed inset-x-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/30"
             style={{
-              height: modalHeight ? `${modalHeight}px` : "88svh",
+              top: modalTop ? `${modalTop}px` : "12vh",
+              bottom: "auto",
+              height: modalHeight ? `${modalHeight}px` : "88vh",
               background: "rgba(255, 255, 255, 0.82)",
               backdropFilter: "blur(24px)",
               WebkitBackdropFilter: "blur(24px)",

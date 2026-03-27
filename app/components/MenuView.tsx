@@ -26,6 +26,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
 
   // Capturar altura y posición inicial cuando se abre el modal
   const [modalTop, setModalTop] = useState<number | null>(null);
+  const [viewportOffset, setViewportOffset] = useState(0);
 
   useEffect(() => {
     if (showPepperChat && !modalHeight) {
@@ -37,8 +38,30 @@ function MenuView({ tableNumber }: MenuViewProps) {
     if (!showPepperChat) {
       setModalHeight(null);
       setModalTop(null);
+      setViewportOffset(0);
     }
   }, [showPepperChat, modalHeight]);
+
+  // Contrarrestar el scroll del viewport cuando aparece el teclado en iOS
+  useEffect(() => {
+    if (!showPepperChat) return;
+
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleViewportChange = () => {
+      // offsetTop indica cuánto ha "scrolleado" Safari por el teclado
+      setViewportOffset(vv.offsetTop);
+    };
+
+    vv.addEventListener("resize", handleViewportChange);
+    vv.addEventListener("scroll", handleViewportChange);
+
+    return () => {
+      vv.removeEventListener("resize", handleViewportChange);
+      vv.removeEventListener("scroll", handleViewportChange);
+    };
+  }, [showPepperChat]);
 
   // Bloquear scroll del body cuando el chat está abierto
   useEffect(() => {
@@ -319,7 +342,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
           <div
             className="fixed inset-x-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/30"
             style={{
-              top: modalTop ? `${modalTop}px` : "12vh",
+              top: modalTop ? `${modalTop + viewportOffset}px` : "12vh",
               bottom: "auto",
               height: modalHeight ? `${modalHeight}px` : "88vh",
               background: "rgba(255, 255, 255, 0.82)",

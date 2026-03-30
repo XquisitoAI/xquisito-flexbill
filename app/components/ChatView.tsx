@@ -588,12 +588,41 @@ export default function ChatView({ onBack }: ChatViewProps) {
 
       {/* Mensajes */}
       <div
-        className={`flex-1 overflow-y-auto flex flex-col ${
+        className={`flex-1 overflow-y-auto ${
           hasStartedChat
-            ? "p-4 md:p-6 lg:p-8 justify-end gap-3 md:gap-4 lg:gap-5"
-            : "items-center justify-center"
+            ? "p-4 md:p-6 lg:p-8"
+            : "flex items-center justify-center"
         }`}
       >
+        {hasStartedChat && (
+          <div className="min-h-full flex flex-col justify-end gap-3 md:gap-4 lg:gap-5">
+            {messages.map((msg, index) => {
+              const isLastPepperMessage =
+                msg.role === "pepper" && index === messages.length - 1;
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex ${
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-xl md:rounded-2xl px-4 md:px-5 lg:px-6 py-2 md:py-3 lg:py-4 text-black text-base md:text-lg lg:text-xl ${
+                      msg.role === "user" ? "bg-[#ebb2f4]" : "bg-white/60"
+                    }`}
+                  >
+                    <MessageContent
+                      content={msg.content}
+                      isStreaming={isLastPepperMessage && isStreaming}
+                      activeTool={isLastPepperMessage ? activeTool : null}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
         {!hasStartedChat && (
           <div className="text-center max-w-md px-8 md:px-10 lg:px-12">
             <div className="mb-8 md:mb-10 lg:mb-12 flex justify-center">
@@ -619,31 +648,6 @@ export default function ChatView({ onBack }: ChatViewProps) {
             </p>
           </div>
         )}
-        {messages.map((msg, index) => {
-          const isLastPepperMessage =
-            msg.role === "pepper" && index === messages.length - 1;
-          return (
-            <div
-              key={msg.id}
-              className={`flex ${
-                msg.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
-              <div
-                className={`max-w-[80%] rounded-xl md:rounded-2xl px-4 md:px-5 lg:px-6 py-2 md:py-3 lg:py-4 text-black text-base md:text-lg lg:text-xl ${
-                  msg.role === "user" ? "bg-[#ebb2f4]" : "bg-white/60"
-                }`}
-              >
-                <MessageContent
-                  content={msg.content}
-                  isStreaming={isLastPepperMessage && isStreaming}
-                  activeTool={isLastPepperMessage ? activeTool : null}
-                />
-              </div>
-            </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}

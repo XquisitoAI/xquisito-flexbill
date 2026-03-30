@@ -588,10 +588,10 @@ export default function ChatView({ onBack }: ChatViewProps) {
 
       {/* Mensajes */}
       <div
-        className={`flex-1 overflow-y-auto ${
+        className={`flex-1 overflow-y-auto flex flex-col ${
           hasStartedChat
-            ? "p-4 md:p-6 lg:p-8 space-y-3 md:space-y-4 lg:space-y-5"
-            : "flex items-center justify-center"
+            ? "p-4 md:p-6 lg:p-8 justify-end gap-3 md:gap-4 lg:gap-5"
+            : "items-center justify-center"
         }`}
       >
         {!hasStartedChat && (
@@ -647,7 +647,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
       </div>
 
       {/* Input */}
-      <div className="shrink-0 flex justify-center pt-4 md:pt-5 lg:pt-6 pb-6 px-4 md:px-6 lg:px-8">
+      <div className="shrink-0 flex justify-center pb-6 px-4 md:px-6 lg:px-8">
         <div className="flex items-center gap-2 md:gap-3 lg:gap-4 bg-white/90 backdrop-blur-md rounded-full px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 border border-white/40 w-full max-w-2xl shadow-lg">
           <input
             type="text"

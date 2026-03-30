@@ -22,37 +22,6 @@ function MenuView({ tableNumber }: MenuViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showPepperChat, setShowPepperChat] = useState(false);
   const [isPepperClosing, setIsPepperClosing] = useState(false);
-  const [modalHeight, setModalHeight] = useState<number | null>(null);
-
-  // Contrarrestar el scroll de iOS Safari cuando aparece el teclado
-  const [viewportOffset, setViewportOffset] = useState(0);
-
-  useEffect(() => {
-    if (!showPepperChat) {
-      setModalHeight(null);
-      setViewportOffset(0);
-      return;
-    }
-
-    // Capturar altura inicial (antes del teclado)
-    setModalHeight(Math.round(window.innerHeight * 0.88));
-
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const handleViewportChange = () => {
-      // offsetTop = cuánto ha "subido" el viewport por el teclado
-      setViewportOffset(vv.offsetTop);
-    };
-
-    vv.addEventListener("resize", handleViewportChange);
-    vv.addEventListener("scroll", handleViewportChange);
-
-    return () => {
-      vv.removeEventListener("resize", handleViewportChange);
-      vv.removeEventListener("scroll", handleViewportChange);
-    };
-  }, [showPepperChat]);
 
   // Bloquear scroll del body cuando el chat está abierto
   useEffect(() => {
@@ -331,14 +300,11 @@ function MenuView({ tableNumber }: MenuViewProps) {
             onClick={closePepperChat}
           />
           <div
-            className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/30"
+            className="fixed inset-x-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/30"
             style={{
-              height: modalHeight ? `${modalHeight}px` : "88vh",
-              // Contrarrestar el scroll de iOS: cuando sube el viewport, empujamos el modal hacia abajo
-              transform:
-                viewportOffset > 0
-                  ? `translateY(${viewportOffset}px)`
-                  : undefined,
+              top: "12%",
+              bottom: 0,
+              paddingBottom: "env(safe-area-inset-bottom)",
               background: "rgba(255, 255, 255, 0.82)",
               backdropFilter: "blur(24px)",
               WebkitBackdropFilter: "blur(24px)",

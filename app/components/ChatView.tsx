@@ -118,6 +118,7 @@ async function streamFromAgent(
 
 // Mapeo de nombres de herramientas a nombres amigables
 const toolDisplayNames: Record<string, string> = {
+  thinking: "Pensando",
   extracts_image_urls: "Obteniendo imagen",
   retrieves_restaurant_information: "Obteniendo información del restaurante",
   extract_restaurant_dish: "Obteniendo estadísticas del platillo",
@@ -455,8 +456,8 @@ export default function ChatView({ onBack }: ChatViewProps) {
         const userContext = profile?.userContext || null;
 
         // Construir el mensaje con el contexto separado
-        const contextualMessage = `[CONTEXT: service=flex_bill, restaurant_id=${restaurantId || "null"}, user_id=${userId || "null"}, guest_id=${currentGuestId || "null"}, branch_number=${branchNumber || "null"}]
-[USER_MESSAGE: ${userMessage}]`;
+        const contextualMessage = `[CONTEXT: restaurant_id=${restaurantId || "null"}, user_id=${userId || "null"}, guest_id=${currentGuestId || "null"}, branch_number=${branchNumber || "null"}]
+        [USER_MESSAGE: ${userMessage}]`;
 
         // Agregar mensaje vacío de Pepper mientras se procesa
         const pepperMessageId = crypto.randomUUID();
@@ -589,10 +590,39 @@ export default function ChatView({ onBack }: ChatViewProps) {
       <div
         className={`flex-1 overflow-y-auto ${
           hasStartedChat
-            ? "p-4 md:p-6 lg:p-8 space-y-3 md:space-y-4 lg:space-y-5"
+            ? "p-4 md:p-6 lg:p-8"
             : "flex items-center justify-center"
         }`}
       >
+        {hasStartedChat && (
+          <div className="min-h-full flex flex-col justify-end gap-3 md:gap-4 lg:gap-5">
+            {messages.map((msg, index) => {
+              const isLastPepperMessage =
+                msg.role === "pepper" && index === messages.length - 1;
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex ${
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-xl md:rounded-2xl px-4 md:px-5 lg:px-6 py-2 md:py-3 lg:py-4 text-black text-base md:text-lg lg:text-xl ${
+                      msg.role === "user" ? "bg-[#ebb2f4]" : "bg-white/60"
+                    }`}
+                  >
+                    <MessageContent
+                      content={msg.content}
+                      isStreaming={isLastPepperMessage && isStreaming}
+                      activeTool={isLastPepperMessage ? activeTool : null}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
         {!hasStartedChat && (
           <div className="text-center max-w-md px-8 md:px-10 lg:px-12">
             <div className="mb-8 md:mb-10 lg:mb-12 flex justify-center">
@@ -618,36 +648,11 @@ export default function ChatView({ onBack }: ChatViewProps) {
             </p>
           </div>
         )}
-        {messages.map((msg, index) => {
-          const isLastPepperMessage =
-            msg.role === "pepper" && index === messages.length - 1;
-          return (
-            <div
-              key={msg.id}
-              className={`flex ${
-                msg.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
-              <div
-                className={`max-w-[80%] rounded-xl md:rounded-2xl px-4 md:px-5 lg:px-6 py-2 md:py-3 lg:py-4 text-black text-base md:text-lg lg:text-xl ${
-                  msg.role === "user" ? "bg-[#ebb2f4]" : "bg-white/60"
-                }`}
-              >
-                <MessageContent
-                  content={msg.content}
-                  isStreaming={isLastPepperMessage && isStreaming}
-                  activeTool={isLastPepperMessage ? activeTool : null}
-                />
-              </div>
-            </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <div className="shrink-0 flex justify-center py-4 md:py-5 lg:py-6 px-4 md:px-6 lg:px-8">
-        <div className="flex items-center gap-2 md:gap-3 lg:gap-4 bg-white/60 rounded-full px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 border border-white/40 w-full">
+      <div className="shrink-0 flex justify-center pb-6 px-4 md:px-6 lg:px-8">
+        <div className="flex items-center gap-2 md:gap-3 lg:gap-4 bg-white/90 backdrop-blur-md rounded-full px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 border border-white/40 w-full max-w-2xl shadow-lg">
           <input
             type="text"
             value={message}

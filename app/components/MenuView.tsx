@@ -6,7 +6,7 @@ import ErrorScreen from "@/app/components/ErrorScreen";
 import Loader from "@/app/components/UI/Loader";
 import ChatView from "@/app/components/ChatView";
 import { Search, ShoppingCart, Settings } from "lucide-react";
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { useCart } from "@/app/context/CartContext";
@@ -22,34 +22,16 @@ function MenuView({ tableNumber }: MenuViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showPepperChat, setShowPepperChat] = useState(false);
   const [isPepperClosing, setIsPepperClosing] = useState(false);
-  const modalRef = useRef<HTMLDivElement>(null);
 
-  // Ajustar el modal cuando el teclado virtual aparece en iOS
+  // Bloquear scroll del body cuando el chat está abierto
   useEffect(() => {
-    if (!showPepperChat) return;
-
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const update = () => {
-      const el = modalRef.current;
-      if (!el) return;
-      const keyboardHeight = Math.max(0, window.innerHeight - vv.height);
-      el.style.bottom = `${keyboardHeight}px`;
-      el.style.height = keyboardHeight > 0
-        ? `${vv.height - 40}px`
-        : "88svh";
-    };
-
-    vv.addEventListener("resize", update);
-    update();
-
+    if (showPepperChat) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
     return () => {
-      vv.removeEventListener("resize", update);
-      if (modalRef.current) {
-        modalRef.current.style.bottom = "0px";
-        modalRef.current.style.height = "88svh";
-      }
+      document.body.style.overflow = "";
     };
   }, [showPepperChat]);
 
@@ -71,7 +53,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
     if (menu && menu.length > 0) {
       // Ordenar secciones por display_order antes de extraer nombres
       const sortedSections = [...menu].sort(
-        (a, b) => a.display_order - b.display_order
+        (a, b) => a.display_order - b.display_order,
       );
       sortedSections.forEach((section) => {
         if (section.name) {
@@ -128,7 +110,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
           items: section.items.filter(
             (item) =>
               item.name.toLowerCase().includes(query) ||
-              item.description?.toLowerCase().includes(query)
+              item.description?.toLowerCase().includes(query),
           ),
         }))
         .filter((section) => section.items.length > 0);
@@ -171,14 +153,17 @@ function MenuView({ tableNumber }: MenuViewProps) {
         className="absolute top-0 left-0 w-full h-[230px] md:h-96 lg:h-[28rem] z-0 banner-mobile"
         style={{
           backgroundImage: `url(${restaurant.banner_url || DEFAULT_IMAGES.RESTAURANT_BANNER})`,
-          backgroundPosition: 'center top',
-          backgroundRepeat: 'no-repeat'
+          backgroundPosition: "center top",
+          backgroundRepeat: "no-repeat",
         }}
       ></div>
 
       <MenuHeader restaurant={restaurant} tableNumber={tableNumber} />
 
-      <main className="mt-48 md:mt-64 lg:mt-80 relative z-10" style={{marginTop:'9rem'}}>
+      <main
+        className="mt-48 md:mt-64 lg:mt-80 relative z-10"
+        style={{ marginTop: "9rem" }}
+      >
         <div className="bg-white rounded-t-4xl flex flex-col items-center px-6 md:px-8 lg:px-10">
           <div className="mt-6 md:mt-8 flex items-start justify-between w-full">
             {/* Settings Icon */}
@@ -315,10 +300,11 @@ function MenuView({ tableNumber }: MenuViewProps) {
             onClick={closePepperChat}
           />
           <div
-            ref={modalRef}
-            className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/30"
+            className="fixed inset-x-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/30"
             style={{
-              height: "88svh",
+              top: "12%",
+              bottom: 0,
+              paddingBottom: "env(safe-area-inset-bottom)",
               background: "rgba(255, 255, 255, 0.82)",
               backdropFilter: "blur(24px)",
               WebkitBackdropFilter: "blur(24px)",

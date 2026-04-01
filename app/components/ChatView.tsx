@@ -456,8 +456,8 @@ export default function ChatView({ onBack }: ChatViewProps) {
         const userContext = profile?.userContext || null;
 
         // Construir el mensaje con el contexto separado
-        const contextualMessage = `[CONTEXT: service=flex_bill, restaurant_id=${restaurantId || "null"}, user_id=${userId || "null"}, guest_id=${currentGuestId || "null"}, branch_number=${branchNumber || "null"}]
-[USER_MESSAGE: ${userMessage}]`;
+        const contextualMessage = `[CONTEXT: restaurant_id=${restaurantId || "null"}, user_id=${userId || "null"}, guest_id=${currentGuestId || "null"}, branch_number=${branchNumber || "null"}]
+        [USER_MESSAGE: ${userMessage}]`;
 
         // Agregar mensaje vacío de Pepper mientras se procesa
         const pepperMessageId = crypto.randomUUID();

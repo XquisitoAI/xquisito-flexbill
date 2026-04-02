@@ -7,16 +7,15 @@ import { getRestaurantData } from "@/app/utils/restaurantData";
 import { useTable } from "@/app/context/TableContext";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
-import Loader from "@/app/components/UI/Loader";
 
 export default function AuthSelectionPage() {
   const { navigateWithTable } = useTableNavigation();
-  const { validationError, isValidating } = useValidateAccess();
+  const { validationError } = useValidateAccess();
   const { state } = useTable();
   const restaurantData = getRestaurantData();
 
   const handleSignUp = () => {
-    sessionStorage.setItem("signupFromOrder", "true");
+    sessionStorage.setItem("authFromPaymentFlow", "true");
     navigateWithTable("/auth");
   };
 

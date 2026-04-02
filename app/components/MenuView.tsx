@@ -79,7 +79,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
     if (isAuthenticated) {
       navigateWithTable("/dashboard");
     } else {
-      sessionStorage.setItem("signInFromMenu", "true");
+      sessionStorage.setItem("authFromMenu", "true");
       navigateWithTable("/auth");
     }
   };

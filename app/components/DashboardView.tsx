@@ -9,7 +9,11 @@ import DashboardHeader from "./headers/DashboardHeader";
 import { useTableNavigation } from "../hooks/useTableNavigation";
 import { useAuth } from "../context/AuthContext";
 
-export default function DashboardView() {
+interface DashboardViewProps {
+  onClose?: () => void;
+}
+
+export default function DashboardView({ onClose }: DashboardViewProps = {}) {
   const [activeTab, setActiveTab] = useState<
     "profile" | "cards" | "history" | "support"
   >("profile");
@@ -26,7 +30,7 @@ export default function DashboardView() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <div className={`flex flex-col ${onClose ? "h-full" : "min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43]"}`}>
         <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
           <div className="w-full max-w-md">
             {/* Logo */}
@@ -96,14 +100,14 @@ export default function DashboardView() {
   }
 
   return (
-    <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
-      <DashboardHeader />
+    <div className={`flex flex-col ${onClose ? "h-full" : "min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43]"}`}>
+      <DashboardHeader onClose={onClose} />
 
       <div className="px-4 md:px-6 lg:px-8 w-full flex-1 flex flex-col">
         {/* Welcome Header */}
-        <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
+        <div className={`left-4 right-4 rounded-t-4xl translate-y-7 z-0 ${onClose ? "bg-black/5" : "bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e]"}`}>
           <div className="py-6 md:py-8 lg:py-10 px-8 md:px-10 lg:px-12 flex flex-col justify-center pb-12 md:pb-14 lg:pb-16">
-            <h1 className="text-white text-2xl md:text-3xl lg:text-4xl font-medium">
+            <h1 className={`text-2xl md:text-3xl lg:text-4xl font-medium ${onClose ? "text-black/80" : "text-white"}`}>
               ¡Bienvenido{profile?.firstName ? ` ${profile.firstName}` : ""}!
             </h1>
           </div>

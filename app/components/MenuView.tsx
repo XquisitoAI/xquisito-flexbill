@@ -7,11 +7,12 @@ import Loader from "@/app/components/UI/Loader";
 import ChatView from "@/app/components/ChatView";
 import AuthView from "@/app/components/AuthView";
 import DashboardView from "@/app/components/DashboardView";
-import { Search, ShoppingCart, Settings } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { Search, ShoppingCart, Settings, ReceiptText } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { useCart } from "@/app/context/CartContext";
+import { useTable } from "@/app/context/TableContext";
 import { useRestaurant } from "@/app/context/RestaurantContext";
 import { DEFAULT_IMAGES } from "@/app/constants/images";
 
@@ -26,6 +27,8 @@ function MenuView({ tableNumber }: MenuViewProps) {
   const [isPepperClosing, setIsPepperClosing] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isSettingsClosing, setIsSettingsClosing] = useState(false);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const stickyTriggerRef = useRef<HTMLDivElement>(null);
 
   // Bloquear scroll del body cuando un modal está abierto
   useEffect(() => {
@@ -58,7 +61,20 @@ function MenuView({ tableNumber }: MenuViewProps) {
   const { profile, isAuthenticated } = useAuth();
   const { navigateWithTable } = useTableNavigation();
   const { state: cartState } = useCart();
+  const { state: tableState } = useTable();
   const { restaurant, menu, loading, error } = useRestaurant();
+
+  // Mostrar barra sticky al hacer scroll past el trigger
+  useEffect(() => {
+    const trigger = stickyTriggerRef.current;
+    if (!trigger) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickyBar(!entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(trigger);
+    return () => observer.disconnect();
+  }, []);
 
   // Obtener categorías únicas del menú de la BD ordenadas por display_order
   const categorias = useMemo(() => {
@@ -173,6 +189,8 @@ function MenuView({ tableNumber }: MenuViewProps) {
         style={{ marginTop: "9rem" }}
       >
         <div className="bg-white rounded-t-4xl flex flex-col items-center px-6 md:px-8 lg:px-10">
+          {/* Trigger invisible para IntersectionObserver */}
+          <div ref={stickyTriggerRef} className="absolute top-0 h-px w-px pointer-events-none" />
           <div className="mt-6 md:mt-8 flex items-start justify-between w-full">
             {/* Settings Icon */}
             <div
@@ -294,6 +312,81 @@ function MenuView({ tableNumber }: MenuViewProps) {
           </div>
         </div>
       )}
+
+      {/* Sticky Bar — aparece al hacer scroll down */}
+      <div
+        className="fixed top-0 inset-x-0 z-40 flex justify-center px-4 pt-3 pb-2 transition-all duration-300"
+        style={{
+          opacity: showStickyBar ? 1 : 0,
+          transform: showStickyBar ? "translateY(0)" : "translateY(-100%)",
+          pointerEvents: showStickyBar ? "auto" : "none",
+        }}
+      >
+        <div
+          className="flex items-center gap-3 md:gap-4 rounded-full px-4 md:px-5 py-2 md:py-2.5 shadow-lg border border-white/40"
+          style={{
+            background: "rgba(255, 255, 255, 0.82)",
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+          }}
+        >
+          {/* Settings */}
+          <div
+            onClick={handleSettingsClick}
+            className="size-9 md:size-10 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 cursor-pointer hover:bg-white transition-colors active:scale-95"
+          >
+            <Settings className="size-4 md:size-5 text-stone-700" strokeWidth={1.5} />
+          </div>
+
+          {/* Carrito */}
+          <div className="relative group">
+            <div
+              onClick={handleCartClick}
+              className="size-9 md:size-10 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 cursor-pointer hover:bg-white transition-colors active:scale-95"
+            >
+              <ShoppingCart className="size-4 md:size-5 text-stone-700" strokeWidth={1.5} />
+            </div>
+            {cartState.totalItems > 0 && (
+              <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-4 flex items-center justify-center text-[10px] font-normal">
+                {cartState.totalItems}
+              </div>
+            )}
+          </div>
+
+          {/* Orden */}
+          <div className="relative group">
+            <div
+              onClick={() => navigateWithTable("/order")}
+              className="size-9 md:size-10 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 cursor-pointer hover:bg-white transition-colors active:scale-95"
+            >
+              <ReceiptText className="size-4 md:size-5 text-stone-700" strokeWidth={1.5} />
+            </div>
+            {Array.isArray(tableState.dishOrders) && tableState.dishOrders.length > 0 && (
+              <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-4 flex items-center justify-center text-[10px] font-normal">
+                {tableState.dishOrders.length}
+              </div>
+            )}
+          </div>
+
+          {/* Pepper */}
+          <div
+            onClick={handlePepperClick}
+            className="size-9 md:size-10 rounded-full border border-gray-200 bg-white/60 cursor-pointer overflow-hidden hover:bg-white transition-colors active:scale-95"
+          >
+            <video
+              src="/videos/video-icon-pepper.webm"
+              autoPlay
+              loop
+              muted
+              playsInline
+              disablePictureInPicture
+              controls={false}
+              controlsList="nodownload nofullscreen noremoteplayback"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Pepper Chat Modal */}
       {showPepperChat && (

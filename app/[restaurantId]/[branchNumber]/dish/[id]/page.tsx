@@ -31,6 +31,7 @@ export default function DishDetailPage() {
   const { restaurant, menu, isOpen, setBranchNumber, setRestaurantId } =
     useRestaurant();
   const [localQuantity, setLocalQuantity] = useState(0);
+  const [dishQuantity, setDishQuantity] = useState(1);
   const [isPulsing, setIsPulsing] = useState(false);
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>(
     {},
@@ -771,7 +772,7 @@ export default function DishDetailPage() {
         0,
       ) || 0;
 
-    setLocalQuantity((prev) => prev + 1);
+    setLocalQuantity((prev) => prev + dishQuantity);
     setIsPulsing(true);
 
     const itemToAdd = {
@@ -781,7 +782,7 @@ export default function DishDetailPage() {
       extraPrice,
     };
 
-    await addItem(itemToAdd);
+    await addItem(itemToAdd, dishQuantity);
 
     // Guardar en localStorage como el último item agregado
     const lastItemKey = `lastItem_${dishData.dish.id}`;
@@ -1505,22 +1506,42 @@ export default function DishDetailPage() {
             </div>
 
             <div
-              className="fixed bottom-0 left-0 right-0 mx-4 md:mx-6 lg:mx-8 px-6 md:px-8 lg:px-10 p-6 md:p-7 lg:p-8 z-10"
+              className="fixed bottom-0 left-0 right-0 mx-4 md:mx-6 lg:mx-8 p-4 md:p-5 lg:p-6 z-10 flex items-center gap-3"
               style={{
-                paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
+                paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
               }}
             >
+              {/* Contador - 1 + */}
+              <div className="flex items-center bg-white border border-gray-300 rounded-2xl shadow-sm shrink-0">
+                <button
+                  onClick={() => setDishQuantity((q) => Math.max(1, q - 1))}
+                  className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-black text-xl font-light cursor-pointer active:scale-90 transition-transform"
+                >
+                  −
+                </button>
+                <span className="w-8 text-center text-base md:text-lg font-medium text-black select-none">
+                  {dishQuantity}
+                </span>
+                <button
+                  onClick={() => setDishQuantity((q) => q + 1)}
+                  className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-black text-xl font-light cursor-pointer active:scale-90 transition-transform"
+                >
+                  +
+                </button>
+              </div>
+
+              {/* Botón agregar */}
               <button
                 onClick={handleAddToCartAndReturn}
                 disabled={!isFormValid()}
-                className={`w-full text-white py-4 md:py-5 lg:py-6 rounded-full transition-colors flex items-center justify-center gap-2 ${
+                className={`flex-1 text-white py-3.5 md:py-4 lg:py-5 rounded-2xl transition-colors flex items-center justify-center ${
                   isFormValid()
-                    ? "bg-gradient-to-r from-[#34808C] to-[#173E44] cursor-pointer animate-pulse-button active:scale-95 transition-transform"
+                    ? "bg-gradient-to-r from-[#34808C] to-[#173E44] cursor-pointer active:scale-95 transition-transform"
                     : "bg-gray-400 cursor-not-allowed opacity-60"
                 }`}
               >
-                <span className="text-base md:text-lg lg:text-xl font-medium">
-                  Agregar al carrito • ${calculateTotalPrice().toFixed(2)} MXN
+                <span className="text-base md:text-lg font-medium">
+                  Agregar • ${(calculateTotalPrice() * dishQuantity).toFixed(2)}
                 </span>
               </button>
             </div>

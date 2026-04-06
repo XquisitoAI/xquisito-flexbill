@@ -105,7 +105,7 @@ function convertApiItemToCartItem(apiItem: ApiCartItem): CartItem {
 // Contexto del carrito con funciones
 interface CartContextType {
   state: CartState;
-  addItem: (item: MenuItemData) => Promise<void>;
+  addItem: (item: MenuItemData, quantity?: number) => Promise<void>;
   removeItem: (itemId: number) => Promise<void>;
   updateQuantity: (itemId: number, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -163,13 +163,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   // Agregar item al carrito
-  const addItem = async (item: MenuItemData) => {
+  const addItem = async (item: MenuItemData, quantity: number = 1) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
 
       const response = await cartApi.addToCart(
         item.id,
-        1,
+        quantity,
         item.customFields || [],
         item.extraPrice || 0,
         item.price // Pasar el precio base (ya con descuento aplicado si lo hay)

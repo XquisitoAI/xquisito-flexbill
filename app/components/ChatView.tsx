@@ -265,26 +265,64 @@ const OrderButton = ({
   );
 
   // Resolver el ID real buscando por nombre en el menú cargado en contexto,
-  // en lugar de confiar en el ID que provee el agente
+  // en lugar de confiar en el ID que provee el agente.
+  // Usa matching por palabras clave para tolerar diferencias entre el nombre
+  // que Pepper dice ("Wrap de Pollo") y el nombre real en BD ("Wrap Pollo").
   const resolvedDishId = (() => {
     const normalize = (s: string) =>
       s
         .toLowerCase()
         .trim()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s*\([^)]*\)\s*/g, " ") // quitar paréntesis ej. "(3pz)"
+        .trim();
+
+    const STOP_WORDS = new Set([
+      "de", "a", "la", "el", "los", "las", "con", "y", "en",
+      "al", "del", "un", "una", "lo", "se", "su", "por", "o",
+    ]);
+
+    const keyWords = (s: string): string[] =>
+      normalize(s)
+        .split(/\s+/)
+        .filter((w) => w.length > 1 && !STOP_WORDS.has(w));
 
     if (!menu?.length) return dishId;
 
-    const search = normalize(dishName);
+    const searchWords = keyWords(dishName);
+    if (!searchWords.length) return dishId;
+
+    let bestId = dishId;
+    let bestScore = 0;
+
     for (const section of menu) {
-      const item = section.items?.find((i) => {
-        const n = normalize(i.name);
-        return n === search || n.startsWith(search) || search.startsWith(n);
-      });
-      if (item) return item.id;
+      for (const item of section.items ?? []) {
+        const itemWords = keyWords(item.name);
+        if (!itemWords.length) continue;
+
+        // Cuántas palabras clave del nombre buscado están en el item
+        const matched = searchWords.filter((sw) =>
+          itemWords.some(
+            (iw) =>
+              iw === sw ||
+              (sw.length >= 4 && iw.startsWith(sw)) ||
+              (iw.length >= 4 && sw.startsWith(iw)),
+          ),
+        ).length;
+
+        // Score: proporción de palabras coincidentes vs total de palabras únicas
+        const score = matched / Math.max(searchWords.length, itemWords.length);
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestId = item.id;
+        }
+      }
     }
-    return dishId;
+
+    // Solo usar el match si la confianza es suficiente (≥50% de palabras coinciden)
+    return bestScore >= 0.5 ? bestId : dishId;
   })();
 
   const handleAdd = async () => {

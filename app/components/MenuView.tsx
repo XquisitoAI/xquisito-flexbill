@@ -208,7 +208,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
               className="bg-white rounded-full text-black border border-gray-400 size-10 md:size-12 lg:size-14 cursor-pointer shadow-sm"
             >
               <video
-                src="/videos/video-icon-pepper.mp4"
+                src="/videos/video-icon-pepper.webm"
                 autoPlay
                 loop
                 muted
@@ -374,7 +374,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
             className="size-11 md:size-12 rounded-full border border-gray-200 bg-white/60 cursor-pointer overflow-hidden hover:bg-white transition-colors active:scale-95"
           >
             <video
-              src="/videos/video-icon-pepper.mp4"
+              src="/videos/video-icon-pepper.webm"
               autoPlay
               loop
               muted
@@ -405,7 +405,6 @@ function MenuView({ tableNumber }: MenuViewProps) {
             style={{
               top: "12%",
               bottom: 0,
-              minHeight: "88lvh",
               paddingBottom: "env(safe-area-inset-bottom)",
               background: "rgba(255, 255, 255, 0.82)",
               backdropFilter: "blur(24px)",
@@ -441,7 +440,6 @@ function MenuView({ tableNumber }: MenuViewProps) {
             style={{
               top: "5%",
               bottom: 0,
-              minHeight: "95lvh",
               paddingBottom: "env(safe-area-inset-bottom)",
               background: "rgba(255, 255, 255, 0.82)",
               backdropFilter: "blur(24px)",

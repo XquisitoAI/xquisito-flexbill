@@ -723,7 +723,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
           <div className="flex items-center gap-3 md:gap-4">
             <div className="bg-white rounded-full border border-black/20 size-10 md:size-12 lg:size-14">
               <video
-                src="/videos/video-icon-pepper.mp4"
+                src="/videos/video-icon-pepper.webm"
                 autoPlay
                 loop
                 muted
@@ -797,7 +797,7 @@ export default function ChatView({ onBack }: ChatViewProps) {
             <div className="mb-8 md:mb-10 lg:mb-12 flex justify-center">
               <div className="rounded-full h-28 w-28 md:h-36 md:w-36 lg:h-40 lg:w-40 overflow-hidden flex items-center justify-center">
                 <video
-                  src="/videos/video-icon-pepper.mp4"
+                  src="/videos/video-icon-pepper.webm"
                   autoPlay
                   loop
                   muted

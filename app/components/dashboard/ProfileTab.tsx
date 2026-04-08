@@ -6,7 +6,11 @@ import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { User, Camera, Loader2, Phone, X, LogOut, LogIn } from "lucide-react";
 
-export default function ProfileTab() {
+interface ProfileTabProps {
+  onLogout?: () => void;
+}
+
+export default function ProfileTab({ onLogout }: ProfileTabProps = {}) {
   const { navigateWithTable } = useTableNavigation();
   const { logout: contextLogout } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -174,7 +178,11 @@ export default function ProfileTab() {
       await contextLogout();
       setIsLogoutModalOpen(false);
       // Redirect to menu with table navigation
-      navigateWithTable("/menu");
+      if (onLogout) {
+        onLogout();
+      } else {
+        navigateWithTable("/menu");
+      }
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
       alert("Error al cerrar sesión");
@@ -190,7 +198,7 @@ export default function ProfileTab() {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full flex-1 overflow-y-auto min-h-0 pb-6">
       {/* Profile Image */}
       <div className="flex flex-col items-center">
         <div className="relative group mb-4">

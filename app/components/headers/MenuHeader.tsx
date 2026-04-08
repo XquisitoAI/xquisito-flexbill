@@ -38,28 +38,7 @@ export default function MenuHeader({
   return (
     <header className="sticky top-0 container mx-auto px-5 md:px-8 lg:px-10 pt-5 md:pt-7 lg:pt-9 z-5">
       <div className="flex items-center justify-end z-10">
-        {/*<div className="flex items-center z-10">
-            <img src="/logo-short-green.webp" alt="Xquisito Logo" className="size-10 md:size-12 lg:size-14 justify-self-center" />
-            <span className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-800">
-              Table {tableNumber || restaurant.tableNumber}
-            </span>
-          </div>*/}
-
         <div className="flex items-center space-x-2 md:space-x-3 lg:space-x-4 z-10">
-          <div className="relative group">
-            <div
-              onClick={handleOrderClick}
-              className="size-10 md:size-12 lg:size-14 rounded-full flex items-center justify-center bg-white/85 backdrop-blur-sm shadow-sm hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer"
-            >
-              <ReceiptText className="text-primary size-5 md:size-6 lg:size-7 group-hover:scale-105 transition-transform" />
-            </div>
-            {Array.isArray(tableState.dishOrders) && tableState.dishOrders.length > 0 && (
-              <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-4 md:size-5 lg:size-6 flex items-center justify-center text-xs md:text-sm font-normal">
-                {tableState.dishOrders.length}
-              </div>
-            )}
-          </div>
-
           <div className="relative group" id="cart-icon">
             <div
               onClick={handleCartClick}
@@ -75,6 +54,21 @@ export default function MenuHeader({
                 {cartState.totalItems}
               </div>
             )}
+          </div>
+
+          <div className="relative group">
+            <div
+              onClick={handleOrderClick}
+              className="size-10 md:size-12 lg:size-14 rounded-full flex items-center justify-center bg-white/85 backdrop-blur-sm shadow-sm hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer"
+            >
+              <ReceiptText className="text-primary size-5 md:size-6 lg:size-7 group-hover:scale-105 transition-transform" />
+            </div>
+            {Array.isArray(tableState.dishOrders) &&
+              tableState.dishOrders.length > 0 && (
+                <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-4 md:size-5 lg:size-6 flex items-center justify-center text-xs md:text-sm font-normal">
+                  {tableState.dishOrders.length}
+                </div>
+              )}
           </div>
         </div>
       </div>

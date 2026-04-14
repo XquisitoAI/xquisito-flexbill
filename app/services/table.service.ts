@@ -225,7 +225,8 @@ async function createDishOrder(
       price: number;
     }>;
   }>,
-  extraPrice?: number
+  extraPrice?: number,
+  menuItemId?: number | null
 ): Promise<ApiResponse<any>> {
   return makeRequest(
     `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/dishes`,
@@ -241,6 +242,7 @@ async function createDishOrder(
         images,
         customFields,
         extraPrice,
+        menuItemId,
       }),
     }
   );

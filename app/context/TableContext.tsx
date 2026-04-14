@@ -768,6 +768,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
           item.images,
           item.customFields, // custom fields seleccionados
           item.extraPrice, // precio extra por custom fields
+          item.id, // menu_item_id
         );
 
         if (!response.success) {

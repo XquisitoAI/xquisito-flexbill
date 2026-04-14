@@ -33,12 +33,29 @@ function MenuView({ tableNumber }: MenuViewProps) {
   // Bloquear scroll del body cuando el modal está abierto
   useEffect(() => {
     if (showPepperChat || showSettingsModal) {
+      // Bloquear scroll en body para móviles
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
       document.body.style.overflow = "hidden";
     } else {
+      // Restaurar scroll
+      const scrollY = parseInt(document.body.style.top || "0") * -1;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
       document.body.style.overflow = "";
+      window.scrollTo(0, scrollY);
     }
     return () => {
+      // Restaurar scroll
+      const scrollY = parseInt(document.body.style.top || "0") * -1;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
       document.body.style.overflow = "";
+      window.scrollTo(0, scrollY);
     };
   }, [showPepperChat, showSettingsModal]);
 
@@ -323,15 +340,15 @@ function MenuView({ tableNumber }: MenuViewProps) {
 
       {/* Sticky Bar — aparece al hacer scroll down */}
       <div
-        className="fixed top-0 inset-x-0 z-40 flex justify-center px-4 pt-3 pb-2 transition-all duration-300"
+        className="fixed top-0 inset-x-0 z-40 flex justify-center px-4 pt-4 pb-3"
         style={{
           opacity: showStickyBar ? 1 : 0,
-          transform: showStickyBar ? "translateY(0)" : "translateY(-100%)",
+          transition: "opacity 120ms ease",
           pointerEvents: showStickyBar ? "auto" : "none",
         }}
       >
         <div
-          className="flex items-center gap-3 md:gap-4 rounded-full px-4 md:px-5 py-2 md:py-2.5 shadow-lg border border-white/40"
+          className="flex items-center gap-4 md:gap-5 rounded-full px-6 md:px-7 py-3 md:py-3.5 shadow-lg border border-white/40"
           style={{
             background: "rgba(255, 255, 255, 0.82)",
             backdropFilter: "blur(24px)",
@@ -341,10 +358,10 @@ function MenuView({ tableNumber }: MenuViewProps) {
           {/* Settings */}
           <div
             onClick={handleSettingsClick}
-            className="size-9 md:size-10 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 cursor-pointer hover:bg-white transition-colors active:scale-95"
+            className="size-11 md:size-12 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 cursor-pointer hover:bg-white transition-colors active:scale-95"
           >
             <Settings
-              className="size-4 md:size-5 text-stone-700"
+              className="size-5 md:size-6 text-stone-700"
               strokeWidth={1.5}
             />
           </div>
@@ -353,15 +370,15 @@ function MenuView({ tableNumber }: MenuViewProps) {
           <div className="relative group">
             <div
               onClick={handleCartClick}
-              className="size-9 md:size-10 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 cursor-pointer hover:bg-white transition-colors active:scale-95"
+              className="size-11 md:size-12 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 cursor-pointer hover:bg-white transition-colors active:scale-95"
             >
               <ShoppingCart
-                className="size-4 md:size-5 text-stone-700"
+                className="size-5 md:size-6 text-stone-700"
                 strokeWidth={1.5}
               />
             </div>
             {cartState.totalItems > 0 && (
-              <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-4 flex items-center justify-center text-[10px] font-normal">
+              <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-5 flex items-center justify-center text-xs font-normal">
                 {cartState.totalItems}
               </div>
             )}
@@ -371,16 +388,16 @@ function MenuView({ tableNumber }: MenuViewProps) {
           <div className="relative group">
             <div
               onClick={() => navigateWithTable("/order")}
-              className="size-9 md:size-10 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 cursor-pointer hover:bg-white transition-colors active:scale-95"
+              className="size-11 md:size-12 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 cursor-pointer hover:bg-white transition-colors active:scale-95"
             >
               <ReceiptText
-                className="size-4 md:size-5 text-stone-700"
+                className="size-5 md:size-6 text-stone-700"
                 strokeWidth={1.5}
               />
             </div>
             {Array.isArray(tableState.dishOrders) &&
               tableState.dishOrders.length > 0 && (
-                <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-4 flex items-center justify-center text-[10px] font-normal">
+                <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-5 flex items-center justify-center text-xs font-normal">
                   {tableState.dishOrders.length}
                 </div>
               )}
@@ -389,7 +406,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
           {/* Pepper */}
           <div
             onClick={handlePepperClick}
-            className="size-9 md:size-10 rounded-full border border-gray-200 bg-white/60 cursor-pointer overflow-hidden hover:bg-white transition-colors active:scale-95"
+            className="size-11 md:size-12 rounded-full border border-gray-200 bg-white/60 cursor-pointer overflow-hidden hover:bg-white transition-colors active:scale-95"
           >
             <video
               src="/videos/video-icon-pepper.webm"
@@ -454,7 +471,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
             onClick={closeSettingsModal}
           />
           <div
-            className="fixed inset-x-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/20"
+            className="fixed inset-x-0 z-50 flex flex-col rounded-t-3xl shadow-2xl border-t border-white/20"
             style={{
               top: "5%",
               bottom: 0,
@@ -472,7 +489,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
               <div className="w-10 h-1 rounded-full bg-white/30" />
             </div>
             {isAuthenticated ? (
-              <div className="flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 min-h-0">
                 <DashboardView
                   onClose={closeSettingsModal}
                   onLogout={closeSettingsModal}

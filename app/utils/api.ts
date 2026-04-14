@@ -553,6 +553,7 @@ class ApiService {
       }>;
     }>,
     extraPrice?: number,
+    menuItemId?: number | null,
   ): Promise<ApiResponse<any>> {
     return this.makeRequest(
       `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/dishes`,
@@ -568,6 +569,7 @@ class ApiService {
           images,
           customFields,
           extraPrice,
+          menuItemId,
         }),
       },
     );

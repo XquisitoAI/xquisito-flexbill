@@ -1,10 +1,16 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { MenuItemData } from '../interfaces/menuItemData';
-import { cartApi, CartItem as ApiCartItem } from '../services/cartApi';
-import { useAuth } from './AuthContext';
-import { useRestaurant } from './RestaurantContext';
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  ReactNode,
+} from "react";
+import { MenuItemData } from "../interfaces/menuItemData";
+import { cartApi, CartItem as ApiCartItem } from "../services/cartApi";
+import { useAuth } from "./AuthContext";
+import { useRestaurant } from "./RestaurantContext";
 
 // Interfaz para un item del carrito (frontend)
 export interface CartItem extends MenuItemData {
@@ -24,60 +30,68 @@ interface CartState {
 
 // Acciones del carrito
 type CartAction =
-  | { type: 'ADD_ITEM'; payload: MenuItemData }
-  | { type: 'REMOVE_ITEM'; payload: number }
-  | { type: 'UPDATE_QUANTITY'; payload: { id: number; quantity: number } }
-  | { type: 'CLEAR_CART' }
-  | { type: 'SET_USER_NAME'; payload: string }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_CART'; payload: { items: CartItem[]; totalItems: number; totalPrice: number; cartId: string | null } };
+  | { type: "ADD_ITEM"; payload: MenuItemData }
+  | { type: "REMOVE_ITEM"; payload: number }
+  | { type: "UPDATE_QUANTITY"; payload: { id: number; quantity: number } }
+  | { type: "CLEAR_CART" }
+  | { type: "SET_USER_NAME"; payload: string }
+  | { type: "SET_LOADING"; payload: boolean }
+  | {
+      type: "SET_CART";
+      payload: {
+        items: CartItem[];
+        totalItems: number;
+        totalPrice: number;
+        cartId: string | null;
+      };
+    };
 
 // Estado inicial
 const initialState: CartState = {
   items: [],
   totalItems: 0,
   totalPrice: 0,
-  userName: '',
+  userName: "",
   isLoading: false,
-  cartId: null
+  cartId: null,
 };
 
 // Reducer del carrito
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
-    case 'SET_LOADING':
+    case "SET_LOADING":
       return {
         ...state,
-        isLoading: action.payload
+        isLoading: action.payload,
       };
 
-    case 'SET_CART':
+    case "SET_CART":
       return {
         ...state,
         items: action.payload.items,
         totalItems: action.payload.totalItems,
         totalPrice: action.payload.totalPrice,
         cartId: action.payload.cartId,
-        isLoading: false
+        isLoading: false,
       };
 
-    case 'SET_USER_NAME':
+    case "SET_USER_NAME":
       return {
         ...state,
-        userName: action.payload
+        userName: action.payload,
       };
 
-    case 'CLEAR_CART':
+    case "CLEAR_CART":
       return {
         ...initialState,
-        userName: state.userName // Mantener userName
+        userName: state.userName, // Mantener userName
       };
 
     // Las acciones ADD_ITEM, REMOVE_ITEM, UPDATE_QUANTITY ahora son manejadas por el provider
     // usando la API, pero mantenemos los casos para actualización optimista
-    case 'ADD_ITEM':
-    case 'REMOVE_ITEM':
-    case 'UPDATE_QUANTITY':
+    case "ADD_ITEM":
+    case "REMOVE_ITEM":
+    case "UPDATE_QUANTITY":
       return state;
 
     default:
@@ -90,7 +104,7 @@ function convertApiItemToCartItem(apiItem: ApiCartItem): CartItem {
   return {
     id: apiItem.menu_item_id,
     name: apiItem.name,
-    description: apiItem.description || '',
+    description: apiItem.description || "",
     price: apiItem.price,
     images: apiItem.images || [],
     features: apiItem.features || [],
@@ -98,14 +112,14 @@ function convertApiItemToCartItem(apiItem: ApiCartItem): CartItem {
     customFields: apiItem.customFields || [],
     extraPrice: apiItem.extraPrice || 0,
     quantity: apiItem.quantity,
-    cartItemId: apiItem.id
+    cartItemId: apiItem.id,
   };
 }
 
 // Contexto del carrito con funciones
 interface CartContextType {
   state: CartState;
-  addItem: (item: MenuItemData) => Promise<void>;
+  addItem: (item: MenuItemData, quantity?: number) => Promise<void>;
   removeItem: (itemId: number) => Promise<void>;
   updateQuantity: (itemId: number, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -139,65 +153,65 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Función para refrescar el carrito desde el backend
   const refreshCart = async () => {
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: "SET_LOADING", payload: true });
       const response = await cartApi.getCart();
 
       if (response.success && response.data) {
         const items = response.data.items.map(convertApiItemToCartItem);
         dispatch({
-          type: 'SET_CART',
+          type: "SET_CART",
           payload: {
             items,
             totalItems: response.data.total_items,
             totalPrice: response.data.total_amount,
-            cartId: response.data.cart_id
-          }
+            cartId: response.data.cart_id,
+          },
         });
       } else {
-        dispatch({ type: 'SET_LOADING', payload: false });
+        dispatch({ type: "SET_LOADING", payload: false });
       }
     } catch (error) {
-      console.error('Error loading cart:', error);
-      dispatch({ type: 'SET_LOADING', payload: false });
+      console.error("Error loading cart:", error);
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   };
 
   // Agregar item al carrito
-  const addItem = async (item: MenuItemData) => {
+  const addItem = async (item: MenuItemData, quantity: number = 1) => {
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: "SET_LOADING", payload: true });
 
       const response = await cartApi.addToCart(
         item.id,
-        1,
+        quantity,
         item.customFields || [],
         item.extraPrice || 0,
-        item.price // Pasar el precio base (ya con descuento aplicado si lo hay)
+        item.price, // Pasar el precio base (ya con descuento aplicado si lo hay)
       );
 
       if (response.success) {
         // Refrescar carrito después de agregar
         await refreshCart();
       } else {
-        console.error('Error adding item to cart:', response.error);
-        dispatch({ type: 'SET_LOADING', payload: false });
+        console.error("Error adding item to cart:", response.error);
+        dispatch({ type: "SET_LOADING", payload: false });
       }
     } catch (error) {
-      console.error('Error adding item to cart:', error);
-      dispatch({ type: 'SET_LOADING', payload: false });
+      console.error("Error adding item to cart:", error);
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   };
 
   // Eliminar item del carrito
   const removeItem = async (itemId: number) => {
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: "SET_LOADING", payload: true });
 
       // Buscar el cartItemId del item
-      const item = state.items.find(i => i.id === itemId);
+      const item = state.items.find((i) => i.id === itemId);
       if (!item || !item.cartItemId) {
-        console.error('Cart item not found');
-        dispatch({ type: 'SET_LOADING', payload: false });
+        console.error("Cart item not found");
+        dispatch({ type: "SET_LOADING", payload: false });
         return;
       }
 
@@ -206,66 +220,69 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (response.success) {
         await refreshCart();
       } else {
-        console.error('Error removing item from cart:', response.error);
-        dispatch({ type: 'SET_LOADING', payload: false });
+        console.error("Error removing item from cart:", response.error);
+        dispatch({ type: "SET_LOADING", payload: false });
       }
     } catch (error) {
-      console.error('Error removing item from cart:', error);
-      dispatch({ type: 'SET_LOADING', payload: false });
+      console.error("Error removing item from cart:", error);
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   };
 
   // Actualizar cantidad de un item
   const updateQuantity = async (itemId: number, quantity: number) => {
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: "SET_LOADING", payload: true });
 
       // Buscar el cartItemId del item
-      const item = state.items.find(i => i.id === itemId);
+      const item = state.items.find((i) => i.id === itemId);
       if (!item || !item.cartItemId) {
-        console.error('Cart item not found');
-        dispatch({ type: 'SET_LOADING', payload: false });
+        console.error("Cart item not found");
+        dispatch({ type: "SET_LOADING", payload: false });
         return;
       }
 
-      const response = await cartApi.updateCartItemQuantity(item.cartItemId, quantity);
+      const response = await cartApi.updateCartItemQuantity(
+        item.cartItemId,
+        quantity,
+      );
 
       if (response.success) {
         await refreshCart();
       } else {
-        console.error('Error updating quantity:', response.error);
-        dispatch({ type: 'SET_LOADING', payload: false });
+        console.error("Error updating quantity:", response.error);
+        dispatch({ type: "SET_LOADING", payload: false });
       }
     } catch (error) {
-      console.error('Error updating quantity:', error);
-      dispatch({ type: 'SET_LOADING', payload: false });
+      console.error("Error updating quantity:", error);
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   };
 
   // Limpiar carrito
   const clearCart = async () => {
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: "SET_LOADING", payload: true });
 
       const response = await cartApi.clearCart();
 
       if (response.success) {
-        dispatch({ type: 'CLEAR_CART' });
+        dispatch({ type: "CLEAR_CART" });
         // Refrescar desde el backend para asegurar sincronización
         await refreshCart();
       } else {
-        console.error('Error clearing cart:', response.error);
-        dispatch({ type: 'SET_LOADING', payload: false });
+        console.error("Error clearing cart:", response.error);
+        dispatch({ type: "SET_LOADING", payload: false });
       }
     } catch (error) {
-      console.error('Error clearing cart:', error);
-      dispatch({ type: 'SET_LOADING', payload: false });
+      console.error("Error clearing cart:", error);
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   };
 
   // Actualizar nombre de usuario
   const setUserName = (name: string) => {
-    dispatch({ type: 'SET_USER_NAME', payload: name });
+    dispatch({ type: "SET_USER_NAME", payload: name });
   };
 
   const value: CartContextType = {
@@ -275,7 +292,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     updateQuantity,
     clearCart,
     refreshCart,
-    setUserName
+    setUserName,
   };
 
   // Cargar carrito al montar el componente o cuando cambie el restaurante
@@ -286,18 +303,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId, isLoading]);
 
-  return (
-    <CartContext.Provider value={value}>
-      {children}
-    </CartContext.Provider>
-  );
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 // Hook personalizado para usar el carrito
 export function useCart() {
   const context = useContext(CartContext);
   if (!context) {
-    throw new Error('useCart must be used within a CartProvider');
+    throw new Error("useCart must be used within a CartProvider");
   }
   return context;
 }

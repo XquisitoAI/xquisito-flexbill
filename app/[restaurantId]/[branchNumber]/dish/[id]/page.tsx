@@ -7,7 +7,6 @@ import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { useRestaurant } from "@/app/context/RestaurantContext";
 import { ChevronDown, X, Home, QrCode, AlertCircle } from "lucide-react";
 import MenuHeaderDish from "@/app/components/headers/MenuHeaderDish";
-import Loader from "@/app/components/UI/Loader";
 import RestaurantClosedModal from "@/app/components/RestaurantClosedModal";
 import ValidationError from "@/app/components/ValidationError";
 import {
@@ -31,6 +30,7 @@ export default function DishDetailPage() {
   const { restaurant, menu, isOpen, setBranchNumber, setRestaurantId } =
     useRestaurant();
   const [localQuantity, setLocalQuantity] = useState(0);
+  const [dishQuantity, setDishQuantity] = useState(1);
   const [isPulsing, setIsPulsing] = useState(false);
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>(
     {},
@@ -771,7 +771,7 @@ export default function DishDetailPage() {
         0,
       ) || 0;
 
-    setLocalQuantity((prev) => prev + 1);
+    setLocalQuantity((prev) => prev + dishQuantity);
     setIsPulsing(true);
 
     const itemToAdd = {
@@ -781,7 +781,7 @@ export default function DishDetailPage() {
       extraPrice,
     };
 
-    await addItem(itemToAdd);
+    await addItem(itemToAdd, dishQuantity);
 
     // Guardar en localStorage como el último item agregado
     const lastItemKey = `lastItem_${dishData.dish.id}`;
@@ -1432,8 +1432,8 @@ export default function DishDetailPage() {
                           )}
                         {field.type === "checkboxes" && field.options && (
                           <div>
-                            <div className="divide-y divide-[8e8e8e]">
-                              {field.options.map((option) => {
+                            <div className="bg-white rounded-lg border border-[#8e8e8e]/30 shadow-lg overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                              {field.options.map((option, index) => {
                                 const currentSelections =
                                   (customFieldSelections[
                                     field.id
@@ -1449,11 +1449,13 @@ export default function DishDetailPage() {
                                 return (
                                   <label
                                     key={option.id}
-                                    className={`flex items-center justify-between gap-2 md:gap-3 py-6 md:py-7 ${
+                                    className={`flex items-center justify-between gap-2 md:gap-3 py-4 md:py-5 px-4 md:px-6 hover:bg-[#f9f9f9] transition-colors duration-200 ${
+                                      isSelected ? "bg-[#eab3f4]/10" : ""
+                                    } ${
                                       isDisabled
                                         ? "cursor-not-allowed opacity-50"
                                         : "cursor-pointer"
-                                    }`}
+                                    } ${index !== (field.options?.length ?? 0) - 1 ? "border-b border-[#8e8e8e]/20" : ""}`}
                                   >
                                     <div className="flex flex-col">
                                       <span className="text-black text-base md:text-lg lg:text-xl">
@@ -1505,22 +1507,45 @@ export default function DishDetailPage() {
             </div>
 
             <div
-              className="fixed bottom-0 left-0 right-0 mx-4 md:mx-6 lg:mx-8 px-6 md:px-8 lg:px-10 p-6 md:p-7 lg:p-8 z-10"
+              className="fixed bottom-0 left-0 right-0 z-10 flex items-center gap-3 px-4 md:px-6 lg:px-8 pt-4 md:pt-5"
               style={{
-                paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
+                paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+                background: "rgba(255, 255, 255, 0.75)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
               }}
             >
+              {/* Contador - 1 + */}
+              <div className="flex items-center bg-white border border-gray-300 rounded-2xl shadow-sm shrink-0">
+                <button
+                  onClick={() => setDishQuantity((q) => Math.max(1, q - 1))}
+                  className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-black text-xl font-light cursor-pointer active:scale-90 transition-transform"
+                >
+                  −
+                </button>
+                <span className="w-8 text-center text-base md:text-lg font-medium text-black select-none">
+                  {dishQuantity}
+                </span>
+                <button
+                  onClick={() => setDishQuantity((q) => q + 1)}
+                  className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-black text-xl font-light cursor-pointer active:scale-90 transition-transform"
+                >
+                  +
+                </button>
+              </div>
+
+              {/* Botón agregar */}
               <button
                 onClick={handleAddToCartAndReturn}
                 disabled={!isFormValid()}
-                className={`w-full text-white py-4 md:py-5 lg:py-6 rounded-full transition-colors flex items-center justify-center gap-2 ${
+                className={`flex-1 text-white py-3.5 md:py-4 lg:py-5 rounded-2xl transition-colors flex items-center justify-center ${
                   isFormValid()
-                    ? "bg-gradient-to-r from-[#34808C] to-[#173E44] cursor-pointer animate-pulse-button active:scale-95 transition-transform"
+                    ? "bg-gradient-to-r from-[#34808C] to-[#173E44] cursor-pointer active:scale-95 transition-transform"
                     : "bg-gray-400 cursor-not-allowed opacity-60"
                 }`}
               >
-                <span className="text-base md:text-lg lg:text-xl font-medium">
-                  Agregar al carrito • ${calculateTotalPrice().toFixed(2)} MXN
+                <span className="text-base md:text-lg font-medium">
+                  Agregar • ${(calculateTotalPrice() * dishQuantity).toFixed(2)}
                 </span>
               </button>
             </div>

@@ -1,11 +1,13 @@
 "use client";
 
-import { ChevronDown, SendHorizontal } from "lucide-react";
+import { ChevronDown, SendHorizontal, ShoppingBag, Check } from "lucide-react";
 import { useState, useRef, useEffect, memo } from "react";
 import { useRestaurant } from "../context/RestaurantContext";
 import { useGuest } from "../context/GuestContext";
 import { useAuth } from "../context/AuthContext";
 import { usePepper } from "../context/PepperContext";
+import { cartApi } from "../services/cartApi";
+import { useCart } from "../context/CartContext";
 
 interface ChatViewProps {
   onBack: () => void;
@@ -236,18 +238,222 @@ const hasIncompleteImageUrl = (text: string): boolean => {
   return false;
 };
 
+// Regex para detectar el marcador ORDER_BUTTON
+const ORDER_BUTTON_REGEX =
+  /\[ORDER_BUTTON:\s*dish_id=(\d+),\s*name="([^"]+)"\]/;
+// Para ocultar el marcador mientras se está escribiendo en streaming
+const PARTIAL_ORDER_BUTTON_REGEX = /\[ORDER_BUTTON[^\]]*\]?/g;
+
+// Botón que agrega directamente al carrito
+const OrderButton = ({
+  dishId,
+  dishName,
+  restaurantId,
+  branchNumber,
+  userId,
+}: {
+  dishId: number;
+  dishName: string;
+  restaurantId: number | null;
+  branchNumber: number | null;
+  userId: string | null;
+}) => {
+  const { menu } = useRestaurant();
+  const { refreshCart } = useCart();
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">(
+    "idle",
+  );
+
+  // Resolver el ID real buscando por nombre en el menú cargado en contexto,
+  // en lugar de confiar en el ID que provee el agente.
+  // Usa matching por palabras clave para tolerar diferencias entre el nombre
+  // que Pepper dice ("Wrap de Pollo") y el nombre real en BD ("Wrap Pollo").
+  const resolvedDishId = (() => {
+    const normalize = (s: string) =>
+      s
+        .toLowerCase()
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s*\([^)]*\)\s*/g, " ") // quitar paréntesis ej. "(3pz)"
+        .trim();
+
+    const STOP_WORDS = new Set([
+      "de",
+      "a",
+      "la",
+      "el",
+      "los",
+      "las",
+      "con",
+      "y",
+      "en",
+      "al",
+      "del",
+      "un",
+      "una",
+      "lo",
+      "se",
+      "su",
+      "por",
+      "o",
+    ]);
+
+    const keyWords = (s: string): string[] =>
+      normalize(s)
+        .split(/\s+/)
+        .filter((w) => w.length > 1 && !STOP_WORDS.has(w));
+
+    if (!menu?.length) return dishId;
+
+    const searchWords = keyWords(dishName);
+    if (!searchWords.length) return dishId;
+
+    let bestId = dishId;
+    let bestScore = 0;
+
+    for (const section of menu) {
+      for (const item of section.items ?? []) {
+        const itemWords = keyWords(item.name);
+        if (!itemWords.length) continue;
+
+        // Cuántas palabras clave del nombre buscado están en el item
+        const matched = searchWords.filter((sw) =>
+          itemWords.some(
+            (iw) =>
+              iw === sw ||
+              (sw.length >= 4 && iw.startsWith(sw)) ||
+              (iw.length >= 4 && sw.startsWith(iw)),
+          ),
+        ).length;
+
+        // Score: proporción de palabras coincidentes vs total de palabras únicas
+        const score = matched / Math.max(searchWords.length, itemWords.length);
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestId = item.id;
+        }
+      }
+    }
+
+    // Solo usar el match si la confianza es suficiente (≥50% de palabras coinciden)
+    return bestScore >= 0.5 ? bestId : dishId;
+  })();
+
+  const handleAdd = async () => {
+    if (status !== "idle") return;
+    setStatus("loading");
+    cartApi.setRestaurantId(restaurantId);
+    cartApi.setBranchNumber(branchNumber);
+    cartApi.setSupabaseUserId(userId);
+    const result = await cartApi.addToCart(resolvedDishId);
+    if (result.success) {
+      await refreshCart();
+      setStatus("done");
+    } else {
+      setStatus("error");
+    }
+  };
+
+  const glassStyle: React.CSSProperties =
+    status === "done"
+      ? {
+          background:
+            "linear-gradient(160deg, rgba(220,252,231,0.95) 0%, rgba(187,247,208,0.85) 100%)",
+          boxShadow:
+            "0 4px 16px rgba(74,222,128,0.25), 0 1px 0 rgba(255,255,255,0.8) inset",
+          border: "1px solid rgba(134,239,172,0.5)",
+        }
+      : status === "error"
+        ? {
+            background:
+              "linear-gradient(160deg, rgba(254,226,226,0.95) 0%, rgba(252,165,165,0.85) 100%)",
+            boxShadow:
+              "0 4px 16px rgba(239,68,68,0.2), 0 1px 0 rgba(255,255,255,0.7) inset",
+            border: "1px solid rgba(252,165,165,0.5)",
+          }
+        : status === "loading"
+          ? {
+              background:
+                "linear-gradient(160deg, rgba(245,210,255,0.7) 0%, rgba(220,140,238,0.6) 100%)",
+              boxShadow: "0 2px 12px rgba(200,100,230,0.2)",
+              border: "1px solid rgba(255,255,255,0.4)",
+              backdropFilter: "blur(12px)",
+            }
+          : {
+              background:
+                "linear-gradient(160deg, rgba(250,220,255,0.97) 0%, rgba(235,178,244,0.92) 40%, rgba(210,130,235,0.88) 100%)",
+              boxShadow:
+                "0 6px 24px rgba(190,80,230,0.3), 0 1px 0 rgba(255,255,255,0.75) inset, 0 -1px 0 rgba(120,0,160,0.08) inset",
+              border: "1px solid rgba(255,255,255,0.6)",
+              backdropFilter: "blur(16px)",
+            };
+
+  return (
+    <button
+      onClick={handleAdd}
+      disabled={status === "loading" || status === "done"}
+      className="mt-2 relative overflow-hidden flex items-center gap-2 transition-all active:scale-[0.97] font-semibold rounded-2xl px-5 py-3 text-base md:text-lg w-full justify-center text-black"
+      style={glassStyle}
+    >
+      {/* Specular highlight — franja de luz en el borde superior */}
+      <div
+        className="absolute top-0 left-0 right-0 pointer-events-none rounded-t-2xl"
+        style={{
+          height: "42%",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 100%)",
+        }}
+      />
+      {/* Contenido */}
+      <span className="relative z-10 flex items-center gap-2">
+        {status === "done" ? (
+          <>
+            <Check className="size-5" />
+            Agregado al carrito
+          </>
+        ) : status === "loading" ? (
+          <>
+            <Spinner />
+            Agregando...
+          </>
+        ) : (
+          <>
+            <ShoppingBag className="size-5" />
+            {status === "error"
+              ? "Error, intenta de nuevo"
+              : `Agregar ${dishName}`}
+          </>
+        )}
+      </span>
+    </button>
+  );
+};
+
 // Componente para renderizar mensajes con imágenes (sin memo para garantizar re-render con nuevas URLs)
 const MessageContent = ({
   content,
   isStreaming,
   activeTool,
+  restaurantId,
+  branchNumber,
+  userId,
 }: {
   content: string;
   isStreaming?: boolean;
   activeTool?: string | null;
+  restaurantId: number | null;
+  branchNumber: number | null;
+  userId: string | null;
 }) => {
+  // Extraer ORDER_BUTTON del contenido
+  const orderButtonMatch = ORDER_BUTTON_REGEX.exec(content);
+  const dishId = orderButtonMatch ? orderButtonMatch[1] : null;
+  const dishName = orderButtonMatch ? orderButtonMatch[2] : null;
+  const cleanContent = content.replace(ORDER_BUTTON_REGEX, "").trim();
   // Si el contenido está vacío, mostrar herramienta o puntos de carga
-  if (!content) {
+  if (!cleanContent) {
     if (activeTool) {
       return (
         <div className="flex items-center gap-2">
@@ -264,7 +470,10 @@ const MessageContent = ({
   // Si está en streaming, reemplazar URLs de imagen con LoadingDots inline
   if (isStreaming) {
     const IMAGE_PLACEHOLDER = "\u0000IMG\u0000";
-    let processed = content
+    // Ocultar el marcador ORDER_BUTTON mientras se está escribiendo
+    let processed = cleanContent
+      .replace(PARTIAL_ORDER_BUTTON_REGEX, "")
+      .trim()
       .replace(
         /!\[[^\]]*\]\(https?:\/\/[^\s)]+\.(?:jpg|jpeg|png|gif|webp|svg|avif)(?:\?[^\s)]*)?\)/gi,
         IMAGE_PLACEHOLDER,
@@ -318,7 +527,7 @@ const MessageContent = ({
   }> = [];
 
   let match;
-  while ((match = markdownImageRegex.exec(content)) !== null) {
+  while ((match = markdownImageRegex.exec(cleanContent)) !== null) {
     matches.push({
       index: match.index,
       length: match[0].length,
@@ -329,7 +538,7 @@ const MessageContent = ({
   }
 
   // Luego, encontrar URLs directas (que no estén dentro de Markdown)
-  while ((match = directImageRegex.exec(content)) !== null) {
+  while ((match = directImageRegex.exec(cleanContent)) !== null) {
     // Verificar que no esté dentro de un match de Markdown
     const isInsideMarkdown = matches.some(
       (m) => match!.index >= m.index && match!.index < m.index + m.length,
@@ -351,7 +560,7 @@ const MessageContent = ({
   for (const m of matches) {
     // Agregar texto antes de la imagen
     if (m.index > lastIndex) {
-      const text = content.slice(lastIndex, m.index);
+      const text = cleanContent.slice(lastIndex, m.index);
       if (text.trim()) {
         elements.push(
           <p key={key++} className="whitespace-pre-wrap">
@@ -379,8 +588,8 @@ const MessageContent = ({
   }
 
   // Agregar texto restante
-  if (lastIndex < content.length) {
-    const text = content.slice(lastIndex);
+  if (lastIndex < cleanContent.length) {
+    const text = cleanContent.slice(lastIndex);
     if (text.trim()) {
       elements.push(
         <p key={key++} className="whitespace-pre-wrap">
@@ -391,11 +600,26 @@ const MessageContent = ({
   }
 
   // Si no hay elementos (solo espacios), mostrar el contenido original
-  if (elements.length === 0) {
-    return <p className="whitespace-pre-wrap">{renderBoldText(content)}</p>;
+  if (elements.length === 0 && !dishId) {
+    return (
+      <p className="whitespace-pre-wrap">{renderBoldText(cleanContent)}</p>
+    );
   }
 
-  return <div className="space-y-2">{elements}</div>;
+  return (
+    <div className="space-y-2">
+      {elements}
+      {dishId && dishName && (
+        <OrderButton
+          dishId={Number(dishId)}
+          dishName={dishName}
+          restaurantId={restaurantId}
+          branchNumber={branchNumber}
+          userId={userId}
+        />
+      )}
+    </div>
+  );
 };
 
 export default function ChatView({ onBack }: ChatViewProps) {
@@ -615,6 +839,9 @@ export default function ChatView({ onBack }: ChatViewProps) {
                       content={msg.content}
                       isStreaming={isLastPepperMessage && isStreaming}
                       activeTool={isLastPepperMessage ? activeTool : null}
+                      restaurantId={restaurantId}
+                      branchNumber={branchNumber}
+                      userId={user?.id ?? null}
                     />
                   </div>
                 </div>

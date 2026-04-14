@@ -242,6 +242,16 @@ export const paymentService = {
     }
   },
 
+  // Crea una orden en Ecart Pay para Apple Pay y regresa el orderId
+  async createApplePayOrder(params: {
+    amount: number;
+    currency: string;
+    tableNumber?: string;
+    restaurantId?: string;
+  }): Promise<ApiResponse<{ orderId: string }>> {
+    return apiService.createApplePayOrder(params);
+  },
+
   // Migra los métodos de pago de guest a usuario autenticado
   async migrateGuestPaymentMethods(
     guestId: string

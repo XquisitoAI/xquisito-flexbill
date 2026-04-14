@@ -136,6 +136,9 @@ export default function CardSelectionPage() {
   const [showTotalModal, setShowTotalModal] = useState(false);
   const [showPaymentOptionsModal, setShowPaymentOptionsModal] = useState(false);
   const [selectedMSI, setSelectedMSI] = useState<number | null>(null);
+  const [applePayReady, setApplePayReady] = useState(false);
+  const [applePayUnavailable, setApplePayUnavailable] = useState(false);
+  const [isApplePayProcessing, setIsApplePayProcessing] = useState(false);
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -229,6 +232,20 @@ export default function CardSelectionPage() {
     // Set loading to false once we have payment methods data
     setIsLoadingInitial(false);
   }, [allPaymentMethods.length]);
+
+  // Cargar el SDK de Ecart Pay para Apple Pay
+  useEffect(() => {
+    const src =
+      process.env.NEXT_PUBLIC_ENV === "production"
+        ? "https://ecartpay.com/sdk/pay.js"
+        : "https://sandbox.ecartpay.com/sdk/pay.js";
+    if (!document.querySelector(`script[src="${src}"]`)) {
+      const script = document.createElement("script");
+      script.src = src;
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, []);
 
   const handlePaymentSuccess = async (
     paymentId: string,
@@ -413,6 +430,83 @@ export default function CardSelectionPage() {
       `/payment-success?paymentId=${paymentId}&amount=${baseAmount}&type=${paymentType}&processed=true`,
     );
   }, [navigateWithTable, baseAmount, paymentType]);
+
+  // Inicializar Apple Pay SDK cuando los datos estén listos
+  const initApplePay = useCallback(async () => {
+    if (typeof window === "undefined" || !totalAmountCharged) return;
+
+    try {
+      // Crear orden en Ecart Pay para obtener orderId
+      const orderResult = await paymentService.createApplePayOrder({
+        amount: totalAmountCharged,
+        currency: "MXN",
+        tableNumber: state.tableNumber || undefined,
+        restaurantId: restaurantId?.toString(),
+      });
+
+      if (!orderResult.success || !orderResult.data?.orderId) {
+        console.warn("⚠️ Apple Pay: no se pudo crear la orden", orderResult);
+        return;
+      }
+
+      const applePaySDK = (window as any).Pay?.ApplePay;
+      if (!applePaySDK) {
+        console.warn("⚠️ Apple Pay SDK no disponible en window.Pay.ApplePay");
+        return;
+      }
+
+      applePaySDK
+        .create({
+          container: "#apple-pay-container",
+          orderId: orderResult.data.orderId,
+          amount: totalAmountCharged,
+          currency: "MXN",
+          countryCode: "MX",
+          supportedNetworks: ["visa", "masterCard", "amex"],
+          merchantCapabilities: ["supports3DS"],
+          buttonStyle: "black",
+          buttonType: "pay",
+        })
+        .on("ready", () => {
+          console.log("✅ Apple Pay botón listo");
+          setApplePayReady(true);
+        })
+        .on("unavailable", () => {
+          console.log("ℹ️ Apple Pay no disponible en este dispositivo/cuenta");
+          setApplePayUnavailable(true);
+        })
+        .on("cancel", () => {
+          console.log("🚫 Apple Pay cancelado por el usuario");
+          setIsApplePayProcessing(false);
+        })
+        .on("error", (err: any) => {
+          console.error("❌ Apple Pay error:", err);
+          setIsApplePayProcessing(false);
+        })
+        .on("success", async () => {
+          console.log("💳 Apple Pay: pago autorizado");
+          const mockPaymentId = `apple-pay-${Date.now()}`;
+          setIsApplePayProcessing(true);
+          await handlePaymentSuccess(mockPaymentId, baseAmount, paymentType);
+          setShowPaymentAnimation(true);
+        });
+    } catch (err) {
+      console.error("❌ Error inicializando Apple Pay:", err);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    totalAmountCharged,
+    state.tableNumber,
+    restaurantId,
+    baseAmount,
+    paymentType,
+  ]);
+
+  useEffect(() => {
+    if (!isLoadingInitial && totalAmountCharged > 0) {
+      initApplePay();
+    }
+  }, [isLoadingInitial, totalAmountCharged, initApplePay]);
 
   const handlePayment = async (): Promise<void> => {
     // Validar selección de tarjeta si hay métodos de pago disponibles
@@ -933,6 +1027,19 @@ export default function CardSelectionPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Apple Pay Button */}
+                {!applePayUnavailable && (
+                  <div className="mb-2.5">
+                    <div id="apple-pay-container" className="w-full" />
+                    {!applePayReady && (
+                      <div className="border border-white/50 flex justify-center items-center gap-1 w-full text-black py-3 rounded-full bg-black text-base md:text-lg lg:text-xl">
+                        {/*<Loader2 className="size-4 animate-spin" />*/}
+                        <img src="/icons/apple-pay.png" className="h-6" />
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Payment Method Section */}
                 <div>

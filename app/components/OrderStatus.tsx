@@ -270,7 +270,7 @@ export default function OrderStatus() {
                                       <div className="size-16 md:size-20 lg:size-24 bg-gray-300 rounded-sm md:rounded-md flex items-center justify-center hover:scale-105 transition-transform duration-200">
                                         <img
                                           src={
-                                            dish.images?.[0] ??
+                                            dish.images?.[0] ||
                                             "/logo-short-green.webp"
                                           }
                                           alt="Dish Image"

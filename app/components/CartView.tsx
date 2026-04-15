@@ -38,7 +38,7 @@ export default function CartView() {
     } else if (guestName) {
       // Si NO está loggeado pero ya tiene nombre de invitado, proceder con la orden
       console.log(
-        "📱 User not authenticated but has guest name, proceeding with order"
+        "📱 User not authenticated but has guest name, proceeding with order",
       );
       setIsSubmitting(true);
       const itemsToOrder = [...cartState.items];
@@ -92,7 +92,7 @@ export default function CartView() {
         const errorMessage =
           error instanceof Error ? error.message : "Error desconocido";
         alert(
-          `Error al enviar la orden: ${errorMessage}. Por favor intenta nuevamente.`
+          `Error al enviar la orden: ${errorMessage}. Por favor intenta nuevamente.`,
         );
       } finally {
         setIsSubmitting(false);
@@ -176,7 +176,7 @@ export default function CartView() {
                                   />
                                 ) : (
                                   <img
-                                    src={DEFAULT_IMAGES.RESTAURANT_LOGO}
+                                    src="/logo-short-green.webp"
                                     alt="Logo Xquisito"
                                     className="size-18 md:size-20 lg:size-22 object-contain"
                                   />
@@ -192,14 +192,21 @@ export default function CartView() {
                                   <div className="text-xs md:text-sm lg:text-base text-gray-400 space-y-0.5">
                                     {item.customFields.map((field, idx) => (
                                       <div key={idx}>
-                                        {field.selectedOptions
-                                          .filter((opt) => opt.price > 0)
-                                          .map((opt, optIdx) => (
+                                        {field.selectedOptions.map(
+                                          (opt, optIdx) => (
                                             <p key={optIdx}>
-                                              {opt.optionName} $
-                                              {opt.price.toFixed(2)}
+                                              {optIdx === 0 &&
+                                                (opt.quantity ?? 0) > 1 && (
+                                                  <span className="ml-1">
+                                                    x{item.quantity}
+                                                  </span>
+                                                )}{" "}
+                                              {opt.optionName}
+                                              {opt.price > 0 &&
+                                                ` $${opt.price.toFixed(2)}`}
                                             </p>
-                                          ))}
+                                          ),
+                                        )}
                                       </div>
                                     ))}
                                   </div>
@@ -228,7 +235,7 @@ export default function CartView() {
                               <p className="text-base md:text-lg lg:text-xl text-black">
                                 $
                                 {(item.price + (item.extraPrice || 0)).toFixed(
-                                  2
+                                  2,
                                 )}
                               </p>
                             </div>
@@ -250,7 +257,10 @@ export default function CartView() {
                       placeholder="Alergias, instrucciones especiales, comentarios..."
                       onFocus={(e) => {
                         setTimeout(() => {
-                          e.target.scrollIntoView({ behavior: "smooth", block: "center" });
+                          e.target.scrollIntoView({
+                            behavior: "smooth",
+                            block: "center",
+                          });
                         }, 300);
                       }}
                     ></textarea>

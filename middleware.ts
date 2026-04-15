@@ -17,8 +17,8 @@ export function middleware(request: NextRequest) {
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https:;
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: blob: ${backendUrl} https://*.supabase.co;
-    font-src 'self';
-    connect-src 'self' ${backendUrl} ${wsProtocol}://${backendHost};
+    font-src 'self' https://applepay.cdn-apple.com;
+    connect-src 'self' ${backendUrl} ${wsProtocol}://${backendHost} https://*.ecartpay.com https://checkoutdev.ecartpay.com;
     frame-src 'none';
     object-src 'none';
     base-uri 'self';
@@ -48,7 +48,7 @@ export function middleware(request: NextRequest) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=(), payment=()",
+    "camera=(), microphone=(), geolocation=()",
   );
   response.headers.set("X-DNS-Prefetch-Control", "off");
   response.headers.set("X-Permitted-Cross-Domain-Policies", "none");

@@ -60,7 +60,7 @@ export interface ProcessPaymentParams {
 
 async function makeRequest(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<ApiResponse<any>> {
   const url = `${API_BASE_URL}${endpoint}`;
 
@@ -96,14 +96,14 @@ export const paymentService = {
   // Marca un platillo como pagado
   async payDishOrder(
     dishOrderId: string,
-    paymentMethodId: string | null
+    paymentMethodId: string | null,
   ): Promise<void> {
     await apiService.payDishOrder(dishOrderId, paymentMethodId);
   },
 
   // Registra el pago de una división equitativa
   async paySplitAmount(
-    params: PaySplitAmountParams
+    params: PaySplitAmountParams,
   ): Promise<ApiResponse<any>> {
     const {
       restaurantId,
@@ -123,13 +123,13 @@ export const paymentService = {
           guestName: guestName || null,
           paymentMethodId,
         }),
-      }
+      },
     );
   },
 
   // Registra el pago de un monto específico de la mesa
   async payTableAmount(
-    params: PayTableAmountParams
+    params: PayTableAmountParams,
   ): Promise<ApiResponse<any>> {
     const {
       restaurantId,
@@ -151,7 +151,7 @@ export const paymentService = {
           guestName: guestName || null,
           paymentMethodId,
         }),
-      }
+      },
     );
   },
 
@@ -159,10 +159,10 @@ export const paymentService = {
   async getSplitPaymentStatus(
     restaurantId: string,
     branchNumber: string,
-    tableNumber: string
+    tableNumber: string,
   ): Promise<ApiResponse<any>> {
     return makeRequest(
-      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/split-status`
+      `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/split-status`,
     );
   },
 
@@ -173,7 +173,7 @@ export const paymentService = {
     tableNumber: string,
     numberOfPeople: number,
     userIds?: string[] | null,
-    guestNames?: string[] | null
+    guestNames?: string[] | null,
   ): Promise<ApiResponse<any>> {
     return makeRequest(
       `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/split-bill`,
@@ -184,13 +184,13 @@ export const paymentService = {
           userIds,
           guestNames,
         }),
-      }
+      },
     );
   },
 
   // Registra una transacción de pago en la base de datos
   async recordPaymentTransaction(
-    params: RecordPaymentTransactionParams
+    params: RecordPaymentTransactionParams,
   ): Promise<void> {
     await apiService.recordPaymentTransaction(params);
   },
@@ -209,12 +209,12 @@ export const paymentService = {
   async payUserDishes(
     dishOrders: any[],
     userName: string,
-    paymentMethodId: string | null
+    paymentMethodId: string | null,
   ): Promise<void> {
     const userDishes = dishOrders.filter(
       (dish) =>
         dish.guest_name === userName &&
-        (dish.payment_status === "not_paid" || !dish.payment_status)
+        (dish.payment_status === "not_paid" || !dish.payment_status),
     );
 
     for (const dish of userDishes) {
@@ -230,7 +230,7 @@ export const paymentService = {
   // Paga platillos seleccionados específicamente
   async paySelectedDishes(
     selectedItems: string[],
-    paymentMethodId: string | null
+    paymentMethodId: string | null,
   ): Promise<void> {
     for (const dishId of selectedItems) {
       try {
@@ -254,7 +254,7 @@ export const paymentService = {
 
   // Migra los métodos de pago de guest a usuario autenticado
   async migrateGuestPaymentMethods(
-    guestId: string
+    guestId: string,
   ): Promise<ApiResponse<{ migratedCount: number }>> {
     return apiService.migrateGuestPaymentMethods(guestId);
   },

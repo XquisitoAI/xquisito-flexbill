@@ -291,22 +291,25 @@ export default function OrderStatus() {
                                             {dish.custom_fields.map(
                                               (field: any, idx: number) => (
                                                 <div key={idx}>
-                                                  {field.selectedOptions
-                                                    .filter(
-                                                      (opt: any) =>
-                                                        opt.price > 0,
-                                                    )
-                                                    .map(
-                                                      (
-                                                        opt: any,
-                                                        optIdx: number,
-                                                      ) => (
-                                                        <p key={optIdx}>
-                                                          {opt.optionName} $
-                                                          {opt.price.toFixed(2)}
-                                                        </p>
-                                                      ),
-                                                    )}
+                                                  {field.selectedOptions.map(
+                                                    (
+                                                      opt: any,
+                                                      optIdx: number,
+                                                    ) => (
+                                                      <p key={optIdx}>
+                                                        {optIdx === 0 &&
+                                                          (opt.quantity ?? 0) >
+                                                            1 && (
+                                                            <span className="ml-1">
+                                                              x{dish.quantity}
+                                                            </span>
+                                                          )}{" "}
+                                                        {opt.optionName}
+                                                        {opt.price > 0 &&
+                                                          ` $${opt.price.toFixed(2)}`}
+                                                      </p>
+                                                    ),
+                                                  )}
                                                 </div>
                                               ),
                                             )}
@@ -414,22 +417,25 @@ export default function OrderStatus() {
                                             {dish.custom_fields.map(
                                               (field: any, idx: number) => (
                                                 <div key={idx}>
-                                                  {field.selectedOptions
-                                                    .filter(
-                                                      (opt: any) =>
-                                                        opt.price > 0,
-                                                    )
-                                                    .map(
-                                                      (
-                                                        opt: any,
-                                                        optIdx: number,
-                                                      ) => (
-                                                        <p key={optIdx}>
-                                                          {opt.optionName} $
-                                                          {opt.price.toFixed(2)}
-                                                        </p>
-                                                      ),
-                                                    )}
+                                                  {field.selectedOptions.map(
+                                                    (
+                                                      opt: any,
+                                                      optIdx: number,
+                                                    ) => (
+                                                      <p key={optIdx}>
+                                                        {optIdx === 0 &&
+                                                          (opt.quantity ?? 0) >
+                                                            1 && (
+                                                            <span className="ml-1">
+                                                              x{dish.quantity}
+                                                            </span>
+                                                          )}{" "}
+                                                        {opt.optionName}
+                                                        {opt.price > 0 &&
+                                                          ` $${opt.price.toFixed(2)}`}
+                                                      </p>
+                                                    ),
+                                                  )}
                                                 </div>
                                               ),
                                             )}

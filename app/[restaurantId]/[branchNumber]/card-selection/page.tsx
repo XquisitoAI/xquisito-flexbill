@@ -19,9 +19,11 @@ import { paymentService } from "@/app/services/payment.service";
 
 import { Plus, Trash2, Loader2, CircleAlert, X } from "lucide-react";
 import { getCardTypeIcon } from "@/app/utils/cardIcons";
+import { usePaymentProvider } from "@/app/hooks/usePaymentProvider";
 
 export default function CardSelectionPage() {
   const { validationError, restaurantId, branchNumber } = useValidateAccess();
+  const { provider, isLoadingProvider } = usePaymentProvider(restaurantId);
   const { state, dispatch, loadTableData } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const searchParams = useSearchParams();
@@ -137,7 +139,8 @@ export default function CardSelectionPage() {
   const [showPaymentOptionsModal, setShowPaymentOptionsModal] = useState(false);
   const [selectedMSI, setSelectedMSI] = useState<number | null>(null);
   const [applePayReady, setApplePayReady] = useState(false);
-  const [applePayUnavailable, setApplePayUnavailable] = useState(false);
+  // Start hidden — reveal only after client mount confirms Apple Pay is available
+  const [applePayUnavailable, setApplePayUnavailable] = useState(true);
   const [isApplePayProcessing, setIsApplePayProcessing] = useState(false);
 
   useEffect(() => {
@@ -233,8 +236,36 @@ export default function CardSelectionPage() {
     setIsLoadingInitial(false);
   }, [allPaymentMethods.length]);
 
-  // Cargar el SDK de Ecart Pay para Apple Pay
+  // Log del proveedor de pago activo
   useEffect(() => {
+    if (!isLoadingProvider) {
+      console.log(
+        `[PaymentProvider] Proveedor activo: ${provider ?? "null"} (restaurantId: ${restaurantId})`,
+      );
+      if (provider === "clip") {
+        console.warn(
+          "[PaymentProvider] Clip seleccionado — flujo no implementado aún, usando eCartPay como fallback",
+        );
+      }
+    }
+  }, [provider, isLoadingProvider, restaurantId]);
+
+  // Verificar soporte de Apple Pay y cargar el SDK solo si aplica
+  useEffect(() => {
+    if (isLoadingProvider) return; // esperar a que se resuelva el proveedor
+
+    // Apple Pay solo aplica cuando el proveedor es eCartPay (o null como fallback)
+    if (provider !== null && provider !== "ecartpay") return;
+
+    const ApplePaySession = (window as any).ApplePaySession;
+    if (!ApplePaySession || !ApplePaySession.canMakePayments?.()) {
+      // Dispositivo/navegador no soporta Apple Pay — mantener oculto
+      return;
+    }
+
+    // Dispositivo compatible y proveedor es eCartPay — revelar sección y cargar SDK
+    setApplePayUnavailable(false);
+
     const src =
       process.env.NEXT_PUBLIC_ENV === "production"
         ? "https://ecartpay.com/sdk/pay.js"
@@ -245,7 +276,7 @@ export default function CardSelectionPage() {
       script.async = true;
       document.head.appendChild(script);
     }
-  }, []);
+  }, [provider, isLoadingProvider]);
 
   const handlePaymentSuccess = async (
     paymentId: string,
@@ -455,41 +486,43 @@ export default function CardSelectionPage() {
         return;
       }
 
-      applePaySDK
-        .create({
-          container: "#apple-pay-container",
-          orderId: orderResult.data.orderId,
-          amount: totalAmountCharged,
-          currency: "MXN",
-          countryCode: "MX",
-          supportedNetworks: ["visa", "masterCard", "amex"],
-          merchantCapabilities: ["supports3DS"],
-          buttonStyle: "black",
-          buttonType: "pay",
-        })
-        .on("ready", () => {
-          console.log("✅ Apple Pay botón listo");
-          setApplePayReady(true);
-        })
-        .on("unavailable", () => {
-          console.log("ℹ️ Apple Pay no disponible en este dispositivo/cuenta");
-          setApplePayUnavailable(true);
-        })
-        .on("cancel", () => {
-          console.log("🚫 Apple Pay cancelado por el usuario");
-          setIsApplePayProcessing(false);
-        })
-        .on("error", (err: any) => {
-          console.error("❌ Apple Pay error:", err);
-          setIsApplePayProcessing(false);
-        })
-        .on("success", async () => {
-          console.log("💳 Apple Pay: pago autorizado");
-          const mockPaymentId = `apple-pay-${Date.now()}`;
-          setIsApplePayProcessing(true);
-          await handlePaymentSuccess(mockPaymentId, baseAmount, paymentType);
-          setShowPaymentAnimation(true);
-        });
+      // Register listeners before render (SDK dispatches to window, not returned object)
+      applePaySDK.on("ready", () => {
+        console.log("✅ Apple Pay botón listo");
+        setApplePayReady(true);
+      });
+      applePaySDK.on("unavailable", () => {
+        console.log("ℹ️ Apple Pay no disponible en este dispositivo/cuenta");
+        setApplePayUnavailable(true);
+      });
+      applePaySDK.on("cancel", () => {
+        console.log("🚫 Apple Pay cancelado por el usuario");
+        setIsApplePayProcessing(false);
+      });
+      applePaySDK.on("error", (err: any) => {
+        console.error("❌ Apple Pay error:", err);
+        setIsApplePayProcessing(false);
+        setApplePayUnavailable(true);
+      });
+      applePaySDK.on("success", async () => {
+        console.log("💳 Apple Pay: pago autorizado");
+        const mockPaymentId = `apple-pay-${Date.now()}`;
+        setIsApplePayProcessing(true);
+        await handlePaymentSuccess(mockPaymentId, baseAmount, paymentType);
+        setShowPaymentAnimation(true);
+      });
+
+      applePaySDK.render({
+        container: "#apple-pay-container",
+        orderId: orderResult.data.orderId,
+        amount: totalAmountCharged,
+        currency: "MXN",
+        countryCode: "MX",
+        supportedNetworks: ["visa", "masterCard", "amex"],
+        merchantCapabilities: ["supports3DS"],
+        buttonStyle: "black",
+        buttonType: "pay",
+      });
     } catch (err) {
       console.error("❌ Error inicializando Apple Pay:", err);
     }
@@ -621,7 +654,7 @@ export default function CardSelectionPage() {
         description: `Xquisito Restaurant Payment - Table ${tableNumber || state.tableNumber || "N/A"}${userName ? ` - ${userName}` : ""} - Tip: $${tipAmount.toFixed(2)} - Commission: $${(xquisitoCommissionClient + ivaXquisitoClient).toFixed(2)}`,
         orderId: `order-${Date.now()}-attempt-${paymentAttempts + 1}`,
         tableNumber: tableNumber || state.tableNumber,
-        restaurantId: "xquisito-main",
+        restaurantId: restaurantId,
       };
 
       console.log("💳 Sending payment request:", paymentData);
@@ -820,7 +853,7 @@ export default function CardSelectionPage() {
 
   const displayTotal = getDisplayTotal();
 
-  if (isLoadingInitial) {
+  if (isLoadingInitial || isLoadingProvider) {
     return <Loader />;
   }
 
@@ -1031,7 +1064,10 @@ export default function CardSelectionPage() {
                 {/* Apple Pay Button */}
                 {!applePayUnavailable && (
                   <div className="mb-2.5">
-                    <div id="apple-pay-container" className="w-full" />
+                    <div
+                      id="apple-pay-container"
+                      className="w-full rounded-full overflow-hidden"
+                    />
                     {!applePayReady && (
                       <div className="border border-white/50 flex justify-center items-center gap-1 w-full text-black py-3 rounded-full bg-black text-base md:text-lg lg:text-xl">
                         {/*<Loader2 className="size-4 animate-spin" />*/}

@@ -99,16 +99,16 @@ class AuthService {
       if (data.success && data.data?.session?.access_token) {
         localStorage.setItem(
           "xquisito_access_token",
-          data.data.session.access_token
+          data.data.session.access_token,
         );
         localStorage.setItem(
           "xquisito_refresh_token",
-          data.data.session.refresh_token
+          data.data.session.refresh_token,
         );
         if (data.data.session.expires_at) {
           localStorage.setItem(
             "xquisito_expires_at",
-            data.data.session.expires_at.toString()
+            data.data.session.expires_at.toString(),
           );
         }
         localStorage.setItem("xquisito_user", JSON.stringify(data.data.user));
@@ -266,16 +266,16 @@ class AuthService {
       if (data.success && data.data?.session?.access_token) {
         localStorage.setItem(
           "xquisito_access_token",
-          data.data.session.access_token
+          data.data.session.access_token,
         );
         localStorage.setItem(
           "xquisito_refresh_token",
-          data.data.session.refresh_token
+          data.data.session.refresh_token,
         );
         if (data.data.session.expires_at) {
           localStorage.setItem(
             "xquisito_expires_at",
-            data.data.session.expires_at.toString()
+            data.data.session.expires_at.toString(),
           );
         }
       }
@@ -307,12 +307,14 @@ class AuthService {
       // Limpiar localStorage
       localStorage.removeItem("xquisito_access_token");
       localStorage.removeItem("xquisito_refresh_token");
+      localStorage.removeItem("xquisito_expires_at");
       localStorage.removeItem("xquisito_user");
     } catch (error) {
       console.error("Error logging out:", error);
       // Limpiar localStorage de todos modos
       localStorage.removeItem("xquisito_access_token");
       localStorage.removeItem("xquisito_refresh_token");
+      localStorage.removeItem("xquisito_expires_at");
       localStorage.removeItem("xquisito_user");
     }
   }

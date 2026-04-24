@@ -1,21 +1,10 @@
 import type { NextConfig } from "next";
-import withPWA from "next-pwa";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-};
-
-export default withPWA({
-  dest: "public",
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
     {
       urlPattern: /\.(?:mp4|webm)$/i,
@@ -30,4 +19,6 @@ export default withPWA({
       },
     },
   ],
-})(nextConfig);
+};
+
+export default nextConfig;

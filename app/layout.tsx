@@ -10,6 +10,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext";
 import { PepperProvider } from "./context/PepperContext";
 import Script from "next/script";
+import { headers } from "next/headers";
 
 const helveticaNeue = localFont({
   src: [
@@ -114,11 +115,13 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-visual",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html lang="es">
       <body
@@ -128,6 +131,7 @@ export default function RootLayout({
         <Script
           src="https://ecartpay.com/sdk/pay.js"
           strategy="afterInteractive"
+          nonce={nonce}
         />
         <AuthProvider>
           <RestaurantProvider>

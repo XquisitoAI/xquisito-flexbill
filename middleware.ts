@@ -14,7 +14,7 @@ export function middleware(request: NextRequest) {
 
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' https://ecartpay.com https://applepay.cdn-apple.com;
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://ecartpay.com https://applepay.cdn-apple.com;
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: blob: ${backendUrl} https://*.supabase.co;
     font-src 'self' https://applepay.cdn-apple.com;

@@ -15,12 +15,8 @@ import MenuHeaderBack from "@/app/components/headers/MenuHeaderBack";
 import CardScanner from "@/app/components/CardScanner";
 import Loader from "@/app/components/UI/Loader";
 import { useAuth } from "@/app/context/AuthContext";
-import { Camera } from "lucide-react";
-import { useValidateAccess } from "@/app/hooks/useValidateAccess";
-import ValidationError from "@/app/components/ValidationError";
 
 function AddCardContent() {
-  const { validationError, isValidating } = useValidateAccess();
   const { state } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const router = useRouter();
@@ -39,12 +35,13 @@ function AddCardContent() {
   const [showScanner, setShowScanner] = useState(false);
   const [isLoadingParams, setIsLoadingParams] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-
-  const handleScanClick = () => {
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
-  };
+  const [errors, setErrors] = useState<{
+    fullName?: string;
+    cardNumber?: string;
+    expDate?: string;
+    cvv?: string;
+    general?: string;
+  }>({});
 
   // Refresh payment methods on mount to ensure we have the latest data
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -58,6 +55,8 @@ function AddCardContent() {
 
     if (textOnlyRegex.test(value)) {
       setFullName(value);
+      if (errors.fullName)
+        setErrors((prev) => ({ ...prev, fullName: undefined }));
     }
   };
 
@@ -69,20 +68,16 @@ function AddCardContent() {
   };
 
   const handleSave = async () => {
-    if (!fullName.trim()) {
-      alert("Please enter your full name");
-      return;
-    }
-    if (!cardNumber.trim()) {
-      alert("Please enter card number");
-      return;
-    }
-    if (!expDate.trim()) {
-      alert("Please enter expiration date");
-      return;
-    }
-    if (!cvv.trim()) {
-      alert("Please enter CVV");
+    const newErrors: typeof errors = {};
+
+    if (!fullName.trim()) newErrors.fullName = "Ingresa tu nombre completo";
+    if (!cardNumber.trim())
+      newErrors.cardNumber = "Ingresa el número de tarjeta";
+    if (!expDate.trim()) newErrors.expDate = "Ingresa la fecha de expiración";
+    if (!cvv.trim()) newErrors.cvv = "Ingresa el CVV";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -96,46 +91,36 @@ function AddCardContent() {
     );
 
     if (isDuplicate) {
-      alert(`Ya existe una tarjeta terminada en ${lastFourDigits}`);
+      setErrors({
+        cardNumber: `Ya existe una tarjeta terminada en ${lastFourDigits}`,
+      });
       return;
     }
 
+    setErrors({});
     setIsLoading(true);
 
     try {
-      // Configure API service based on user type
       if (user) {
-        // For registered users - auth token is already set by AuthContext
         console.log("💳 Adding card for registered user:", user.id);
       } else if (isGuestUser && guestId && tableNumber) {
-        // For guests only (when no registered user)
         console.log("💳 Adding card for guest:", guestId);
         apiService.setGuestInfo(guestId, tableNumber.toString());
       }
 
-      // Use user's email/phone if authenticated, otherwise generate temporary guest email
-      const userEmail =
-        user?.email ||
-        user?.phone ||
-        `guest-${guestId || Date.now()}@xquisito.temp`;
-
       const result = await apiService.addPaymentMethod({
         fullName,
-        email: userEmail,
         cardNumber,
         expDate,
         cvv,
       });
 
       if (result.success) {
-        // Add the new payment method to the context if it exists
         if (result.data?.paymentMethod) {
           addPaymentMethod(result.data.paymentMethod);
         } else {
-          // Fallback: refresh payment methods from API
           await refreshPaymentMethods();
         }
-        alert("Card added successfully!");
 
         // Check if we came from saved-cards page
         const fromSavedCards = document.referrer.includes("/saved-cards");
@@ -146,11 +131,18 @@ function AddCardContent() {
           router.back();
         }
       } else {
-        alert(result.error?.message || "Failed to add card. Please try again.");
+        setErrors({
+          general:
+            result.error?.message ||
+            "No se pudo agregar la tarjeta. Intenta de nuevo.",
+        });
       }
     } catch (error) {
       console.error("Error saving card:", error);
-      alert("Failed to add card. Please check your connection and try again.");
+      setErrors({
+        general:
+          "No se pudo agregar la tarjeta. Verifica tu conexión e intenta de nuevo.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -188,17 +180,20 @@ function AddCardContent() {
     if (numbersOnlyRegex.test(value)) {
       const formatted = formatCardNumber(value);
       setCardNumber(formatted);
+      if (errors.cardNumber)
+        setErrors((prev) => ({ ...prev, cardNumber: undefined }));
     }
   };
 
   const handleExpDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Solo permitir números y "/" para la fecha de expiración
     const expDateRegex = /^[0-9/]*$/;
 
     if (expDateRegex.test(value)) {
       const formatted = formatExpDate(value);
       setExpDate(formatted);
+      if (errors.expDate)
+        setErrors((prev) => ({ ...prev, expDate: undefined }));
     }
   };
 
@@ -207,7 +202,8 @@ function AddCardContent() {
     const numbersOnlyRegex = /^[0-9]*$/;
 
     if (numbersOnlyRegex.test(value)) {
-      setCvv(value.substring(0, 4)); // Máximo 4 dígitos
+      setCvv(value.substring(0, 4));
+      if (errors.cvv) setErrors((prev) => ({ ...prev, cvv: undefined }));
     }
   };
 
@@ -233,13 +229,7 @@ function AddCardContent() {
     setIsLoadingParams(false);
   }, [searchParams]);
 
-  // Mostrar error de validación si existe
-  if (validationError) {
-    return <ValidationError errorType={validationError as any} />;
-  }
-
-  // Mostrar loader mientras valida
-  if (isValidating || isLoadingParams) {
+  if (isLoadingParams) {
     return <Loader />;
   }
 
@@ -250,18 +240,6 @@ function AddCardContent() {
           onScanSuccess={handleScanSuccess}
           onClose={() => setShowScanner(false)}
         />
-      )}
-
-      {/* Toast notification */}
-      {showToast && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-fade-in-out">
-          <div className="bg-gray-900 text-white px-5 py-2 rounded-lg shadow-lg flex items-center gap-3">
-            <Camera className="size-8 text-gray-400" />
-            <span className="text-sm">
-              Esta función no está disponible por el momento
-            </span>
-          </div>
-        </div>
       )}
 
       <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
@@ -305,20 +283,6 @@ function AddCardContent() {
                   </div>
                 </div>
               )}
-              {/* Card Scanner Option */}
-              <div className="mb-6">
-                <button
-                  type="button"
-                  onClick={handleScanClick}
-                  className="w-full bg-black hover:bg-stone-950 text-white py-4 px-6 rounded-full font-medium cursor-pointer transition-colors flex items-center justify-center gap-3"
-                >
-                  <Camera className="size-6" />
-                  <span className="text-base md:text-lg lg:text-xl">
-                    Escanear Tarjeta
-                  </span>
-                </button>
-              </div>
-
               {/* Add Card Form */}
               <div className="space-y-4 md:space-x-5 text-sm md:text-base lg:text-lg">
                 <div>
@@ -330,8 +294,13 @@ function AddCardContent() {
                     value={fullName}
                     onChange={handleFullNameChange}
                     placeholder="John Doe"
-                    className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
+                    className={`w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 border text-black rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent ${errors.fullName ? "border-red-500 bg-red-50" : "border-gray-300"}`}
                   />
+                  {errors.fullName && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.fullName}
+                    </p>
+                  )}
                 </div>
 
                 <div className="text-sm md:text-base lg:text-lg">
@@ -344,8 +313,13 @@ function AddCardContent() {
                     onChange={handleCardNumberChange}
                     placeholder="**** 2098"
                     maxLength={19}
-                    className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 text-black bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
+                    className={`w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 text-black rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent ${errors.cardNumber ? "border border-red-500 bg-red-50" : "bg-gray-100 border border-gray-200"}`}
                   />
+                  {errors.cardNumber && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.cardNumber}
+                    </p>
+                  )}
                 </div>
 
                 {/* Exp Date Field */}
@@ -359,8 +333,13 @@ function AddCardContent() {
                     onChange={handleExpDateChange}
                     placeholder="02/24"
                     maxLength={5}
-                    className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent text-black"
+                    className={`w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent text-black ${errors.expDate ? "border border-red-500 bg-red-50" : "bg-gray-100 border border-gray-200"}`}
                   />
+                  {errors.expDate && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.expDate}
+                    </p>
+                  )}
                 </div>
 
                 {/* CVV Field */}
@@ -372,8 +351,11 @@ function AddCardContent() {
                     onChange={handleCvvChange}
                     placeholder="123"
                     maxLength={4}
-                    className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent"
+                    className={`w-full px-4 md:px-5 lg:px-6 py-3 md:py-4 lg:py-5 text-black rounded-lg focus:outline-none focus:ring focus:ring-teal-500 focus:border-transparent ${errors.cvv ? "border border-red-500 bg-red-50" : "border border-gray-300"}`}
                   />
+                  {errors.cvv && (
+                    <p className="text-red-500 text-xs mt-1">{errors.cvv}</p>
+                  )}
                 </div>
               </div>
 
@@ -385,6 +367,11 @@ function AddCardContent() {
               >
                 {isLoading ? "Guardando..." : "Guardar"}
               </button>
+              {errors.general && (
+                <p className="text-red-500 text-sm text-center mt-3">
+                  {errors.general}
+                </p>
+              )}
             </div>
           </div>
         </div>

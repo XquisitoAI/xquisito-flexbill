@@ -64,7 +64,7 @@ export interface ActiveUser {
 
 async function makeRequest<T = any>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<ApiResponse<T>> {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -140,10 +140,10 @@ async function makeRequest<T = any>(
 async function getTableSummary(
   restaurantId: string,
   branchNumber: string,
-  tableNumber: string
+  tableNumber: string,
 ): Promise<ApiResponse<any>> {
   return makeRequest(
-    `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/summary`
+    `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/summary`,
   );
 }
 
@@ -153,10 +153,10 @@ async function getTableSummary(
 async function getTableOrders(
   restaurantId: string,
   branchNumber: string,
-  tableNumber: string
+  tableNumber: string,
 ): Promise<ApiResponse<any>> {
   return makeRequest(
-    `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/orders`
+    `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/orders`,
   );
 }
 
@@ -166,10 +166,10 @@ async function getTableOrders(
 async function getActiveUsers(
   restaurantId: string,
   branchNumber: string,
-  tableNumber: string
+  tableNumber: string,
 ): Promise<ApiResponse<any>> {
   return makeRequest(
-    `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/active-users`
+    `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/active-users`,
   );
 }
 
@@ -178,10 +178,10 @@ async function getActiveUsers(
  */
 async function getAllTables(
   restaurantId: string,
-  branchNumber: string
+  branchNumber: string,
 ): Promise<ApiResponse<any>> {
   return makeRequest(
-    `/restaurants/${restaurantId}/branches/${branchNumber}/tables`
+    `/restaurants/${restaurantId}/branches/${branchNumber}/tables`,
   );
 }
 
@@ -191,10 +191,10 @@ async function getAllTables(
 async function checkTableAvailability(
   restaurantId: string,
   branchNumber: string,
-  tableNumber: string
+  tableNumber: string,
 ): Promise<ApiResponse<any>> {
   return makeRequest(
-    `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/availability`
+    `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/availability`,
   );
 }
 
@@ -226,7 +226,9 @@ async function createDishOrder(
     }>;
   }>,
   extraPrice?: number,
-  menuItemId?: number | null
+  menuItemId?: number | null,
+  orderNotes?: string | null,
+  specialInstructions?: string | null,
 ): Promise<ApiResponse<any>> {
   return makeRequest(
     `/restaurants/${restaurantId}/branches/${branchNumber}/tables/${tableNumber}/dishes`,
@@ -243,8 +245,10 @@ async function createDishOrder(
         customFields,
         extraPrice,
         menuItemId,
+        orderNotes: orderNotes || null,
+        specialInstructions: specialInstructions || null,
       }),
-    }
+    },
   );
 }
 
@@ -253,7 +257,7 @@ async function createDishOrder(
  */
 async function updateDishStatus(
   dishId: string,
-  status: string
+  status: string,
 ): Promise<ApiResponse<any>> {
   return makeRequest(`/dishes/${dishId}/status`, {
     method: "PUT",

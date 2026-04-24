@@ -1,14 +1,22 @@
 "use client";
 
-import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useCart } from "@/app/context/CartContext";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { useRestaurant } from "@/app/context/RestaurantContext";
-import { ChevronDown, X, Home, QrCode, AlertCircle } from "lucide-react";
+import {
+  ChevronDown,
+  X,
+  Home,
+  QrCode,
+  AlertCircle,
+  CircleAlert,
+} from "lucide-react";
 import MenuHeaderDish from "@/app/components/headers/MenuHeaderDish";
 import RestaurantClosedModal from "@/app/components/RestaurantClosedModal";
 import ValidationError from "@/app/components/ValidationError";
+import Loader from "@/app/components/UI/Loader";
 import {
   MenuItem as MenuItemDB,
   MenuItemData,
@@ -18,9 +26,35 @@ import { reviewsApi, Review, ReviewStats } from "@/app/services/reviewsApi";
 import { useAuth } from "@/app/context/AuthContext";
 import { restaurantService } from "@/app/services/restaurant.service";
 
+// Pure helpers — defined outside to avoid re-creation on every render
+
+function parseCustomFields(item: MenuItemDB): CustomField[] {
+  if (!item.custom_fields) return [];
+  if (typeof item.custom_fields === "string") {
+    try {
+      const parsed = JSON.parse(item.custom_fields);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return item.custom_fields as CustomField[];
+}
+
+function adaptDish(item: MenuItemDB): MenuItemData {
+  return {
+    id: item.id,
+    name: item.name,
+    description: item.description || "",
+    price: Number(item.price),
+    images: item.image_url ? [item.image_url] : [],
+    features: [],
+    discount: item.discount || 0,
+  };
+}
+
 export default function DishDetailPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const dishId = parseInt(params.id as string);
   const restaurantId = params.restaurantId as string;
@@ -29,19 +63,23 @@ export default function DishDetailPage() {
   const { tableNumber, navigateWithTable } = useTableNavigation();
   const { restaurant, menu, isOpen, setBranchNumber, setRestaurantId } =
     useRestaurant();
+
   const [localQuantity, setLocalQuantity] = useState(0);
   const [dishQuantity, setDishQuantity] = useState(1);
   const [isPulsing, setIsPulsing] = useState(false);
+  const [specialInstructions, setSpecialInstructions] = useState("");
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>(
     {},
   );
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
+  // Refs en lugar de state — los valores de touch no necesitan re-renders
+  const touchStartRef = useRef(0);
+  const touchEndRef = useRef(0);
   const [customFieldSelections, setCustomFieldSelections] = useState<{
     [fieldId: string]: string | string[] | Record<string, number>;
   }>({});
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [reviewRating, setReviewRating] = useState(0);
   const [hoveredReviewRating, setHoveredReviewRating] = useState(0);
   const [showClosedModal, setShowClosedModal] = useState(false);
@@ -60,22 +98,18 @@ export default function DishDetailPage() {
         router.push("/");
         return;
       }
-
       if (!branchNumber || isNaN(parseInt(branchNumber))) {
         router.push("/");
         return;
       }
-
       if (!tableNumber || isNaN(parseInt(tableNumber))) {
         router.push("/");
         return;
       }
 
-      // Establecer contextos
       setRestaurantId(parseInt(restaurantId));
       setBranchNumber(parseInt(branchNumber));
 
-      // Validar que existen
       try {
         const validation =
           await restaurantService.validateRestaurantBranchTable(
@@ -83,7 +117,6 @@ export default function DishDetailPage() {
             parseInt(branchNumber),
             parseInt(tableNumber),
           );
-
         if (!validation.valid) {
           console.error("❌ Validation failed:", validation.error);
           setValidationError(validation.error || "VALIDATION_ERROR");
@@ -109,44 +142,16 @@ export default function DishDetailPage() {
     router,
   ]);
 
-  // Intentar cargar datos del menú del contexto de forma sincrónica (precarga instantánea)
+  // Precarga instantánea desde el contexto del menú
   const initialDishData = useMemo(() => {
     if (!menu || menu.length === 0 || !dishId) return null;
-
-    // Buscar el platillo en el menú del contexto
     for (const section of menu) {
       const foundItem = section.items.find((item) => item.id === dishId);
       if (foundItem) {
-        // Parsear custom_fields si es string JSON
-        let parsedCustomFields: CustomField[] = [];
-        if (foundItem.custom_fields) {
-          if (typeof foundItem.custom_fields === "string") {
-            try {
-              const parsed = JSON.parse(foundItem.custom_fields);
-              parsedCustomFields = Array.isArray(parsed) ? parsed : [];
-            } catch (e) {
-              console.error("Error parsing custom_fields:", e);
-            }
-          } else {
-            parsedCustomFields = foundItem.custom_fields;
-          }
-        }
-
-        // Adaptar el item de BD al formato esperado
-        const adaptedDish: MenuItemData = {
-          id: foundItem.id,
-          name: foundItem.name,
-          description: foundItem.description || "",
-          price: Number(foundItem.price),
-          images: foundItem.image_url ? [foundItem.image_url] : [],
-          features: [],
-          discount: foundItem.discount || 0,
-        };
-
         return {
-          dish: adaptedDish,
+          dish: adaptDish(foundItem),
           section: section.name,
-          customFields: parsedCustomFields,
+          customFields: parseCustomFields(foundItem),
         };
       }
     }
@@ -161,44 +166,28 @@ export default function DishDetailPage() {
     customFields: CustomField[];
   } | null>(initialDishData);
 
-  // Obtener datos del platillo directamente de la API (para recargas o si no está en caché)
+  // Fetch desde API (para recargas directas o si no está en caché)
   useEffect(() => {
     const fetchDish = async () => {
       if (!dishId) return;
-
-      // Si ya tenemos datos del menú, no mostrar skeleton
-      const hasDataFromMenu = dishData !== null;
-
-      if (!hasDataFromMenu) {
-        setDishLoading(true);
-      }
+      if (!dishData) setDishLoading(true);
       setDishError(null);
-
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL;
-        const response = await fetch(`${API_URL}/menu/items/${dishId}`);
-
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/menu/items/${dishId}`,
+        );
         if (!response.ok) {
-          if (response.status === 404) {
-            setDishError("not_found");
-          } else {
-            setDishError("error");
-          }
+          setDishError(response.status === 404 ? "not_found" : "error");
           setDishLoading(false);
           return;
         }
-
         const result = await response.json();
-
         if (!result.success || !result.data) {
           setDishError("error");
           setDishLoading(false);
           return;
         }
-
         const foundItem = result.data;
-
-        // Buscar la sección en el menú del contexto si está disponible
         let sectionName = "Menú";
         if (menu && menu.length > 0) {
           for (const section of menu) {
@@ -208,37 +197,10 @@ export default function DishDetailPage() {
             }
           }
         }
-
-        // Parsear custom_fields si es string JSON
-        let parsedCustomFields: CustomField[] = [];
-        if (foundItem.custom_fields) {
-          if (typeof foundItem.custom_fields === "string") {
-            try {
-              const parsed = JSON.parse(foundItem.custom_fields);
-              parsedCustomFields = Array.isArray(parsed) ? parsed : [];
-            } catch (e) {
-              console.error("Error parsing custom_fields:", e);
-            }
-          } else {
-            parsedCustomFields = foundItem.custom_fields;
-          }
-        }
-
-        // Adaptar el item de BD al formato esperado
-        const adaptedDish: MenuItemData = {
-          id: foundItem.id,
-          name: foundItem.name,
-          description: foundItem.description || "",
-          price: Number(foundItem.price),
-          images: foundItem.image_url ? [foundItem.image_url] : [],
-          features: [],
-          discount: foundItem.discount || 0,
-        };
-
         setDishData({
-          dish: adaptedDish,
+          dish: adaptDish(foundItem),
           section: sectionName,
-          customFields: parsedCustomFields,
+          customFields: parseCustomFields(foundItem),
         });
         setDishLoading(false);
       } catch (error) {
@@ -247,49 +209,30 @@ export default function DishDetailPage() {
         setDishLoading(false);
       }
     };
-
     fetchDish();
   }, [dishId]);
 
-  // Inicializar secciones abiertas por defecto
+  // Abrir todas las secciones por defecto
   useEffect(() => {
-    if (dishData?.customFields) {
-      // Abrir todas las secciones por defecto
-      if (dishData.customFields.length > 0) {
-        const allSectionsOpen: { [key: string]: boolean } = {};
-        dishData.customFields.forEach((field) => {
-          allSectionsOpen[field.id] = true;
-        });
-        setOpenSections(allSectionsOpen);
-      }
+    if (dishData?.customFields && dishData.customFields.length > 0) {
+      const allOpen: { [key: string]: boolean } = {};
+      dishData.customFields.forEach((field) => {
+        allOpen[field.id] = true;
+      });
+      setOpenSections(allOpen);
     }
   }, [dishData?.customFields]);
 
   const toggleSection = (section: string) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
   const handleDropdownChange = (fieldId: string, optionId: string) => {
     setCustomFieldSelections((prev) => {
-      const currentSelection = prev[fieldId] as string[] | undefined;
-      const isSelected = currentSelection?.includes(optionId);
-
-      // Si ya está seleccionado, deseleccionar
-      if (isSelected) {
-        return {
-          ...prev,
-          [fieldId]: [],
-        };
-      }
-
-      // Si no está seleccionado, seleccionar
-      return {
-        ...prev,
-        [fieldId]: [optionId],
-      };
+      const isSelected = (prev[fieldId] as string[] | undefined)?.includes(
+        optionId,
+      );
+      return { ...prev, [fieldId]: isSelected ? [] : [optionId] };
     });
   };
 
@@ -301,30 +244,12 @@ export default function DishDetailPage() {
     setCustomFieldSelections((prev) => {
       const current = (prev[fieldId] as string[]) || [];
       const isSelected = current.includes(optionId);
-
-      // Si ya está seleccionado, siempre permitir desmarcar
       if (isSelected) {
-        return {
-          ...prev,
-          [fieldId]: current.filter((item) => item !== optionId),
-        };
+        return { ...prev, [fieldId]: current.filter((i) => i !== optionId) };
       }
-
-      // Si no está seleccionado, verificar límite de selecciones
       const maxSelections = field?.maxSelections || 1;
-      if (current.length >= maxSelections) {
-        // Mostrar feedback visual o sonoro si se excede el límite
-        console.log(
-          `Máximo ${maxSelections} opción${maxSelections > 1 ? "es" : ""} permitida${maxSelections > 1 ? "s" : ""}`,
-        );
-        return prev; // No agregar la nueva selección
-      }
-
-      // Agregar la nueva selección
-      return {
-        ...prev,
-        [fieldId]: [...current, optionId],
-      };
+      if (current.length >= maxSelections) return prev;
+      return { ...prev, [fieldId]: [...current, optionId] };
     });
   };
 
@@ -335,115 +260,67 @@ export default function DishDetailPage() {
   ) => {
     setCustomFieldSelections((prev) => {
       const current = (prev[fieldId] as Record<string, number>) || {};
-      const updatedSelections = { ...current };
-
+      const updated = { ...current };
       if (quantity > 0) {
-        updatedSelections[optionId] = quantity;
+        updated[optionId] = quantity;
       } else {
-        delete updatedSelections[optionId];
+        delete updated[optionId];
       }
-
-      return {
-        ...prev,
-        [fieldId]: updatedSelections,
-      };
+      return { ...prev, [fieldId]: updated };
     });
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
+    touchStartRef.current = e.targetTouches[0].clientX;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
+    touchEndRef.current = e.targetTouches[0].clientX;
   };
 
   const handleTouchEnd = () => {
     if (!dishData) return;
-
-    const minSwipeDistance = 50;
-    const distance = touchStart - touchEnd;
-
-    if (Math.abs(distance) < minSwipeDistance) return;
-
+    const distance = touchStartRef.current - touchEndRef.current;
+    if (Math.abs(distance) < 50) return;
     if (distance > 0) {
-      // Swipe left - siguiente imagen
       setCurrentImageIndex((prev) =>
         prev < dishData.dish.images.length - 1 ? prev + 1 : prev,
       );
     } else {
-      // Swipe right - imagen anterior
       setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : prev));
     }
   };
 
-  useEffect(() => {
-    if (!tableNumber) {
-      router.push("/");
-      return;
-    }
-
-    if (isNaN(parseInt(tableNumber))) {
-      router.push("/");
-      return;
-    }
-  }, [tableNumber, router]);
-
-  // Cargar estadísticas de reviews al montar
-  useEffect(() => {
-    if (dishId && !isNaN(dishId)) {
-      console.log("🔄 Loading reviews for dish:", dishId);
-      setIsLoadingReviews(true);
-      Promise.all([loadDishStats(), loadMyReview()]).finally(() => {
-        setIsLoadingReviews(false);
-      });
-    }
-  }, [dishId]);
-
-  const loadDishStats = async () => {
+  const loadDishStats = useCallback(async () => {
     if (!dishId || isNaN(dishId)) return;
-
     try {
       const response = await reviewsApi.getMenuItemStats(dishId);
-      console.log("stats response ", response);
-      if (response.success && response.data) {
-        setDishStats(response.data.data);
-      }
+      if (response.success && response.data) setDishStats(response.data.data);
     } catch (error) {
       console.error("Error loading dish stats:", error);
     }
-  };
+  }, [dishId]);
 
-  const loadMyReview = async () => {
+  const loadMyReview = useCallback(async () => {
     if (!dishId || isNaN(dishId)) return;
-
     try {
-      // Determinar si el usuario está autenticado
       const isAuthenticated = !isLoading && user;
       const userId = isAuthenticated ? user.id : null;
-
-      // Solo usar guestId si NO está autenticado
       const guestId =
         !isAuthenticated && typeof window !== "undefined"
           ? localStorage.getItem("xquisito-guest-id")
           : null;
 
       const response = await reviewsApi.getMyReview(dishId, userId, guestId);
-      console.log("My review response:", response);
-
       if (response.success) {
         if (response.data?.data) {
-          // Usuario tiene una review existente
           setMyReview(response.data.data);
           setReviewRating(response.data.data.rating);
         } else {
-          // Usuario no tiene review aún (esto es normal)
           setMyReview(null);
           setReviewRating(0);
         }
       } else if (response.error?.type === "http_error") {
-        // Si es error 401 u otro error HTTP, simplemente no mostrar review
-        console.log("No review found or no auth:", response.error.message);
         setMyReview(null);
         setReviewRating(0);
       }
@@ -452,195 +329,111 @@ export default function DishDetailPage() {
       setMyReview(null);
       setReviewRating(0);
     }
-  };
+  }, [dishId, isLoading, user]);
 
-  const handleSubmitReview = async () => {
-    if (reviewRating === 0 || !dishId || isNaN(dishId)) return;
-
-    setIsSubmittingReview(true);
-
-    try {
-      let response;
-
-      // Determinar si el usuario está autenticado
-      const isAuthenticated = !isLoading && user;
-      const userId = isAuthenticated ? user.id : null;
-
-      // Solo usar guestId si NO está autenticado
-      const guestId =
-        !isAuthenticated && typeof window !== "undefined"
-          ? localStorage.getItem("xquisito-guest-id")
-          : null;
-
-      console.log(dishId, reviewRating, userId, guestId);
-
-      if (myReview) {
-        response = await reviewsApi.updateReview(
-          myReview.id,
-          reviewRating,
-          userId,
-          guestId,
-        );
-      } else {
-        response = await reviewsApi.createReview({
-          menu_item_id: dishId,
-          rating: reviewRating,
-          user_id: userId,
-          guest_id: guestId,
-        });
-      }
-
-      if (response?.success) {
-        alert(myReview ? "¡Reseña actualizada!" : "¡Gracias por tu reseña!");
-        setIsReviewModalOpen(false);
-
-        // Recargar estadísticas
-        await loadDishStats();
-        await loadMyReview();
-      } else {
-        throw new Error(response.error?.message || "Error al enviar reseña");
-      }
-    } catch (error: any) {
-      console.error("Error submitting review:", error);
-
-      if (error.message.includes("already reviewed")) {
-        alert("Ya has calificado este platillo");
-      } else {
-        alert("Error al enviar la reseña. Intenta de nuevo.");
-      }
-    } finally {
-      setIsSubmittingReview(false);
+  useEffect(() => {
+    if (dishId && !isNaN(dishId)) {
+      setIsLoadingReviews(true);
+      Promise.all([loadDishStats(), loadMyReview()]).finally(() => {
+        setIsLoadingReviews(false);
+      });
     }
-  };
+  }, [dishId, loadDishStats, loadMyReview]);
 
-  // Calcular precio total con extras
-  const calculateTotalPrice = () => {
+  // Precio total con extras — memoizado para evitar recálculo en cada render
+  const totalPrice = useMemo(() => {
     if (!dishData) return 0;
-
-    // Aplicar descuento al precio base
     const basePrice =
       dishData.dish.discount > 0
         ? dishData.dish.price * (1 - dishData.dish.discount / 100)
         : dishData.dish.price;
-
     let extraPrice = 0;
-    if (dishData.customFields) {
-      dishData.customFields.forEach((field) => {
-        const fieldSelection = customFieldSelections[field.id];
-
-        if (
-          field.type === "dropdown-quantity" &&
-          fieldSelection &&
-          typeof fieldSelection === "object" &&
-          !Array.isArray(fieldSelection)
-        ) {
-          // Manejar dropdown-quantity (Record<string, number>)
-          const quantitySelections = fieldSelection as Record<string, number>;
-          Object.entries(quantitySelections).forEach(([optionId, quantity]) => {
-            const option = field.options?.find((opt) => opt.id === optionId);
-            if (option && quantity > 0) {
-              extraPrice += option.price * quantity;
-            }
+    dishData.customFields?.forEach((field) => {
+      const sel = customFieldSelections[field.id];
+      if (
+        field.type === "dropdown-quantity" &&
+        sel &&
+        typeof sel === "object" &&
+        !Array.isArray(sel)
+      ) {
+        Object.entries(sel as Record<string, number>).forEach(
+          ([optionId, qty]) => {
+            const option = field.options?.find((o) => o.id === optionId);
+            if (option && qty > 0) extraPrice += option.price * qty;
+          },
+        );
+      } else if (Array.isArray(sel)) {
+        field.options
+          ?.filter((o) => sel.includes(o.id))
+          .forEach((o) => {
+            extraPrice += o.price;
           });
-        } else if (Array.isArray(fieldSelection)) {
-          // Manejar dropdown y checkboxes (string[])
-          const selectedOptions =
-            field.options?.filter((opt) => fieldSelection.includes(opt.id)) ||
-            [];
-          selectedOptions.forEach((opt) => {
-            extraPrice += opt.price;
-          });
-        }
-      });
-    }
+      }
+    });
     return basePrice + extraPrice;
-  };
+  }, [dishData, customFieldSelections]);
 
-  // Validar que todos los dropdowns obligatorios tengan una opción seleccionada
-  const isFormValid = () => {
+  // Validación de campos obligatorios — memoizada
+  const isFormValid = useMemo(() => {
     if (!dishData?.customFields) return true;
-
     for (const field of dishData.customFields) {
       if (field.type === "dropdown" && field.required) {
-        const selection = customFieldSelections[field.id] as
-          | string[]
-          | undefined;
-        if (!selection || selection.length === 0) {
-          return false;
-        }
+        const sel = customFieldSelections[field.id] as string[] | undefined;
+        if (!sel || sel.length === 0) return false;
       }
     }
     return true;
-  };
+  }, [dishData, customFieldSelections]);
 
-  const handleAddToCart = async (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (!dishData) return;
-
-    // Validar que todos los dropdowns tengan selección
-    if (!isFormValid()) {
-      return;
-    }
-
-    // Verificar si el restaurante está abierto
-    if (!isOpen) {
-      setShowClosedModal(true);
-      return;
-    }
-
-    // Aplicar descuento al precio base
+  // Helper compartido para construir el item del carrito
+  const buildCartItem = useCallback(() => {
+    if (!dishData) return null;
     const basePrice =
       dishData.dish.discount > 0
         ? dishData.dish.price * (1 - dishData.dish.discount / 100)
         : dishData.dish.price;
 
-    // Calcular precio extra y preparar custom fields
+    type SelectedOption = {
+      optionId: string;
+      optionName: string;
+      price: number;
+      quantity: number;
+    };
+
     const customFieldsData = dishData.customFields
       ?.map((field) => {
-        const fieldSelection = customFieldSelections[field.id];
-        let selectedOptions: Array<{
-          optionId: string;
-          optionName: string;
-          price: number;
-          quantity?: number;
-        }> = [];
+        const sel = customFieldSelections[field.id];
+        let selectedOptions: SelectedOption[] = [];
 
         if (
           field.type === "dropdown-quantity" &&
-          fieldSelection &&
-          typeof fieldSelection === "object" &&
-          !Array.isArray(fieldSelection)
+          sel &&
+          typeof sel === "object" &&
+          !Array.isArray(sel)
         ) {
-          // Manejar dropdown-quantity (Record<string, number>)
-          const quantitySelections = fieldSelection as Record<string, number>;
-          selectedOptions = Object.entries(quantitySelections)
-            .filter(([_, quantity]) => quantity > 0)
+          selectedOptions = Object.entries(sel as Record<string, number>)
+            .filter(([, qty]) => qty > 0)
             .map(([optionId, quantity]) => {
-              const option = field.options?.find((opt) => opt.id === optionId);
-              return option
+              const opt = field.options?.find((o) => o.id === optionId);
+              return opt
                 ? {
-                    optionId: option.id,
-                    optionName: option.name,
-                    price: option.price,
+                    optionId: opt.id,
+                    optionName: opt.name,
+                    price: opt.price,
                     quantity,
                   }
                 : null;
             })
-            .filter(Boolean) as Array<{
-            optionId: string;
-            optionName: string;
-            price: number;
-            quantity: number;
-          }>;
-        } else if (Array.isArray(fieldSelection)) {
-          // Manejar dropdown y checkboxes (string[])
+            .filter((x): x is SelectedOption => x !== null);
+        } else if (Array.isArray(sel)) {
           selectedOptions =
             field.options
-              ?.filter((opt) => fieldSelection.includes(opt.id))
-              .map((opt) => ({
-                optionId: opt.id,
-                optionName: opt.name,
-                price: opt.price,
+              ?.filter((o) => sel.includes(o.id))
+              .map((o) => ({
+                optionId: o.id,
+                optionName: o.name,
+                price: o.price,
+                quantity: 1,
               })) || [];
         }
 
@@ -651,156 +444,51 @@ export default function DishDetailPage() {
           selectedOptions,
         };
       })
-      .filter((field) => field.selectedOptions.length > 0);
+      .filter((f) => f.selectedOptions.length > 0);
 
     const extraPrice =
       customFieldsData?.reduce(
-        (sum, field) =>
-          sum +
-          field.selectedOptions.reduce(
-            (s, opt) => s + opt.price * (opt.quantity || 1),
-            0,
-          ),
+        (sum, f) =>
+          sum + f.selectedOptions.reduce((s, o) => s + o.price * o.quantity, 0),
         0,
       ) || 0;
 
-    setLocalQuantity((prev) => prev + 1);
-    setIsPulsing(true);
-
-    const itemToAdd = {
+    return {
       ...dishData.dish,
       price: basePrice,
       customFields: customFieldsData,
       extraPrice,
+      specialInstructions: specialInstructions.trim() || null,
     };
+  }, [dishData, customFieldSelections, specialInstructions]);
 
-    await addItem(itemToAdd);
-
-    // Guardar en localStorage como el último item agregado
-    const lastItemKey = `lastItem_${dishData.dish.id}`;
-    localStorage.setItem(lastItemKey, JSON.stringify(itemToAdd));
-  };
-
-  const handleAddToCartAndReturn = async () => {
-    if (!dishData) return;
-
-    // Validar que todos los dropdowns tengan selección
-    if (!isFormValid()) {
-      return;
-    }
-
-    // Verificar si el restaurante está abierto
+  const handleAddToCart = async (e?: React.MouseEvent): Promise<boolean> => {
+    e?.stopPropagation();
+    if (!dishData || !isFormValid) return false;
     if (!isOpen) {
       setShowClosedModal(true);
-      return;
+      return false;
     }
-
-    // Aplicar descuento al precio base
-    const basePrice =
-      dishData.dish.discount > 0
-        ? dishData.dish.price * (1 - dishData.dish.discount / 100)
-        : dishData.dish.price;
-
-    // Calcular precio extra y preparar custom fields
-    const customFieldsData = dishData.customFields
-      ?.map((field) => {
-        const fieldSelection = customFieldSelections[field.id];
-        let selectedOptions: Array<{
-          optionId: string;
-          optionName: string;
-          price: number;
-          quantity?: number;
-        }> = [];
-
-        if (
-          field.type === "dropdown-quantity" &&
-          fieldSelection &&
-          typeof fieldSelection === "object" &&
-          !Array.isArray(fieldSelection)
-        ) {
-          // Manejar dropdown-quantity (Record<string, number>)
-          const quantitySelections = fieldSelection as Record<string, number>;
-          selectedOptions = Object.entries(quantitySelections)
-            .filter(([_, quantity]) => quantity > 0)
-            .map(([optionId, quantity]) => {
-              const option = field.options?.find((opt) => opt.id === optionId);
-              return option
-                ? {
-                    optionId: option.id,
-                    optionName: option.name,
-                    price: option.price,
-                    quantity,
-                  }
-                : null;
-            })
-            .filter(Boolean) as Array<{
-            optionId: string;
-            optionName: string;
-            price: number;
-            quantity: number;
-          }>;
-        } else if (Array.isArray(fieldSelection)) {
-          // Manejar dropdown y checkboxes (string[])
-          selectedOptions =
-            field.options
-              ?.filter((opt) => fieldSelection.includes(opt.id))
-              .map((opt) => ({
-                optionId: opt.id,
-                optionName: opt.name,
-                price: opt.price,
-              })) || [];
-        }
-
-        return {
-          fieldId: field.id,
-          fieldName: field.name,
-          fieldType: field.type,
-          selectedOptions,
-        };
-      })
-      .filter((field) => field.selectedOptions.length > 0);
-
-    const extraPrice =
-      customFieldsData?.reduce(
-        (sum, field) =>
-          sum +
-          field.selectedOptions.reduce(
-            (s, opt) => s + opt.price * (opt.quantity || 1),
-            0,
-          ),
-        0,
-      ) || 0;
+    const item = buildCartItem();
+    if (!item) return false;
 
     setLocalQuantity((prev) => prev + dishQuantity);
     setIsPulsing(true);
+    await addItem(item, dishQuantity);
+    localStorage.setItem(`lastItem_${dishData.dish.id}`, JSON.stringify(item));
+    return true;
+  };
 
-    const itemToAdd = {
-      ...dishData.dish,
-      price: basePrice,
-      customFields: customFieldsData,
-      extraPrice,
-    };
-
-    await addItem(itemToAdd, dishQuantity);
-
-    // Guardar en localStorage como el último item agregado
-    const lastItemKey = `lastItem_${dishData.dish.id}`;
-    localStorage.setItem(lastItemKey, JSON.stringify(itemToAdd));
-
-    setTimeout(() => {
-      navigateWithTable("/menu");
-    }, 200);
+  const handleAddToCartAndReturn = async () => {
+    const success = await handleAddToCart();
+    if (success) setTimeout(() => navigateWithTable("/menu"), 200);
   };
 
   const handleRemoveFromCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!dishData) return;
-
     setLocalQuantity((prev) => Math.max(0, prev - 1));
-
-    const cartItem = state.items.find(
-      (cartItem) => cartItem.id === dishData.dish.id,
-    );
+    const cartItem = state.items.find((ci) => ci.id === dishData.dish.id);
     if (cartItem && cartItem.quantity > 1) {
       await updateQuantity(dishData.dish.id, cartItem.quantity - 1);
     } else if (cartItem && cartItem.quantity === 1) {
@@ -809,8 +497,7 @@ export default function DishDetailPage() {
   };
 
   const currentQuantity = dishData
-    ? state.items.find((cartItem) => cartItem.id === dishData.dish.id)
-        ?.quantity || 0
+    ? state.items.find((ci) => ci.id === dishData.dish.id)?.quantity || 0
     : 0;
 
   const displayQuantity = Math.max(localQuantity, currentQuantity);
@@ -822,18 +509,65 @@ export default function DishDetailPage() {
     }
   }, [isPulsing]);
 
-  // Mostrar error de validación si existe
+  const handleSubmitReview = async () => {
+    if (reviewRating === 0 || !dishId || isNaN(dishId)) return;
+    setIsSubmittingReview(true);
+    try {
+      const isAuthenticated = !isLoading && user;
+      const userId = isAuthenticated ? user.id : null;
+      const guestId =
+        !isAuthenticated && typeof window !== "undefined"
+          ? localStorage.getItem("xquisito-guest-id")
+          : null;
+
+      const response = myReview
+        ? await reviewsApi.updateReview(
+            myReview.id,
+            reviewRating,
+            userId,
+            guestId,
+          )
+        : await reviewsApi.createReview({
+            menu_item_id: dishId,
+            rating: reviewRating,
+            user_id: userId,
+            guest_id: guestId,
+          });
+
+      if (response?.success) {
+        setIsReviewModalOpen(false);
+        // Paralelo — no hay dependencia entre ambas llamadas
+        await Promise.all([loadDishStats(), loadMyReview()]);
+      } else {
+        throw new Error(response.error?.message || "Error al enviar reseña");
+      }
+    } catch (error: any) {
+      console.error("Error submitting review:", error);
+      setErrorMessage(
+        error.message?.includes("already reviewed")
+          ? "Ya has calificado este platillo"
+          : "Error al enviar la reseña. Intenta de nuevo.",
+      );
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  // — Guards de render —
+
   if (validationError) {
     return <ValidationError errorType={validationError as any} />;
   }
 
-  // Si hubo error cargando el platillo
+  if (dishLoading) {
+    return <Loader />;
+  }
+
   if (dishError === "error") {
     return (
       <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
           <div className="w-full max-w-md">
-            {/* Logo */}
             <div className="mb-6 md:mb-8 lg:mb-10 text-center">
               <img
                 src="/logo-short-green.webp"
@@ -850,15 +584,12 @@ export default function DishDetailPage() {
                 No pudimos cargar el platillo
               </p>
             </div>
-
-            {/* Options */}
             <div className="space-y-3 md:space-y-4 lg:space-y-5">
-              {/* Go to Menu Option */}
               <button
                 onClick={() => router.push("/")}
                 className="w-full bg-white hover:bg-gray-50 text-black py-4 md:py-5 lg:py-6 px-4 md:px-5 lg:px-6 rounded-xl md:rounded-2xl transition-all duration-200 flex items-center gap-3 md:gap-4 lg:gap-5 active:scale-95"
               >
-                <div className="bg-gradient-to-r from-[#34808C] to-[#173E44] p-2 md:p-2.5 lg:p-3 rounded-full group-hover:scale-110 transition-transform">
+                <div className="bg-gradient-to-r from-[#34808C] to-[#173E44] p-2 md:p-2.5 lg:p-3 rounded-full">
                   <Home className="size-5 md:size-6 lg:size-7 text-white" />
                 </div>
                 <div className="flex-1 text-left">
@@ -871,8 +602,6 @@ export default function DishDetailPage() {
                 </div>
               </button>
             </div>
-
-            {/* Additional Info */}
             <div className="mt-6 md:mt-7 lg:mt-8 text-center">
               <p className="text-white/70 text-xs md:text-sm lg:text-base">
                 Por favor intenta de nuevo más tarde
@@ -889,7 +618,6 @@ export default function DishDetailPage() {
       <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
           <div className="w-full max-w-md">
-            {/* Logo */}
             <div className="mb-6 md:mb-8 lg:mb-10 text-center">
               <img
                 src="/logo-short-green.webp"
@@ -906,15 +634,12 @@ export default function DishDetailPage() {
                 Por favor escanee el código QR de su mesa
               </p>
             </div>
-
-            {/* Options */}
             <div className="space-y-3 md:space-y-4 lg:space-y-5">
-              {/* Scan QR Option */}
               <button
                 onClick={() => router.push("/")}
                 className="w-full bg-white hover:bg-gray-50 text-black py-4 md:py-5 lg:py-6 px-4 md:px-5 lg:px-6 rounded-xl md:rounded-2xl transition-all duration-200 flex items-center gap-3 md:gap-4 lg:gap-5 active:scale-95"
               >
-                <div className="bg-gradient-to-r from-[#34808C] to-[#173E44] p-2 md:p-2.5 lg:p-3 rounded-full group-hover:scale-110 transition-transform">
+                <div className="bg-gradient-to-r from-[#34808C] to-[#173E44] p-2 md:p-2.5 lg:p-3 rounded-full">
                   <QrCode className="size-5 md:size-6 lg:size-7 text-white" />
                 </div>
                 <div className="flex-1 text-left">
@@ -927,8 +652,6 @@ export default function DishDetailPage() {
                 </div>
               </button>
             </div>
-
-            {/* Additional Info */}
             <div className="mt-6 md:mt-7 lg:mt-8 text-center">
               <p className="text-white/70 text-xs md:text-sm lg:text-base">
                 Cada mesa tiene un código QR único para acceder al menú
@@ -940,13 +663,11 @@ export default function DishDetailPage() {
     );
   }
 
-  // Si el platillo no fue encontrado o no hay datos
   if (dishError === "not_found" || !dishData) {
     return (
       <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-5 md:px-8 lg:px-10 pb-12 md:py-10 lg:py-12">
           <div className="w-full max-w-md">
-            {/* Logo */}
             <div className="mb-6 md:mb-8 lg:mb-10 text-center">
               <img
                 src="/logo-short-green.webp"
@@ -960,15 +681,12 @@ export default function DishDetailPage() {
                 Este platillo no está disponible
               </p>
             </div>
-
-            {/* Options */}
             <div className="space-y-3 md:space-y-4 lg:space-y-5">
-              {/* Go to Menu Option */}
               <button
                 onClick={() => navigateWithTable("/menu")}
                 className="w-full bg-white hover:bg-gray-50 text-black py-4 md:py-5 lg:py-6 px-4 md:px-5 lg:px-6 rounded-xl md:rounded-2xl transition-all duration-200 flex items-center gap-3 md:gap-4 lg:gap-5 active:scale-95"
               >
-                <div className="bg-gradient-to-r from-[#34808C] to-[#173E44] p-2 md:p-2.5 lg:p-3 rounded-full group-hover:scale-110 transition-transform">
+                <div className="bg-gradient-to-r from-[#34808C] to-[#173E44] p-2 md:p-2.5 lg:p-3 rounded-full">
                   <Home className="size-5 md:size-6 lg:size-7 text-white" />
                 </div>
                 <div className="flex-1 text-left">
@@ -981,8 +699,6 @@ export default function DishDetailPage() {
                 </div>
               </button>
             </div>
-
-            {/* Additional Info */}
             <div className="mt-6 md:mt-7 lg:mt-8 text-center">
               <p className="text-white/70 text-xs md:text-sm lg:text-base">
                 Es posible que este platillo ya no esté disponible en el menú
@@ -1005,6 +721,7 @@ export default function DishDetailPage() {
         restaurantName={restaurant?.name}
         restaurantLogo={restaurant?.logo_url}
       />
+
       {/* Slider de imágenes */}
       <div className="absolute top-0 left-0 w-full h-96 md:h-[28rem] lg:h-[32rem] z-0">
         <div
@@ -1025,7 +742,7 @@ export default function DishDetailPage() {
                 style={{
                   filter: "contrast(1.08) brightness(1.03)",
                   imageRendering: "crisp-edges",
-                  transform: "scale(1.005)", // Ligero zoom para reducir bordes pixelados
+                  transform: "scale(1.005)",
                 }}
                 loading={index === 0 ? "eager" : "lazy"}
                 decoding="async"
@@ -1048,14 +765,13 @@ export default function DishDetailPage() {
           )}
         </div>
 
-        {/* Indicadores */}
         {dish.images.length > 1 && (
           <div className="absolute bottom-12 md:bottom-16 lg:bottom-20 left-0 right-0 flex justify-center gap-2 md:gap-3 z-10">
             {dish.images.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentImageIndex(index)}
-                className={`h-2.5 md:h-3 lg:h-3.5 rounded-full transition-all duration-300 border border-white cursor-pointer ${
+                className={`h-2.5 md:h-3 lg:h-3.5 rounded-full transition-all duration-300 border border-white ${
                   index === currentImageIndex
                     ? "w-2.5 md:w-3 lg:w-3.5 bg-white"
                     : "w-2.5 md:w-3 lg:w-3.5 bg-white/10"
@@ -1075,12 +791,10 @@ export default function DishDetailPage() {
             <div className="flex justify-between items-center text-black mb-6 md:mb-8">
               {isLoadingReviews ? (
                 <>
-                  {/* Skeleton para el rating */}
                   <div className="flex items-center gap-1.5 md:gap-2">
                     <div className="size-6 md:size-7 lg:size-8 bg-gray-200 rounded animate-pulse" />
                     <div className="h-5 md:h-6 w-8 md:w-10 bg-gray-200 rounded animate-pulse" />
                   </div>
-                  {/* Skeleton para el botón */}
                   <div className="h-5 md:h-6 w-32 md:w-40 bg-gray-200 rounded animate-pulse" />
                 </>
               ) : (
@@ -1110,12 +824,7 @@ export default function DishDetailPage() {
                   </div>
                   <button
                     onClick={() => {
-                      // Si ya hay una review, pre-llenar el rating
-                      if (myReview) {
-                        setReviewRating(myReview.rating);
-                      } else {
-                        setReviewRating(0);
-                      }
+                      setReviewRating(myReview?.rating ?? 0);
                       setIsReviewModalOpen(true);
                     }}
                     className="underline text-black text-sm md:text-base lg:text-lg"
@@ -1125,6 +834,7 @@ export default function DishDetailPage() {
                 </>
               )}
             </div>
+
             <div className="flex flex-col justify-between items-start mb-4 md:mb-6">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-medium text-black capitalize">
                 {dish.name}
@@ -1135,8 +845,7 @@ export default function DishDetailPage() {
                     ${dish.price} MXN
                   </h2>
                   <span className="text-black text-xl md:text-2xl lg:text-3xl">
-                    ${(dish.price * (1 - dish.discount / 100)).toFixed(2)}{" "}
-                    MXN{" "}
+                    ${(dish.price * (1 - dish.discount / 100)).toFixed(2)} MXN
                   </span>
                 </div>
               ) : (
@@ -1182,17 +891,16 @@ export default function DishDetailPage() {
                           {field.type === "dropdown" &&
                             field.required &&
                             (() => {
-                              const selection = customFieldSelections[
-                                field.id
-                              ] as string[] | undefined;
-                              const hasSelection =
-                                selection && selection.length > 0;
+                              const sel = customFieldSelections[field.id] as
+                                | string[]
+                                | undefined;
+                              const has = sel && sel.length > 0;
                               return (
                                 <div
-                                  className={`rounded px-2 py-1 ${hasSelection ? "bg-green-100" : "bg-gray-100"}`}
+                                  className={`rounded px-2 py-1 ${has ? "bg-green-100" : "bg-gray-100"}`}
                                 >
                                   <span
-                                    className={`text-sm md:text-base lg:text-lg font-normal ${hasSelection ? "text-green-600" : "text-gray-500"}`}
+                                    className={`text-sm md:text-base lg:text-lg font-normal ${has ? "text-green-600" : "text-gray-500"}`}
                                   >
                                     Obligatorio
                                   </span>
@@ -1206,17 +914,16 @@ export default function DishDetailPage() {
                             {field.type === "dropdown" &&
                               !openSections[field.id] &&
                               (() => {
-                                const selection = customFieldSelections[
-                                  field.id
-                                ] as string[] | undefined;
-                                if (selection && selection.length > 0) {
-                                  const selectedOption = field.options?.find(
-                                    (opt) => opt.id === selection[0],
+                                const sel = customFieldSelections[field.id] as
+                                  | string[]
+                                  | undefined;
+                                if (sel && sel.length > 0) {
+                                  const opt = field.options?.find(
+                                    (o) => o.id === sel[0],
                                   );
                                   return (
                                     <span className="text-black text-sm md:text-base mt-1">
-                                      {selectedOption?.name ||
-                                        "Selecciona una opción"}
+                                      {opt?.name || "Selecciona una opción"}
                                     </span>
                                   );
                                 }
@@ -1235,43 +942,30 @@ export default function DishDetailPage() {
                               )}
 
                             {(() => {
-                              const quantitySelection =
-                                customFieldSelections[field.id];
-                              const isValidQuantitySelection =
+                              const sel = customFieldSelections[field.id];
+                              if (
                                 field.type === "dropdown-quantity" &&
-                                quantitySelection &&
-                                typeof quantitySelection === "object" &&
-                                !Array.isArray(quantitySelection);
-
-                              if (isValidQuantitySelection) {
-                                const totalQuantity = Object.values(
-                                  quantitySelection as Record<string, number>,
-                                ).reduce((sum, qty) => sum + qty, 0);
-                                if (totalQuantity > 0) {
+                                sel &&
+                                typeof sel === "object" &&
+                                !Array.isArray(sel)
+                              ) {
+                                const total = Object.values(
+                                  sel as Record<string, number>,
+                                ).reduce((s, n) => s + n, 0);
+                                if (total > 0)
                                   return (
                                     <span className="text-[#eab3f4] text-sm md:text-base mt-1">
-                                      {totalQuantity} producto(s)
-                                      seleccionado(s)
+                                      {total} producto(s) seleccionado(s)
                                     </span>
                                   );
-                                }
                               }
-                              return null;
-                            })()}
-
-                            {(() => {
-                              const quantitySelection =
-                                customFieldSelections[field.id];
-                              const shouldShowPlaceholder =
+                              if (
                                 field.type === "dropdown-quantity" &&
-                                (!quantitySelection ||
-                                  Array.isArray(quantitySelection) ||
-                                  typeof quantitySelection !== "object" ||
-                                  Object.keys(
-                                    quantitySelection as Record<string, number>,
-                                  ).length === 0);
-
-                              if (shouldShowPlaceholder) {
+                                (!sel ||
+                                  Array.isArray(sel) ||
+                                  typeof sel !== "object" ||
+                                  Object.keys(sel as object).length === 0)
+                              ) {
                                 return (
                                   <span className="text-[#8e8e8e] text-sm md:text-base mt-1">
                                     Personalizar productos adicionales
@@ -1283,25 +977,18 @@ export default function DishDetailPage() {
 
                             {field.type === "checkboxes" &&
                               (() => {
-                                const currentSelections =
+                                const sel =
                                   (customFieldSelections[
                                     field.id
                                   ] as string[]) || [];
-                                const maxSelections = field.maxSelections || 1;
-                                const selectedCount = currentSelections.length;
-
-                                if (selectedCount > 0) {
-                                  return (
-                                    <span className="text-[#eab3f4] text-sm md:text-base mt-1">
-                                      {selectedCount} producto(s)
-                                      seleccionado(s)
-                                    </span>
-                                  );
-                                }
-
-                                return (
+                                const max = field.maxSelections || 1;
+                                return sel.length > 0 ? (
+                                  <span className="text-[#eab3f4] text-sm md:text-base mt-1">
+                                    {sel.length} producto(s) seleccionado(s)
+                                  </span>
+                                ) : (
                                   <span className="text-gray-600 text-sm md:text-base mt-1">
-                                    Selecciona hasta {maxSelections}
+                                    Selecciona hasta {max}
                                   </span>
                                 );
                               })()}
@@ -1315,16 +1002,17 @@ export default function DishDetailPage() {
                         </div>
                       </div>
                     </div>
+
                     {openSections[field.id] && (
                       <div className="mt-3 md:mt-4">
                         {field.type === "dropdown" && field.options && (
                           <div className="bg-white rounded-lg border border-[#8e8e8e]/30 shadow-lg overflow-hidden animate-in slide-in-from-top-2 duration-200">
                             {field.options.map((option, index) => {
-                              const currentSelection = customFieldSelections[
-                                field.id
-                              ] as string[] | undefined;
+                              const sel = customFieldSelections[field.id] as
+                                | string[]
+                                | undefined;
                               const isSelected =
-                                currentSelection?.includes(option.id) || false;
+                                sel?.includes(option.id) || false;
                               return (
                                 <div
                                   key={option.id}
@@ -1357,21 +1045,18 @@ export default function DishDetailPage() {
                             })}
                           </div>
                         )}
+
                         {field.type === "dropdown-quantity" &&
                           field.options && (
                             <div className="bg-white rounded-lg border border-[#8e8e8e]/30 shadow-lg overflow-hidden animate-in slide-in-from-top-2 duration-200">
                               {field.options.map((option, index) => {
-                                const fieldSelection =
-                                  customFieldSelections[field.id];
-                                const currentQuantity =
-                                  (fieldSelection &&
-                                  typeof fieldSelection === "object" &&
-                                  !Array.isArray(fieldSelection)
-                                    ? (
-                                        fieldSelection as Record<string, number>
-                                      )[option.id]
+                                const sel = customFieldSelections[field.id];
+                                const qty =
+                                  (sel &&
+                                  typeof sel === "object" &&
+                                  !Array.isArray(sel)
+                                    ? (sel as Record<string, number>)[option.id]
                                     : 0) || 0;
-
                                 return (
                                   <div
                                     key={option.id}
@@ -1397,25 +1082,25 @@ export default function DishDetailPage() {
                                           handleQuantityChange(
                                             field.id,
                                             option.id,
-                                            Math.max(0, currentQuantity - 1),
+                                            Math.max(0, qty - 1),
                                           )
                                         }
-                                        className="w-8 h-8 md:w-9 md:h-9 bg-[#f9f9f9] hover:bg-[#eab3f4]/20 rounded-full flex items-center justify-center border border-[#8e8e8e]/50 transition-colors duration-200"
-                                        disabled={currentQuantity <= 0}
+                                        disabled={qty <= 0}
+                                        className="w-8 h-8 md:w-9 md:h-9 bg-[#f9f9f9] hover:bg-[#eab3f4]/20 rounded-full flex items-center justify-center border border-[#8e8e8e]/50 transition-colors duration-200 disabled:opacity-40"
                                       >
                                         <span className="text-lg font-medium text-[#8e8e8e]">
                                           −
                                         </span>
                                       </button>
                                       <span className="text-lg md:text-xl font-medium text-black min-w-[2rem] text-center">
-                                        {currentQuantity}
+                                        {qty}
                                       </span>
                                       <button
                                         onClick={() =>
                                           handleQuantityChange(
                                             field.id,
                                             option.id,
-                                            currentQuantity + 1,
+                                            qty + 1,
                                           )
                                         }
                                         className="w-8 h-8 md:w-9 md:h-9 bg-[#f9f9f9] hover:bg-[#eab3f4]/20 rounded-full flex items-center justify-center border border-[#8e8e8e]/50 transition-colors duration-200"
@@ -1430,6 +1115,7 @@ export default function DishDetailPage() {
                               })}
                             </div>
                           )}
+
                         {field.type === "checkboxes" && field.options && (
                           <div>
                             <div className="bg-white rounded-lg border border-[#8e8e8e]/30 shadow-lg overflow-hidden animate-in slide-in-from-top-2 duration-200">
@@ -1445,7 +1131,6 @@ export default function DishDetailPage() {
                                 const isDisabled =
                                   !isSelected &&
                                   currentSelections.length >= maxSelections;
-
                                 return (
                                   <label
                                     key={option.id}
@@ -1493,17 +1178,28 @@ export default function DishDetailPage() {
               </div>
             )}
 
-            {/* Comentarios Textarea */}
+            {/* Comentarios */}
             <div className="text-black">
               <span className="font-medium text-xl md:text-2xl lg:text-3xl">
                 ¿Algo que debamos saber?
               </span>
               <textarea
-                name=""
-                id=""
                 className="h-24 md:h-28 lg:h-32 text-base md:text-lg lg:text-xl w-full bg-[#f9f9f9] border border-[#bfbfbf] px-3 md:px-4 py-2 md:py-3 rounded-lg resize-none focus:outline-none mt-2 md:mt-3"
                 placeholder="Alergias, instrucciones especiales, comentarios..."
-              ></textarea>
+                value={specialInstructions}
+                onChange={(e) => setSpecialInstructions(e.target.value)}
+                maxLength={60}
+                onBlur={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }
+                }}
+              />
+              <p className="text-right text-sm text-gray-400 mt-1">
+                {specialInstructions.length}/60
+              </p>
             </div>
 
             <div
@@ -1515,7 +1211,7 @@ export default function DishDetailPage() {
                 WebkitBackdropFilter: "blur(20px)",
               }}
             >
-              {/* Contador - 1 + */}
+              {/* Contador */}
               <div className="flex items-center bg-white border border-gray-300 rounded-2xl shadow-sm shrink-0">
                 <button
                   onClick={() => setDishQuantity((q) => Math.max(1, q - 1))}
@@ -1537,15 +1233,15 @@ export default function DishDetailPage() {
               {/* Botón agregar */}
               <button
                 onClick={handleAddToCartAndReturn}
-                disabled={!isFormValid()}
+                disabled={!isFormValid}
                 className={`flex-1 text-white py-3.5 md:py-4 lg:py-5 rounded-2xl transition-colors flex items-center justify-center ${
-                  isFormValid()
+                  isFormValid
                     ? "bg-gradient-to-r from-[#34808C] to-[#173E44] cursor-pointer active:scale-95 transition-transform"
                     : "bg-gray-400 cursor-not-allowed opacity-60"
                 }`}
               >
                 <span className="text-base md:text-lg font-medium">
-                  Agregar • ${(calculateTotalPrice() * dishQuantity).toFixed(2)}
+                  Agregar • ${(totalPrice * dishQuantity).toFixed(2)}
                 </span>
               </button>
             </div>
@@ -1572,7 +1268,6 @@ export default function DishDetailPage() {
               </button>
             </div>
 
-            {/* Header */}
             <div className="px-6 md:px-8 lg:px-10 flex items-center justify-center mb-4 md:mb-6">
               <div className="flex flex-col justify-center items-center gap-3 md:gap-4">
                 {dish.images.length > 0 ? (
@@ -1601,22 +1296,18 @@ export default function DishDetailPage() {
               </div>
             </div>
 
-            {/* Content */}
             <div className="px-6 md:px-8 lg:px-10 space-y-4 md:space-y-6">
-              {/* Rating Section */}
               <div className="border-t border-[#8e8e8e] pt-4 md:pt-6">
                 <h3 className="font-normal text-lg md:text-xl lg:text-2xl text-black mb-3 md:mb-4 text-center">
                   ¿Cómo calificarías este platillo?
                 </h3>
                 <div className="flex justify-center gap-2 md:gap-3 lg:gap-4 mb-4 md:mb-6">
                   {[1, 2, 3, 4, 5].map((starIndex) => {
-                    const currentRating = hoveredReviewRating || reviewRating;
-                    const isFilled = currentRating >= starIndex;
-
+                    const isFilled =
+                      (hoveredReviewRating || reviewRating) >= starIndex;
                     return (
-                      <div
+                      <button
                         key={starIndex}
-                        className="relative cursor-pointer"
                         onMouseEnter={() => setHoveredReviewRating(starIndex)}
                         onMouseLeave={() => setHoveredReviewRating(0)}
                         onClick={() => setReviewRating(starIndex)}
@@ -1632,21 +1323,20 @@ export default function DishDetailPage() {
                         >
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                         </svg>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Submit Button */}
               <div className="pt-4 md:pt-6 pb-6 md:pb-8 lg:pb-10">
                 <button
                   onClick={handleSubmitReview}
                   disabled={reviewRating === 0 || isSubmittingReview}
-                  className={`w-full text-white py-3 md:py-4 lg:py-5 rounded-full transition-colors text-base md:text-lg lg:text-xl ${
-                    reviewRating > 0 && !isSubmittingReview
-                      ? "bg-gradient-to-r from-[#34808C] to-[#173E44] cursor-pointer"
-                      : "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed"
+                  className={`w-full text-white py-3 md:py-4 lg:py-5 rounded-full transition-colors text-base md:text-lg lg:text-xl bg-gradient-to-r from-[#34808C] to-[#173E44] ${
+                    reviewRating === 0 || isSubmittingReview
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
                   }`}
                 >
                   {isSubmittingReview
@@ -1656,6 +1346,44 @@ export default function DishDetailPage() {
                       : "Enviar reseña"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {errorMessage && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-end justify-center bg-black/50"
+          onClick={() => setErrorMessage(null)}
+        >
+          <div
+            className="bg-white rounded-t-4xl w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 max-w-2xl mx-auto">
+              <div className="flex flex-col items-center mb-4">
+                <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                  <CircleAlert
+                    className="size-7 text-red-500"
+                    strokeWidth={2}
+                  />
+                </div>
+                <h2 className="text-xl font-semibold text-black text-center">
+                  Error
+                </h2>
+              </div>
+              <div className="bg-[#f9f9f9] border border-[#bfbfbf]/50 rounded-xl p-4 mb-6">
+                <p className="text-gray-700 text-sm text-center">
+                  {errorMessage}
+                </p>
+              </div>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="w-full bg-gradient-to-r from-[#34808C] to-[#173E44] text-white py-3 rounded-full text-base"
+              >
+                Entendido
+              </button>
             </div>
           </div>
         </div>

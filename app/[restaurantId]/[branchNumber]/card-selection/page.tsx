@@ -12,7 +12,6 @@ import { useEcartPay } from "@/app/hooks/useEcartPay";
 import MenuHeaderBack from "@/app/components/headers/MenuHeaderBack";
 import { apiService } from "@/app/utils/api";
 import PaymentAnimation from "@/app/components/UI/PaymentAnimation";
-import Loader from "@/app/components/UI/Loader";
 import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
 import { paymentService } from "@/app/services/payment.service";
@@ -102,12 +101,7 @@ export default function CardSelectionPage() {
       ? (xquisitoCommissionTotal / subtotalForCommission) * 100
       : 0;
 
-  const {
-    createCheckout,
-    isLoading: paymentLoading,
-    error: paymentError,
-    waitForSDK,
-  } = useEcartPay();
+  useEcartPay();
 
   // Determinar el nombre a usar: prioridad a userName de URL, luego state.currentUserName, luego nombre de usuario autenticado
   const effectiveName =
@@ -133,15 +127,13 @@ export default function CardSelectionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
   const [showPaymentAnimation, setShowPaymentAnimation] = useState(false);
-  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
   const [showTotalModal, setShowTotalModal] = useState(false);
   const [showPaymentOptionsModal, setShowPaymentOptionsModal] = useState(false);
   const [selectedMSI, setSelectedMSI] = useState<number | null>(null);
-  const [applePayReady, setApplePayReady] = useState(false);
-  // Start hidden — reveal only after client mount confirms Apple Pay is available
-  const [applePayUnavailable, setApplePayUnavailable] = useState(true);
+  const [applePayUnavailable, setApplePayUnavailable] = useState(false);
   const [isApplePayProcessing, setIsApplePayProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -263,9 +255,8 @@ export default function CardSelectionPage() {
       return;
     }
 
-    // Dispositivo compatible y proveedor es eCartPay — revelar sección y cargar SDK
+    // Dispositivo compatible y proveedor es eCartPay — cargar SDK
     setApplePayUnavailable(false);
-
     const src =
       process.env.NEXT_PUBLIC_ENV === "production"
         ? "https://ecartpay.com/sdk/pay.js"
@@ -285,9 +276,6 @@ export default function CardSelectionPage() {
   ): Promise<void> => {
     try {
       setIsProcessing(true);
-
-      // Trigger exit animations before processing
-      setIsAnimatingOut(true);
 
       // OPERACIONES CRÍTICAS (deben completarse antes de mostrar animación)
       // En el nuevo sistema de platillos, necesitamos marcar platillos específicos como pagados
@@ -462,25 +450,45 @@ export default function CardSelectionPage() {
     );
   }, [navigateWithTable, baseAmount, paymentType]);
 
+  const getApplePaySDK = () =>
+    new Promise<any>((resolve) => {
+      if ((window as any).Pay?.ApplePay) {
+        return resolve((window as any).Pay.ApplePay);
+      }
+
+      const interval = setInterval(() => {
+        if ((window as any).Pay?.ApplePay) {
+          clearInterval(interval);
+          resolve((window as any).Pay.ApplePay);
+        }
+      }, 100);
+    });
+
   // Inicializar Apple Pay SDK cuando los datos estén listos
   const initApplePay = useCallback(async () => {
     if (typeof window === "undefined" || !totalAmountCharged) return;
+    console.log(
+      "🍎 initApplePay fired, totalAmountCharged:",
+      totalAmountCharged,
+    );
 
     try {
       // Crear orden en Ecart Pay para obtener orderId
       const orderResult = await paymentService.createApplePayOrder({
         amount: totalAmountCharged,
         currency: "MXN",
-        tableNumber: state.tableNumber || undefined,
+        tableNumber: undefined,
         restaurantId: restaurantId?.toString(),
       });
 
-      if (!orderResult.success || !orderResult.data?.orderId) {
+      const appleOrderId =
+        (orderResult as any).orderId ?? orderResult.data?.orderId;
+      if (!orderResult.success || !appleOrderId) {
         console.warn("⚠️ Apple Pay: no se pudo crear la orden", orderResult);
         return;
       }
 
-      const applePaySDK = (window as any).Pay?.ApplePay;
+      const applePaySDK = await getApplePaySDK();
       if (!applePaySDK) {
         console.warn("⚠️ Apple Pay SDK no disponible en window.Pay.ApplePay");
         return;
@@ -489,7 +497,6 @@ export default function CardSelectionPage() {
       // Register listeners before render (SDK dispatches to window, not returned object)
       applePaySDK.on("ready", () => {
         console.log("✅ Apple Pay botón listo");
-        setApplePayReady(true);
       });
       applePaySDK.on("unavailable", () => {
         console.log("ℹ️ Apple Pay no disponible en este dispositivo/cuenta");
@@ -514,7 +521,7 @@ export default function CardSelectionPage() {
 
       applePaySDK.render({
         container: "#apple-pay-container",
-        orderId: orderResult.data.orderId,
+        orderId: appleOrderId,
         amount: totalAmountCharged,
         currency: "MXN",
         countryCode: "MX",
@@ -526,14 +533,7 @@ export default function CardSelectionPage() {
     } catch (err) {
       console.error("❌ Error inicializando Apple Pay:", err);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    totalAmountCharged,
-    state.tableNumber,
-    restaurantId,
-    baseAmount,
-    paymentType,
-  ]);
+  }, [totalAmountCharged, restaurantId]);
 
   useEffect(() => {
     if (!isLoadingInitial && totalAmountCharged > 0) {
@@ -544,7 +544,7 @@ export default function CardSelectionPage() {
   const handlePayment = async (): Promise<void> => {
     // Validar selección de tarjeta si hay métodos de pago disponibles
     if (!selectedPaymentMethodId) {
-      alert("Por favor selecciona una tarjeta de pago");
+      setErrorMessage("Por favor selecciona una tarjeta de pago");
       return;
     }
 
@@ -655,6 +655,7 @@ export default function CardSelectionPage() {
         orderId: `order-${Date.now()}-attempt-${paymentAttempts + 1}`,
         tableNumber: tableNumber || state.tableNumber,
         restaurantId: restaurantId,
+        installments: selectedMSI || undefined,
       };
 
       console.log("💳 Sending payment request:", paymentData);
@@ -725,19 +726,7 @@ export default function CardSelectionPage() {
         }
 
         setPaymentAttempts((prev) => prev + 1);
-
-        // Show user-friendly message before redirect
-        const shouldRedirect = confirm(
-          `Tu método de pago requiere verificación a través de EcartPay.\n\n` +
-            `Esto es normal en modo de pruebas. En producción, este paso usualmente se omite.\n\n` +
-            `Haz clic en OK para completar la verificación, o Cancelar para intentar de nuevo.`,
-        );
-
-        if (shouldRedirect) {
-          window.location.href = payLink;
-        } else {
-          setIsProcessing(false);
-        }
+        window.location.href = payLink;
         return;
       }
 
@@ -756,10 +745,10 @@ export default function CardSelectionPage() {
 
       throw new Error("Formato de respuesta de pago inesperado");
     } catch (error) {
-      const errorMessage =
+      const errMsg =
         error instanceof Error ? error.message : "Error desconocido";
       console.error("Payment error:", error);
-      alert(`Error en el pago: ${errorMessage}`);
+      setErrorMessage(errMsg);
     } finally {
       setIsProcessing(false);
     }
@@ -793,7 +782,7 @@ export default function CardSelectionPage() {
     try {
       await deletePaymentMethod(paymentMethodId);
     } catch (error) {
-      alert("Error al eliminar la tarjeta. Intenta de nuevo.");
+      setErrorMessage("Error al eliminar la tarjeta. Intenta de nuevo.");
     } finally {
       setDeletingCardId(null);
     }
@@ -820,7 +809,7 @@ export default function CardSelectionPage() {
     );
     const cardBrand = selectedMethod?.cardBrand;
 
-    // Configuración de MSI según el tipo de tarjeta
+    // Tasas del portal EcartPay (pre-IVA)
     const msiOptions =
       cardBrand === "amex"
         ? [
@@ -834,27 +823,85 @@ export default function CardSelectionPage() {
             { months: 24, rate: 19.25 },
           ]
         : [
-            { months: 3, rate: 3.5 },
-            { months: 6, rate: 5.5 },
+            { months: 3, rate: 4.26 },
+            { months: 6, rate: 7.3 },
             { months: 9, rate: 8.5 },
-            { months: 12, rate: 11.5 },
-            { months: 18, rate: 15.0 },
+            { months: 12, rate: 13.0 },
+            { months: 18, rate: 18.25 },
           ];
 
-    // Encontrar la opción seleccionada
     const selectedOption = msiOptions.find((opt) => opt.months === selectedMSI);
     if (!selectedOption) return totalAmountCharged;
 
-    // Calcular comisión e IVA
-    const commission = totalAmountCharged * (selectedOption.rate / 100);
-    const ivaCommission = commission * 0.16;
-    return totalAmountCharged + commission + ivaCommission;
+    // Cálculo EcartPay: markup sobre monto final
+    return totalAmountCharged / (1 - (selectedOption.rate / 100) * 1.16);
   };
 
   const displayTotal = getDisplayTotal();
 
+  const MINIMUM_AMOUNT = 20;
+  const isUnderMinimum = totalAmountCharged < MINIMUM_AMOUNT;
+
   if (isLoadingInitial || isLoadingProvider) {
-    return <Loader />;
+    return (
+      <div className="min-h-dvh bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+        <MenuHeaderBack
+          restaurant={restaurantData}
+          tableNumber={state.tableNumber}
+        />
+
+        <div className="px-4 md:px-6 lg:px-8 w-full flex-1 flex flex-col">
+          {/* Título skeleton */}
+          <div className="bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
+            <div className="py-6 px-8 flex flex-col justify-center">
+              <div className="h-8 w-3/4 bg-white/20 rounded-full mt-2 mb-6 animate-pulse" />
+            </div>
+          </div>
+
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="bg-white rounded-t-4xl flex-1 flex flex-col px-8 overflow-hidden z-10">
+              <div className="flex-1 overflow-y-auto py-8 pb-[120px] flex flex-col gap-4">
+                {/* Subtotal row */}
+                <div className="flex justify-between items-center">
+                  <div className="h-4 w-20 bg-gray-200 rounded-full animate-pulse" />
+                  <div className="h-4 w-24 bg-gray-200 rounded-full animate-pulse" />
+                </div>
+                {/* Total row */}
+                <div className="flex justify-between items-center border-t pt-3">
+                  <div className="h-5 w-28 bg-gray-200 rounded-full animate-pulse" />
+                  <div className="h-5 w-28 bg-gray-200 rounded-full animate-pulse" />
+                </div>
+
+                {/* Label métodos de pago */}
+                <div className="h-4 w-36 bg-gray-200 rounded-full animate-pulse mt-1" />
+
+                {/* Card skeleton 1 */}
+                <div className="h-12 w-full bg-gray-100 rounded-full animate-pulse" />
+                {/* Card skeleton 2 */}
+                <div className="h-12 w-full bg-gray-100 rounded-full animate-pulse" />
+
+                {/* Botón agregar tarjeta */}
+                <div className="h-12 w-full bg-gray-100 rounded-full animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Barra inferior fija — skeleton */}
+        <div
+          className="fixed bottom-0 left-0 right-0 bg-white mx-4 px-8 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+          style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="flex gap-3 mt-6 mb-2 justify-between items-center">
+            <div className="flex flex-col gap-1.5">
+              <div className="h-3 w-16 bg-gray-200 rounded-full animate-pulse" />
+              <div className="h-6 w-28 bg-gray-200 rounded-full animate-pulse" />
+            </div>
+            <div className="h-12 w-36 bg-gray-200 rounded-full animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Mostrar error de validación si existe
@@ -869,37 +916,26 @@ export default function CardSelectionPage() {
         onAnimationComplete={handleAnimationComplete}
       />
 
-      <div className="min-h-new bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
-        {/* Fixed Header */}
-        <div
-          className="fixed top-0 left-0 right-0 z-50"
-          style={{ zIndex: 999 }}
-        >
-          <div className={isAnimatingOut ? "animate-fade-out" : ""}>
-            <MenuHeaderBack
-              restaurant={restaurantData}
-              tableNumber={state.tableNumber}
-            />
+      <div className="min-h-dvh bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+        {/* Header */}
+        <MenuHeaderBack
+          restaurant={restaurantData}
+          tableNumber={state.tableNumber}
+        />
+
+        {/* Contenido scrolleable */}
+        <div className="px-4 md:px-6 lg:px-8 w-full flex-1 flex flex-col">
+          <div className="bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
+            <div className="py-6 px-8 flex flex-col justify-center">
+              <h1 className="font-medium text-white text-3xl leading-7 mt-2 mb-6">
+                Selecciona tu método de pago
+              </h1>
+            </div>
           </div>
-        </div>
 
-        {/* Spacer for fixed header */}
-        <div className="h-20"></div>
-
-        <div
-          className={`w-full flex-1 flex flex-col justify-end ${isAnimatingOut ? "animate-slide-down" : ""}`}
-        >
-          <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center">
-            <div className="flex flex-col relative mx-4 md:mx-6 lg:mx-8 w-full">
-              <div className="left-4 right-4 bg-gradient-to-tl from-[#0a8b9b] to-[#1d727e] rounded-t-4xl translate-y-7 z-0">
-                <div className="py-6 md:py-8 lg:py-10 px-8 md:px-10 lg:px-12 flex flex-col justify-center">
-                  <h1 className="font-medium text-white text-3xl md:text-4xl lg:text-5xl leading-7 md:leading-9 lg:leading-tight mt-2 md:mt-3 mb-6 md:mb-8">
-                    Selecciona tu método de pago
-                  </h1>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-t-4xl relative z-10 flex flex-col px-6 md:px-8 lg:px-10 flex-1 py-8 md:py-10 lg:py-12">
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="bg-white rounded-t-4xl flex-1 flex flex-col px-8 overflow-hidden z-50">
+              <div className="flex-1 overflow-y-auto py-8 pb-[120px]">
                 {/* Payment Summary */}
                 <div className="space-y-2 mb-6">
                   <div className="flex justify-between items-center">
@@ -996,6 +1032,9 @@ export default function CardSelectionPage() {
                   {/* Saved Cards List */}
                   {paymentMethodType === "saved" && (
                     <div className="space-y-2.5 mb-2.5">
+                      <h3 className="text-black font-medium mb-3">
+                        Métodos de pago
+                      </h3>
                       {allPaymentMethods.map((method) => (
                         <div
                           key={method.id}
@@ -1057,25 +1096,13 @@ export default function CardSelectionPage() {
                           )}
                         </div>
                       ))}
+                      {/* Apple Pay Button */}
+                      {!applePayUnavailable && (
+                        <div id="apple-pay-container" className="w-full" />
+                      )}
                     </div>
                   )}
                 </div>
-
-                {/* Apple Pay Button */}
-                {!applePayUnavailable && (
-                  <div className="mb-2.5">
-                    <div
-                      id="apple-pay-container"
-                      className="w-full rounded-full overflow-hidden"
-                    />
-                    {!applePayReady && (
-                      <div className="border border-white/50 flex justify-center items-center gap-1 w-full text-black py-3 rounded-full bg-black text-base md:text-lg lg:text-xl">
-                        {/*<Loader2 className="size-4 animate-spin" />*/}
-                        <img src="/icons/apple-pay.png" className="h-6" />
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 {/* Payment Method Section */}
                 <div>
@@ -1087,74 +1114,37 @@ export default function CardSelectionPage() {
                     Agregar método de pago
                   </button>
                 </div>
-
-                {/* Bottom section with button - now inside the fixed container */}
-                <div className="pt-4">
-                  {paymentError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                      <p className="text-red-800 text-sm text-center">
-                        {paymentError}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Pay Button */}
-                  <button
-                    onClick={handlePayment}
-                    className={`w-full text-white py-3 rounded-full cursor-pointer transition-colors text-base md:text-lg lg:text-xl active:scale-90 ${
-                      paymentLoading ||
-                      isProcessing ||
-                      (hasPaymentMethods && !selectedPaymentMethodId)
-                        ? "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed"
-                        : "bg-gradient-to-r from-[#34808C] to-[#173E44] animate-pulse-button"
-                    }`}
-                  >
-                    {paymentLoading || isProcessing ? (
-                      <div className="flex items-center justify-center gap-2 md:gap-3">
-                        <svg
-                          className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 text-white"
-                          style={{
-                            animation: "spin 1s linear infinite",
-                          }}
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
-                        </svg>
-                        <style jsx>{`
-                          @keyframes spin {
-                            from {
-                              transform: rotate(0deg);
-                            }
-                            to {
-                              transform: rotate(360deg);
-                            }
-                          }
-                        `}</style>
-                      </div>
-                    ) : hasPaymentMethods && !selectedPaymentMethodId ? (
-                      "Selecciona una tarjeta"
-                    ) : (
-                      "Pagar"
-                    )}
-                  </button>
-                </div>
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Barra inferior fija — botón pagar */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white mx-4 px-8 z-90 py-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          <button
+            onClick={handlePayment}
+            disabled={isProcessing || isUnderMinimum}
+            className={`py-3 text-white rounded-full cursor-pointer font-normal h-fit w-full flex items-center justify-center text-base active:scale-95 transition-transform ${
+              isProcessing ||
+              isUnderMinimum ||
+              (hasPaymentMethods && !selectedPaymentMethodId)
+                ? "bg-gradient-to-r from-[#34808C] to-[#173E44] opacity-50 cursor-not-allowed px-10"
+                : "bg-gradient-to-r from-[#34808C] to-[#173E44] px-10 animate-pulse-button"
+            }`}
+          >
+            {isProcessing ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Procesando...</span>
+              </div>
+            ) : isUnderMinimum ? (
+              `Mínimo $${MINIMUM_AMOUNT} MXN`
+            ) : hasPaymentMethods && !selectedPaymentMethodId ? (
+              "Selecciona una tarjeta"
+            ) : (
+              "Pagar"
+            )}
+          </button>
         </div>
 
         {/* Modal de resumen del total */}
@@ -1263,26 +1253,26 @@ export default function CardSelectionPage() {
                   );
                   const cardBrand = selectedMethod?.cardBrand;
 
-                  // Configuración de MSI según el tipo de tarjeta
+                  // Tasas del portal EcartPay (pre-IVA)
                   const msiOptions =
                     cardBrand === "amex"
                       ? [
-                          { months: 3, rate: 3.25, minAmount: 0 },
-                          { months: 6, rate: 6.25, minAmount: 0 },
-                          { months: 9, rate: 8.25, minAmount: 0 },
-                          { months: 12, rate: 10.25, minAmount: 0 },
-                          { months: 15, rate: 13.25, minAmount: 0 },
-                          { months: 18, rate: 15.25, minAmount: 0 },
-                          { months: 21, rate: 17.25, minAmount: 0 },
-                          { months: 24, rate: 19.25, minAmount: 0 },
+                          { months: 3, rate: 3.25, minAmount: 300 },
+                          { months: 6, rate: 6.25, minAmount: 600 },
+                          { months: 9, rate: 8.25, minAmount: 900 },
+                          { months: 12, rate: 10.25, minAmount: 1200 },
+                          { months: 15, rate: 13.25, minAmount: 1800 },
+                          { months: 18, rate: 15.25, minAmount: 1800 },
+                          { months: 21, rate: 17.25, minAmount: 1800 },
+                          { months: 24, rate: 19.25, minAmount: 1800 },
                         ]
                       : [
-                          // Visa/Mastercard
-                          { months: 3, rate: 3.5, minAmount: 300 },
-                          { months: 6, rate: 5.5, minAmount: 600 },
+                          // Visa/Mastercard — tasas configuradas en portal EcartPay
+                          { months: 3, rate: 4.26, minAmount: 300 },
+                          { months: 6, rate: 7.3, minAmount: 600 },
                           { months: 9, rate: 8.5, minAmount: 900 },
-                          { months: 12, rate: 11.5, minAmount: 1200 },
-                          { months: 18, rate: 15.0, minAmount: 1800 },
+                          { months: 12, rate: 13.0, minAmount: 1200 },
+                          { months: 18, rate: 18.25, minAmount: 1800 },
                         ];
 
                   return (
@@ -1343,12 +1333,10 @@ export default function CardSelectionPage() {
                         return (
                           <>
                             {availableOptions.map((option) => {
-                              // Calcular comisión e IVA
-                              const commission =
-                                totalAmountCharged * (option.rate / 100);
-                              const ivaCommission = commission * 0.16;
+                              // Cálculo EcartPay: markup sobre monto final
                               const totalWithCommission =
-                                totalAmountCharged + commission + ivaCommission;
+                                totalAmountCharged /
+                                (1 - (option.rate / 100) * 1.16);
                               const monthlyPayment =
                                 totalWithCommission / option.months;
 
@@ -1417,6 +1405,46 @@ export default function CardSelectionPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de error de pago */}
+      {errorMessage && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-end justify-center bg-black/50"
+          onClick={() => setErrorMessage(null)}
+        >
+          <div
+            className="bg-white rounded-t-4xl w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 max-w-2xl mx-auto">
+              <div className="flex flex-col items-center mb-4">
+                <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                  <CircleAlert
+                    className="size-7 text-red-500"
+                    strokeWidth={2}
+                  />
+                </div>
+                <h2 className="text-xl font-semibold text-black text-center">
+                  Error al procesar el pago
+                </h2>
+              </div>
+
+              <div className="bg-[#f9f9f9] border border-[#bfbfbf]/50 rounded-xl p-4 mb-6">
+                <p className="text-gray-700 text-sm text-center">
+                  {errorMessage}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="w-full bg-gradient-to-r from-[#34808C] to-[#173E44] text-white py-3 rounded-full text-base"
+              >
+                Intentar de nuevo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

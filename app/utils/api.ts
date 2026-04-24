@@ -28,7 +28,6 @@ export interface ApiResponse<T = any> {
 
 export interface AddPaymentMethodRequest {
   fullName: string;
-  email: string;
   cardNumber: string;
   expDate: string;
   cvv: string;

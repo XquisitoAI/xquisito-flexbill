@@ -9,6 +9,7 @@ import { RestaurantProvider } from "./context/RestaurantContext";
 import { AuthProvider } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext";
 import { PepperProvider } from "./context/PepperContext";
+import Script from "next/script";
 
 const helveticaNeue = localFont({
   src: [
@@ -120,24 +121,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <head>
-        <style>{`
-          body { font-family: var(--font-helvetica-neue); }
-        `}</style>
-      </head>
-      <body className={`${helveticaNeue.variable} antialiased`}>
+      <body
+        className={`${helveticaNeue.variable} antialiased`}
+        style={{ fontFamily: "var(--font-helvetica-neue)" }}
+      >
+        <Script
+          src="https://ecartpay.com/sdk/pay.js"
+          strategy="afterInteractive"
+        />
         <AuthProvider>
           <RestaurantProvider>
             <PepperProvider>
-            <GuestProvider>
-              <SocketProvider>
-                <CartProvider>
-                  <TableProvider>
-                    <PaymentProvider>{children}</PaymentProvider>
-                  </TableProvider>
-                </CartProvider>
-              </SocketProvider>
-            </GuestProvider>
+              <GuestProvider>
+                <SocketProvider>
+                  <CartProvider>
+                    <TableProvider>
+                      <PaymentProvider>{children}</PaymentProvider>
+                    </TableProvider>
+                  </CartProvider>
+                </SocketProvider>
+              </GuestProvider>
             </PepperProvider>
           </RestaurantProvider>
         </AuthProvider>

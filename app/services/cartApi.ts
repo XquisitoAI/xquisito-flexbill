@@ -23,6 +23,7 @@ export interface CartItem {
   price: number;
   discount: number;
   extraPrice: number;
+  specialInstructions?: string | null;
   customFields: Array<{
     fieldId: string;
     fieldName: string;
@@ -40,6 +41,7 @@ export interface Cart {
   items: CartItem[];
   total_items: number;
   total_amount: number;
+  order_notes?: string | null;
 }
 
 export interface CartTotals {
@@ -76,7 +78,7 @@ class CartApiService {
 
   private async request<T>(
     endpoint: string,
-    options?: RequestInit
+    options?: RequestInit,
   ): Promise<ApiResponse<T>> {
     try {
       const headers: Record<string, string> = {
@@ -90,7 +92,7 @@ class CartApiService {
         // For authenticated users, use Bearer token
         headers["Authorization"] = `Bearer ${authToken}`;
         console.log(
-          "🔑 CartAPI - Adding Authorization header for authenticated user"
+          "🔑 CartAPI - Adding Authorization header for authenticated user",
         );
       } else {
         // For guests, add guest identification headers
@@ -179,7 +181,8 @@ class CartApiService {
     quantity: number = 1,
     customFields: CartItem["customFields"] = [],
     extraPrice: number = 0,
-    price?: number
+    price?: number,
+    specialInstructions?: string | null,
   ): Promise<ApiResponse<{ cart_item_id: string }>> {
     const userId = this.getUserIdentifier();
 
@@ -192,6 +195,23 @@ class CartApiService {
         custom_fields: customFields,
         extra_price: extraPrice,
         price: price,
+        special_instructions: specialInstructions || null,
+        restaurant_id: this.restaurantId,
+        branch_number: this.branchNumber,
+      }),
+    });
+  }
+
+  async updateOrderNotes(
+    orderNotes: string | null,
+  ): Promise<ApiResponse<{ message: string }>> {
+    const userId = this.getUserIdentifier();
+
+    return this.request<{ message: string }>("/cart/notes", {
+      method: "PATCH",
+      body: JSON.stringify({
+        ...userId,
+        order_notes: orderNotes || null,
         restaurant_id: this.restaurantId,
         branch_number: this.branchNumber,
       }),
@@ -239,7 +259,7 @@ class CartApiService {
    */
   async updateCartItemQuantity(
     cartItemId: string,
-    quantity: number
+    quantity: number,
   ): Promise<ApiResponse<{ message: string }>> {
     return this.request<{ message: string }>(`/cart/items/${cartItemId}`, {
       method: "PATCH",
@@ -251,7 +271,7 @@ class CartApiService {
    * Eliminar item del carrito
    */
   async removeFromCart(
-    cartItemId: string
+    cartItemId: string,
   ): Promise<ApiResponse<{ message: string }>> {
     return this.request<{ message: string }>(`/cart/items/${cartItemId}`, {
       method: "DELETE",

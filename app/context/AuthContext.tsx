@@ -245,6 +245,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           console.warn("⚠️ No profile data found in response");
         }
+      } else if (response.error?.includes("Sesión expirada")) {
+        // Token refresh failed - user was logged out
+        console.log("🔐 Session expired, user logged out");
+        setUser(null);
+        setProfile(null);
+      } else {
+        console.warn("⚠️ Error loading profile:", response.error);
       }
     } catch (error) {
       console.error("❌ Error loading profile:", error);

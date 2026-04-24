@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useCart, CartItem } from "@/app/context/CartContext";
 import { useTable } from "@/app/context/TableContext";
@@ -11,20 +11,26 @@ import OrderAnimation from "@/app/components/UI/OrderAnimation";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRestaurant } from "@/app/context/RestaurantContext";
 import { useGuest } from "@/app/context/GuestContext";
-import { DEFAULT_IMAGES } from "@/app/constants/images";
 
 export default function CartView() {
-  const { state: cartState, updateQuantity, clearCart } = useCart();
+  const {
+    state: cartState,
+    updateQuantity,
+    clearCart,
+    orderNotes,
+    setOrderNotes,
+    updateOrderNotes,
+  } = useCart();
   const { state: tableState, submitOrder } = useTable();
   const { navigateWithTable } = useTableNavigation();
   const restaurantData = getRestaurantData();
   const { user, isAuthenticated, isLoading, profile } = useAuth();
-  const { restaurantId, branchNumber } = useRestaurant();
+  const { branchNumber } = useRestaurant();
   const { guestName } = useGuest();
   const [showOrderAnimation, setShowOrderAnimation] = useState(false);
   const [orderedItems, setOrderedItems] = useState<CartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderComments, setOrderComments] = useState("");
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleOrder = async () => {
     // Si el usuario está loggeado, hacer la orden directamente con animación
@@ -82,7 +88,12 @@ export default function CartView() {
 
       try {
         // Enviar la orden a la API con branchNumber
-        await submitOrder(userName, orderedItems, branchNumber?.toString());
+        await submitOrder(
+          userName,
+          orderedItems,
+          branchNumber?.toString(),
+          orderNotes.trim() || null,
+        );
         // Limpiar el carrito de la base de datos después de la orden exitosa
         await clearCart();
       } catch (error) {
@@ -134,7 +145,10 @@ export default function CartView() {
           {/* Cart Items */}
           <div className="bg-white rounded-t-4xl flex-1 z-5 flex flex-col px-6 md:px-8 lg:px-10 overflow-hidden">
             {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto flex flex-col pb-[160px] md:pb-[180px] lg:pb-[200px]">
+            <div
+              ref={scrollContainerRef}
+              className="flex-1 overflow-y-auto flex flex-col pb-[160px] md:pb-[180px] lg:pb-[200px]"
+            >
               <div className="pt-6 md:pt-8">
                 <h2 className="bg-[#f9f9f9] border border-[#8e8e8e] rounded-full px-3 md:px-4 lg:px-5 py-1 md:py-1.5 text-base md:text-lg lg:text-xl font-medium text-black w-fit mx-auto">
                   Mi carrito
@@ -211,6 +225,11 @@ export default function CartView() {
                                     ))}
                                   </div>
                                 )}
+                              {item.specialInstructions && (
+                                <p className="text-xs md:text-sm text-gray-500 italic mt-0.5">
+                                  &ldquo;{item.specialInstructions}&rdquo;
+                                </p>
+                              )}
                             </div>
                           </div>
                           <div className="text-right flex items-center justify-center gap-4 md:gap-5 lg:gap-6">
@@ -251,10 +270,26 @@ export default function CartView() {
                       ¿Algo que debamos saber?
                     </span>
                     <textarea
-                      value={orderComments}
-                      onChange={(e) => setOrderComments(e.target.value)}
                       className="h-24 md:h-28 lg:h-32 text-base md:text-lg lg:text-xl w-full bg-[#f9f9f9] border border-[#bfbfbf] px-3 md:px-4 py-2 md:py-3 rounded-lg resize-none focus:outline-none mt-2 md:mt-3"
-                      placeholder="Alergias, instrucciones especiales, comentarios..."
+                      placeholder="Comentarios generales para el restaurante..."
+                      value={orderNotes}
+                      onChange={(e) => setOrderNotes(e.target.value)}
+                      onBlur={(e) => {
+                        updateOrderNotes(e.target.value);
+                        setTimeout(() => {
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                          if (scrollContainerRef.current) {
+                            scrollContainerRef.current.scrollTop = 0;
+                          }
+                        }, 300);
+                      }}
+                      maxLength={80}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          e.currentTarget.blur();
+                        }
+                      }}
                       onFocus={(e) => {
                         setTimeout(() => {
                           e.target.scrollIntoView({
@@ -263,7 +298,10 @@ export default function CartView() {
                           });
                         }, 300);
                       }}
-                    ></textarea>
+                    />
+                    <p className="text-right text-sm text-gray-400 mt-1">
+                      {orderNotes.length}/80
+                    </p>
                   </div>
                 </div>
               )}
@@ -272,7 +310,7 @@ export default function CartView() {
             {/* Fixed bottom section */}
             {cartState.items.length > 0 && (
               <div
-                className="fixed bottom-0 left-0 bg-white right-0 mx-4 md:mx-6 lg:mx-8 px-6 md:px-8 lg:px-10 z-10"
+                className="fixed bottom-0 left-0 bg-white right-0 mx-4 md:mx-6 lg:mx-8 px-6 md:px-8 lg:px-10 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
                 style={{
                   paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
                 }}

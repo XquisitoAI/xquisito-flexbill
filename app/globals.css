@@ -481,6 +481,17 @@ svg {
   }
 }
 
+/* Apple Pay button border radius and height */
+#apple-pay-container apple-pay-button {
+  --apple-pay-button-border-radius: 9999px;
+  height: 48px;
+}
+
+#apple-pay-container > * {
+  border-radius: 9999px !important;
+  height: 48px !important;
+}
+
 /* Fix para inputs en Safari/iOS - evita deformación y zoom */
 input,
 select,

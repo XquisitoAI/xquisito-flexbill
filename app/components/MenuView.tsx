@@ -1,20 +1,85 @@
 "use client";
 
+import {
+  lazy,
+  Suspense,
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useTransition,
+  useDeferredValue,
+} from "react";
 import MenuHeader from "@/app/components/headers/MenuHeader";
 import MenuCategory from "@/app/components/MenuCategory";
 import ErrorScreen from "@/app/components/ErrorScreen";
 import Loader from "@/app/components/UI/Loader";
-import ChatView from "@/app/components/ChatView";
 import { Search, ShoppingCart, UserCircle, ReceiptText } from "lucide-react";
-import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { useCart } from "@/app/context/CartContext";
 import { useRestaurant } from "@/app/context/RestaurantContext";
 import { DEFAULT_IMAGES } from "@/app/constants/images";
-import AuthView from "./AuthView";
-import DashboardView from "./DashboardView";
 import { useTable } from "@/app/context/TableContext";
+
+const ChatView = lazy(() => import("@/app/components/ChatView"));
+const AuthView = lazy(() => import("./AuthView"));
+const DashboardView = lazy(() => import("./DashboardView"));
+const RestaurantClosedModal = lazy(
+  () => import("@/app/components/RestaurantClosedModal"),
+);
+
+// Pure functions — defined outside to avoid re-creation on every render
+function lockScroll() {
+  const scrollY = window.scrollY;
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.width = "100%";
+  document.body.style.overflow = "hidden";
+}
+
+function unlockScroll() {
+  const scrollY = parseInt(document.body.style.top || "0") * -1;
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.width = "";
+  document.body.style.overflow = "";
+  window.scrollTo(0, scrollY);
+}
+
+interface UserAvatarProps {
+  isAuthenticated: boolean;
+  profile: { photoUrl?: string; firstName?: string } | null;
+  iconSize?: string;
+  textSize?: string;
+}
+
+function UserAvatar({
+  isAuthenticated,
+  profile,
+  iconSize = "size-6 md:size-7 lg:size-8",
+  textSize = "text-base md:text-lg lg:text-xl",
+}: UserAvatarProps) {
+  if (isAuthenticated && profile?.photoUrl) {
+    return (
+      <img
+        src={profile.photoUrl}
+        alt="Perfil"
+        className="w-full h-full object-cover"
+      />
+    );
+  }
+  if (isAuthenticated && profile?.firstName) {
+    return (
+      <span className={`text-stone-800 font-semibold select-none ${textSize}`}>
+        {profile.firstName.charAt(0).toUpperCase()}
+      </span>
+    );
+  }
+  return (
+    <UserCircle className={`text-stone-500 ${iconSize}`} strokeWidth={1.2} />
+  );
+}
 
 interface MenuViewProps {
   tableNumber?: string;
@@ -23,41 +88,33 @@ interface MenuViewProps {
 function MenuView({ tableNumber }: MenuViewProps) {
   const [filter, setFilter] = useState("Todo");
   const [searchQuery, setSearchQuery] = useState("");
+  const [, startTransition] = useTransition();
   const [showPepperChat, setShowPepperChat] = useState(false);
   const [isPepperClosing, setIsPepperClosing] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isSettingsClosing, setIsSettingsClosing] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [showClosedModal, setShowClosedModal] = useState(false);
   const stickyTriggerRef = useRef<HTMLDivElement>(null);
 
-  // Bloquear scroll del body cuando el modal está abierto
   useEffect(() => {
     if (showPepperChat || showSettingsModal) {
-      // Bloquear scroll en body para móviles
-      const scrollY = window.scrollY;
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = "100%";
-      document.body.style.overflow = "hidden";
+      lockScroll();
     } else {
-      // Restaurar scroll
-      const scrollY = parseInt(document.body.style.top || "0") * -1;
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      document.body.style.overflow = "";
-      window.scrollTo(0, scrollY);
+      unlockScroll();
     }
-    return () => {
-      // Restaurar scroll
-      const scrollY = parseInt(document.body.style.top || "0") * -1;
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      document.body.style.overflow = "";
-      window.scrollTo(0, scrollY);
-    };
+    return unlockScroll;
   }, [showPepperChat, showSettingsModal]);
+
+  // Precargar chunks lazy después de que la página ya es interactiva
+  useEffect(() => {
+    const t = setTimeout(() => {
+      import("./DashboardView");
+      import("./AuthView");
+      import("@/app/components/ChatView");
+    }, 1500);
+    return () => clearTimeout(t);
+  }, []);
 
   const closePepperChat = () => {
     setIsPepperClosing(true);
@@ -74,6 +131,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
       setIsSettingsClosing(false);
     }, 380);
   };
+
   const { profile, isAuthenticated } = useAuth();
   const { navigateWithTable } = useTableNavigation();
   const { state: cartState } = useCart();
@@ -96,20 +154,16 @@ function MenuView({ tableNumber }: MenuViewProps) {
   const categorias = useMemo(() => {
     const categories = ["Todo"];
     if (menu && menu.length > 0) {
-      // Ordenar secciones por display_order antes de extraer nombres
       const sortedSections = [...menu].sort(
         (a, b) => a.display_order - b.display_order,
       );
       sortedSections.forEach((section) => {
-        if (section.name) {
-          categories.push(section.name);
-        }
+        if (section.name) categories.push(section.name);
       });
     }
     return categories;
   }, [menu]);
 
-  // Get gender from Supabase profile
   const gender = profile?.gender;
   const welcomeMessage = isAuthenticated
     ? gender === "female"
@@ -117,39 +171,21 @@ function MenuView({ tableNumber }: MenuViewProps) {
       : "Bienvenido"
     : "Bienvenido";
 
-  // Total de items en el carrito - ahora desde CartContext
   const totalItems = cartState.totalItems;
 
-  const handleSettingsClick = () => {
-    /*if (isAuthenticated) {
-      navigateWithTable("/dashboard");
-    } else {
-      sessionStorage.setItem("authFromMenu", "true");
-      navigateWithTable("/auth");
-    }*/
-    setShowSettingsModal(true);
-  };
+  const deferredFilter = useDeferredValue(filter);
+  const deferredSearch = useDeferredValue(searchQuery);
 
-  const handlePepperClick = () => {
-    setShowPepperChat(true);
-  };
-
-  const handleCartClick = () => {
-    navigateWithTable("/cart");
-  };
-
-  // Filtrar menú según la categoría seleccionada y búsqueda
+  // Filtrar menú usando valores diferidos — el render pesado ocurre en baja prioridad
   const filteredMenu = useMemo(() => {
     let filtered = menu;
 
-    // Filtrar por categoría
-    if (filter !== "Todo") {
-      filtered = filtered.filter((section) => section.name === filter);
+    if (deferredFilter !== "Todo") {
+      filtered = filtered.filter((section) => section.name === deferredFilter);
     }
 
-    // Filtrar por búsqueda
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
+    if (deferredSearch.trim()) {
+      const query = deferredSearch.toLowerCase().trim();
       filtered = filtered
         .map((section) => ({
           ...section,
@@ -162,16 +198,13 @@ function MenuView({ tableNumber }: MenuViewProps) {
         .filter((section) => section.items.length > 0);
     }
 
-    // Ordenar por display_order antes de retornar
     return [...filtered].sort((a, b) => a.display_order - b.display_order);
-  }, [menu, filter, searchQuery]);
+  }, [menu, deferredFilter, deferredSearch]);
 
-  // Mostrar loader mientras carga
   if (loading) {
     return <Loader />;
   }
 
-  // Mostrar error si falla
   if (error) {
     return (
       <ErrorScreen
@@ -182,7 +215,6 @@ function MenuView({ tableNumber }: MenuViewProps) {
     );
   }
 
-  // Mostrar mensaje si no hay restaurante
   if (!restaurant) {
     return (
       <ErrorScreen
@@ -195,14 +227,12 @@ function MenuView({ tableNumber }: MenuViewProps) {
 
   return (
     <div className="min-h-screen bg-white relative">
-      <div
-        className="absolute top-0 left-0 w-full h-[230px] md:h-96 lg:h-[28rem] z-0 banner-mobile"
-        style={{
-          backgroundImage: `url(${restaurant.banner_url || DEFAULT_IMAGES.RESTAURANT_BANNER})`,
-          backgroundPosition: "center top",
-          backgroundRepeat: "no-repeat",
-        }}
-      ></div>
+      <img
+        src={restaurant.banner_url || DEFAULT_IMAGES.RESTAURANT_BANNER}
+        alt=""
+        fetchPriority="high"
+        className="absolute top-0 left-0 w-full h-[230px] md:h-96 lg:h-[28rem] object-cover banner-mobile z-0"
+      />
 
       <MenuHeader restaurant={restaurant} tableNumber={tableNumber} />
 
@@ -218,31 +248,16 @@ function MenuView({ tableNumber }: MenuViewProps) {
           />
           <div className="mt-6 md:mt-8 flex items-start justify-between w-full">
             {/* Settings Icon */}
-            <div
-              onClick={handleSettingsClick}
-              className="bg-white rounded-full border border-gray-400 shadow-sm cursor-pointer hover:bg-gray-50 transition-all active:scale-95 size-9 md:size-10 lg:size-12 overflow-hidden flex items-center justify-center"
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="bg-white rounded-full border border-gray-400 shadow-sm hover:bg-gray-50 transition-all active:scale-95 size-9 md:size-10 lg:size-12 overflow-hidden flex items-center justify-center"
             >
-              {isAuthenticated && profile?.photoUrl ? (
-                <img
-                  src={profile.photoUrl}
-                  alt="Perfil"
-                  className="w-full h-full object-cover"
-                />
-              ) : isAuthenticated && profile?.firstName ? (
-                <span className="text-stone-800 font-semibold text-base md:text-lg lg:text-xl select-none">
-                  {profile.firstName.charAt(0).toUpperCase()}
-                </span>
-              ) : (
-                <UserCircle
-                  className="size-6 md:size-7 lg:size-8 text-stone-500"
-                  strokeWidth={1.2}
-                />
-              )}
-            </div>
-            {/* Assistent Icon */}
-            <div
-              onClick={handlePepperClick}
-              className="bg-white rounded-full text-black border border-gray-400 size-10 md:size-12 lg:size-14 cursor-pointer shadow-sm"
+              <UserAvatar isAuthenticated={isAuthenticated} profile={profile} />
+            </button>
+            {/* Assistant Icon */}
+            <button
+              onClick={() => setShowPepperChat(true)}
+              className="bg-white rounded-full text-black border border-gray-400 size-10 md:size-12 lg:size-14 shadow-sm overflow-hidden"
             >
               <video
                 src="/videos/video-icon-pepper.webm"
@@ -250,13 +265,14 @@ function MenuView({ tableNumber }: MenuViewProps) {
                 loop
                 muted
                 playsInline
+                preload="none"
+                aria-hidden="true"
                 disablePictureInPicture
                 controls={false}
                 controlsList="nodownload nofullscreen noremoteplayback"
                 className="w-full h-full object-cover rounded-full"
               />
-              {/*<img src="/logo-short-green.webp" alt="AI" className="size-6" />*/}
-            </div>
+            </button>
           </div>
 
           {/* Name and photo */}
@@ -299,10 +315,10 @@ function MenuView({ tableNumber }: MenuViewProps) {
           {/* Filters */}
           <div className="flex gap-2 md:gap-3 mt-3 md:mt-5 mb-3 md:mb-5 w-full overflow-x-auto scrollbar-hide">
             {categorias.map((cat) => (
-              <div
+              <button
                 key={cat}
-                onClick={() => setFilter(cat)}
-                className={`px-3 md:px-5 lg:px-6 py-1 md:py-2 text-sm md:text-base lg:text-lg rounded-full cursor-pointer whitespace-nowrap flex-shrink-0
+                onClick={() => startTransition(() => setFilter(cat))}
+                className={`px-3 md:px-5 lg:px-6 py-1 md:py-2 text-sm md:text-base lg:text-lg rounded-full whitespace-nowrap flex-shrink-0
                 ${
                   filter === cat
                     ? "bg-black text-white hover:bg-slate-800"
@@ -310,7 +326,7 @@ function MenuView({ tableNumber }: MenuViewProps) {
                 }`}
               >
                 {cat}
-              </div>
+              </button>
             ))}
           </div>
 
@@ -320,7 +336,8 @@ function MenuView({ tableNumber }: MenuViewProps) {
               <MenuCategory
                 key={section.id}
                 section={section}
-                showSectionName={filter === "Todo"}
+                showSectionName={deferredFilter === "Todo"}
+                onRestaurantClosed={() => setShowClosedModal(true)}
               />
             ))
           ) : (
@@ -338,15 +355,15 @@ function MenuView({ tableNumber }: MenuViewProps) {
       {/* Carrito flotante */}
       {totalItems > 0 && (
         <div className="fixed bottom-6 md:bottom-8 lg:bottom-10 left-0 right-0 z-50 flex justify-center">
-          <div
-            onClick={handleCartClick}
-            className="bg-gradient-to-r from-[#34808C] to-[#173E44] text-white rounded-full px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 shadow-lg flex items-center gap-3 md:gap-4 cursor-pointer transition-all hover:scale-105 animate-bounce-in active:scale-90"
+          <button
+            onClick={() => navigateWithTable("/cart")}
+            className="bg-gradient-to-r from-[#34808C] to-[#173E44] text-white rounded-full px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 shadow-lg flex items-center gap-3 md:gap-4 transition-all hover:scale-105 animate-bounce-in active:scale-90"
           >
             <ShoppingCart className="size-5 md:size-6 lg:size-7" />
             <span className="text-base md:text-lg lg:text-xl font-medium">
               Ver el carrito • {totalItems}
             </span>
-          </div>
+          </button>
         </div>
       )}
 
@@ -368,39 +385,29 @@ function MenuView({ tableNumber }: MenuViewProps) {
           }}
         >
           {/* Settings */}
-          <div
-            onClick={handleSettingsClick}
-            className="size-11 md:size-12 rounded-full overflow-hidden flex items-center justify-center bg-white/60 border border-gray-200 cursor-pointer hover:bg-white transition-colors active:scale-95"
+          <button
+            onClick={() => setShowSettingsModal(true)}
+            className="size-11 md:size-12 rounded-full overflow-hidden flex items-center justify-center bg-white/60 border border-gray-200 hover:bg-white transition-colors active:scale-95"
           >
-            {isAuthenticated && profile?.photoUrl ? (
-              <img
-                src={profile.photoUrl}
-                alt="Perfil"
-                className="w-full h-full object-cover"
-              />
-            ) : isAuthenticated && profile?.firstName ? (
-              <span className="text-stone-700 font-semibold text-base md:text-lg select-none">
-                {profile.firstName.charAt(0).toUpperCase()}
-              </span>
-            ) : (
-              <UserCircle
-                className="size-6 md:size-7 text-stone-500"
-                strokeWidth={1.2}
-              />
-            )}
-          </div>
+            <UserAvatar
+              isAuthenticated={isAuthenticated}
+              profile={profile}
+              iconSize="size-6 md:size-7"
+              textSize="text-base md:text-lg"
+            />
+          </button>
 
           {/* Carrito */}
           <div className="relative group">
-            <div
-              onClick={handleCartClick}
-              className="size-11 md:size-12 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 cursor-pointer hover:bg-white transition-colors active:scale-95"
+            <button
+              onClick={() => navigateWithTable("/cart")}
+              className="size-11 md:size-12 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 hover:bg-white transition-colors active:scale-95"
             >
               <ShoppingCart
                 className="size-5 md:size-6 text-stone-700"
                 strokeWidth={1.5}
               />
-            </div>
+            </button>
             {cartState.totalItems > 0 && (
               <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-5 flex items-center justify-center text-xs font-normal">
                 {cartState.totalItems}
@@ -410,15 +417,15 @@ function MenuView({ tableNumber }: MenuViewProps) {
 
           {/* Orden */}
           <div className="relative group">
-            <div
+            <button
               onClick={() => navigateWithTable("/order")}
-              className="size-11 md:size-12 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 cursor-pointer hover:bg-white transition-colors active:scale-95"
+              className="size-11 md:size-12 rounded-full flex items-center justify-center bg-white/60 border border-gray-200 hover:bg-white transition-colors active:scale-95"
             >
               <ReceiptText
                 className="size-5 md:size-6 text-stone-700"
                 strokeWidth={1.5}
               />
-            </div>
+            </button>
             {Array.isArray(tableState.dishOrders) &&
               tableState.dishOrders.length > 0 && (
                 <div className="absolute -top-1 -right-1 bg-[#eab3f4] text-white rounded-full size-5 flex items-center justify-center text-xs font-normal">
@@ -428,9 +435,9 @@ function MenuView({ tableNumber }: MenuViewProps) {
           </div>
 
           {/* Pepper */}
-          <div
-            onClick={handlePepperClick}
-            className="size-11 md:size-12 rounded-full border border-gray-200 bg-white/60 cursor-pointer overflow-hidden hover:bg-white transition-colors active:scale-95"
+          <button
+            onClick={() => setShowPepperChat(true)}
+            className="size-11 md:size-12 rounded-full border border-gray-200 bg-white/60 overflow-hidden hover:bg-white transition-colors active:scale-95"
           >
             <video
               src="/videos/video-icon-pepper.webm"
@@ -438,12 +445,14 @@ function MenuView({ tableNumber }: MenuViewProps) {
               loop
               muted
               playsInline
+              preload="none"
+              aria-hidden="true"
               disablePictureInPicture
               controls={false}
               controlsList="nodownload nofullscreen noremoteplayback"
               className="w-full h-full object-cover"
             />
-          </div>
+          </button>
         </div>
       </div>
 
@@ -473,11 +482,12 @@ function MenuView({ tableNumber }: MenuViewProps) {
                 : "slideUp 0.38s cubic-bezier(0.32, 0.72, 0, 1)",
             }}
           >
-            {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-10 h-1 rounded-full bg-gray-300/80" />
             </div>
-            <ChatView onBack={closePepperChat} />
+            <Suspense fallback={null}>
+              <ChatView onBack={closePepperChat} />
+            </Suspense>
           </div>
         </>
       )}
@@ -508,23 +518,35 @@ function MenuView({ tableNumber }: MenuViewProps) {
                 : "slideUp 0.38s cubic-bezier(0.32, 0.72, 0, 1)",
             }}
           >
-            {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-10 h-1 rounded-full bg-white/30" />
             </div>
-            {isAuthenticated ? (
-              <div className="flex-1 min-h-0">
-                <DashboardView
-                  onClose={closeSettingsModal}
-                  onLogout={closeSettingsModal}
-                />
-              </div>
-            ) : (
-              <AuthView onClose={closeSettingsModal} />
-            )}
+            <Suspense fallback={null}>
+              {isAuthenticated ? (
+                <div className="flex-1 min-h-0">
+                  <DashboardView
+                    onClose={closeSettingsModal}
+                    onLogout={closeSettingsModal}
+                  />
+                </div>
+              ) : (
+                <AuthView onClose={closeSettingsModal} />
+              )}
+            </Suspense>
           </div>
         </>
       )}
+
+      {/* Restaurant Closed Modal */}
+      <Suspense fallback={null}>
+        <RestaurantClosedModal
+          isOpen={showClosedModal}
+          onClose={() => setShowClosedModal(false)}
+          openingHours={restaurant?.opening_hours}
+          restaurantName={restaurant?.name}
+          restaurantLogo={restaurant?.logo_url}
+        />
+      </Suspense>
 
       <style>{`
         @keyframes slideUp {

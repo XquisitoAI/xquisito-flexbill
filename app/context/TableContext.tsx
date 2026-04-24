@@ -338,6 +338,7 @@ const TableContext = createContext<{
     userName?: string,
     cartItems?: CartItem[],
     branchNumber?: string,
+    orderNotes?: string | null,
   ) => Promise<void>;
   // Nuevas funciones para el sistema de platillos
   loadTableData: () => Promise<void>;
@@ -686,6 +687,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
     userName?: string,
     cartItems?: CartItem[],
     branchNumberParam?: string,
+    orderNotes?: string | null,
   ) => {
     const finalUserName = userName || state.currentUserName;
     // Usar cartItems pasados como parámetro, o fallback a state.currentUserItems (legacy)
@@ -769,6 +771,8 @@ export function TableProvider({ children }: { children: ReactNode }) {
           item.customFields, // custom fields seleccionados
           item.extraPrice, // precio extra por custom fields
           item.id, // menu_item_id
+          orderNotes, // notas de la orden
+          item.specialInstructions || null, // instrucciones especiales del platillo
         );
 
         if (!response.success) {

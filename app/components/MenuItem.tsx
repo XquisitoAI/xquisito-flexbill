@@ -10,22 +10,19 @@ import { useTableNavigation } from "@/app/hooks/useTableNavigation";
 import { useFlyToCart } from "@/app/hooks/useFlyToCart";
 import { useRestaurant } from "@/app/context/RestaurantContext";
 import { Plus, Minus } from "lucide-react";
-import { useRef, useState, useEffect, useMemo } from "react";
-import RestaurantClosedModal from "@/app/components/RestaurantClosedModal";
+import { useRef, useState, useEffect, useMemo, memo } from "react";
 
 interface MenuItemProps {
   item: MenuItemDB | MenuItemData;
+  onRestaurantClosed?: () => void;
 }
 
-export default function MenuItem({ item }: MenuItemProps) {
+function MenuItem({ item, onRestaurantClosed }: MenuItemProps) {
   // Adaptar el item de BD al formato legacy
   const adaptedItem: MenuItemData = useMemo(() => {
-    // Si ya tiene el formato legacy, devolverlo tal cual
     if ("images" in item && "features" in item) {
       return item as MenuItemData;
     }
-
-    // Convertir de formato BD a formato legacy
     const dbItem = item as MenuItemDB;
     return {
       id: dbItem.id,
@@ -34,21 +31,20 @@ export default function MenuItem({ item }: MenuItemProps) {
       price: Number(dbItem.price),
       images: dbItem.image_url ? [dbItem.image_url] : [],
       discount: dbItem.discount,
-      features: [], // Los custom_fields podrían mapearse aquí si es necesario
+      features: [],
     };
   }, [item]);
+
   const { state, addItem, removeItem, updateQuantity } = useCart();
   const { navigateWithTable } = useTableNavigation();
   const { flyToCart } = useFlyToCart();
-  const { isOpen, restaurant } = useRestaurant();
+  const { isOpen } = useRestaurant();
   const plusButtonRef = useRef<HTMLDivElement>(null);
   const isAddingRef = useRef(false);
   const isRemovingRef = useRef(false);
   const [localQuantity, setLocalQuantity] = useState(0);
   const [isPulsing, setIsPulsing] = useState(false);
-  const [showClosedModal, setShowClosedModal] = useState(false);
 
-  // Verificar si el item tiene custom fields obligatorios
   const hasRequiredCustomFields = useMemo(() => {
     const dbItem = item as MenuItemDB;
     if (dbItem.custom_fields) {
@@ -62,7 +58,6 @@ export default function MenuItem({ item }: MenuItemProps) {
       } else if (Array.isArray(dbItem.custom_fields)) {
         fields = dbItem.custom_fields;
       }
-      // Solo retorna true si hay al menos un campo obligatorio
       return fields.some((field: CustomField) => field.required === true);
     }
     return false;
@@ -75,31 +70,23 @@ export default function MenuItem({ item }: MenuItemProps) {
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    // Evitar clicks múltiples mientras se está agregando (usando ref para check síncrono)
-    if (isAddingRef.current) {
-      return;
-    }
+    if (isAddingRef.current) return;
 
-    // Verificar si el restaurante está abierto
     if (!isOpen) {
-      setShowClosedModal(true);
+      onRestaurantClosed?.();
       return;
     }
 
-    // Si tiene custom fields obligatorios, verificar si hay un último item guardado
     if (hasRequiredCustomFields) {
       const lastItemKey = `lastItem_${adaptedItem.id}`;
       const lastItemData = localStorage.getItem(lastItemKey);
 
       if (lastItemData) {
-        // Si hay un último item guardado, agregarlo al carrito
         try {
           const lastItem = JSON.parse(lastItemData);
-
           isAddingRef.current = true;
           setLocalQuantity((prev) => prev + 1);
           setIsPulsing(true);
-
           try {
             if (plusButtonRef.current) {
               flyToCart(plusButtonRef.current, async () => {
@@ -116,26 +103,18 @@ export default function MenuItem({ item }: MenuItemProps) {
           navigateWithTable(`/dish/${adaptedItem.id}`);
         }
       } else {
-        // Si no hay último item, navegar a la página de detalle
         navigateWithTable(`/dish/${adaptedItem.id}`);
       }
       return;
     }
 
-    // Calcular precio con descuento aplicado
     const finalPrice =
       adaptedItem.discount > 0
         ? adaptedItem.price * (1 - adaptedItem.discount / 100)
         : adaptedItem.price;
 
-    // Crear item con precio con descuento
-    const itemWithDiscount = {
-      ...adaptedItem,
-      price: finalPrice,
-    };
+    const itemWithDiscount = { ...adaptedItem, price: finalPrice };
 
-    // Si no tiene custom fields, agregar directamente al carrito
-    // Bloquear SÍNCRONAMENTE con ref antes de cualquier async
     isAddingRef.current = true;
     setLocalQuantity((prev) => prev + 1);
     setIsPulsing(true);
@@ -153,7 +132,6 @@ export default function MenuItem({ item }: MenuItemProps) {
     }
   };
 
-  // Reset pulse animation
   useEffect(() => {
     if (isPulsing) {
       const timer = setTimeout(() => setIsPulsing(false), 200);
@@ -164,12 +142,8 @@ export default function MenuItem({ item }: MenuItemProps) {
   const handleRemoveFromCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    // Evitar clicks múltiples mientras se está removiendo (usando ref para check síncrono)
-    if (isRemovingRef.current) {
-      return;
-    }
+    if (isRemovingRef.current) return;
 
-    // Si hay múltiples variaciones, navegar al carrito
     const itemsWithSameId = state.items.filter(
       (cartItem) => cartItem.id === adaptedItem.id,
     );
@@ -178,10 +152,7 @@ export default function MenuItem({ item }: MenuItemProps) {
       return;
     }
 
-    // Bloquear SÍNCRONAMENTE con ref antes de cualquier async
     isRemovingRef.current = true;
-
-    // Update local quantity
     setLocalQuantity((prev) => Math.max(0, prev - 1));
 
     try {
@@ -198,115 +169,106 @@ export default function MenuItem({ item }: MenuItemProps) {
     }
   };
 
-  // Sumar todas las cantidades de items con el mismo id (considerando diferentes custom fields)
   const currentQuantity = state.items
     .filter((cartItem) => cartItem.id === adaptedItem.id)
     .reduce((sum, item) => sum + item.quantity, 0);
 
-  // Sync local quantity with state
   const displayQuantity = Math.max(localQuantity, currentQuantity);
 
   return (
-    <>
-      <RestaurantClosedModal
-        isOpen={showClosedModal}
-        onClose={() => setShowClosedModal(false)}
-        openingHours={restaurant?.opening_hours}
-        restaurantName={restaurant?.name}
-        restaurantLogo={restaurant?.logo_url}
-      />
-      <div
-        className="border-b border-gray-300 py-4 md:py-6 lg:py-7 relative"
-        onClick={handleImageClick}
-      >
-        <div className="flex items-center gap-4 md:gap-5 lg:gap-6">
-          {/* Image */}
-          <div className="flex-shrink-0 cursor-pointer">
-            <div className="size-36 md:size-40 lg:size-44 bg-gray-300 rounded-xl md:rounded-2xl flex items-center justify-center hover:scale-105 transition-transform duration-200">
-              {adaptedItem.images[0] ? (
-                <img
-                  src={adaptedItem.images[0]}
-                  alt="Dish preview"
-                  className="w-full h-full object-cover rounded-xl md:rounded-2xl"
+    <div
+      className="border-b border-gray-300 py-4 md:py-6 lg:py-7 relative"
+      onClick={handleImageClick}
+    >
+      <div className="flex items-center gap-4 md:gap-5 lg:gap-6">
+        {/* Image */}
+        <div className="flex-shrink-0 cursor-pointer">
+          <div className="size-36 md:size-40 lg:size-44 bg-gray-300 rounded-xl md:rounded-2xl flex items-center justify-center hover:scale-105 transition-transform duration-200">
+            {adaptedItem.images[0] ? (
+              <img
+                src={adaptedItem.images[0]}
+                alt="Dish preview"
+                loading="lazy"
+                className="w-full h-full object-cover rounded-xl md:rounded-2xl"
+              />
+            ) : (
+              <img
+                src="/logo-short-green.webp"
+                alt="Logo Xquisito"
+                loading="lazy"
+                className="size-18 md:size-20 lg:size-22 object-contain"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between">
+            <h3 className="text-lg md:text-xl lg:text-2xl font-medium text-black leading-tight capitalize line-clamp-2 break-words">
+              {adaptedItem.name}
+            </h3>
+            <div
+              className={`flex gap-1.5 md:gap-2 px-3 md:px-4 lg:px-5 py-0.5 md:py-1 h-fit rounded-full border items-center justify-center border-[#8e8e8e]/50 text-black transition-all ${isPulsing ? "bg-[#eab3f4]/50" : "bg-[#f9f9f9]"}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Minus
+                className={`size-4 md:size-5 lg:size-6 ${displayQuantity > 0 ? "cursor-pointer" : "cursor-no-drop"}`}
+                onClick={displayQuantity > 0 ? handleRemoveFromCart : undefined}
+              />
+              <p className="font-normal text-base md:text-lg lg:text-xl">
+                {displayQuantity}
+              </p>
+              <div ref={plusButtonRef}>
+                <Plus
+                  className="size-4 md:size-5 lg:size-6 cursor-pointer"
+                  onClick={handleAddToCart}
                 />
-              ) : (
-                <img
-                  src="/logo-short-green.webp"
-                  alt="Logo Xquisito"
-                  className="size-18 md:size-20 lg:size-22 object-contain"
-                />
-              )}
+              </div>
             </div>
           </div>
-
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex justify-between">
-              <h3 className="text-lg md:text-xl lg:text-2xl font-medium text-black leading-tight capitalize line-clamp-2 break-words">
-                {adaptedItem.name}
-              </h3>
-              <div
-                className={`flex gap-1.5 md:gap-2 px-3 md:px-4 lg:px-5 py-0.5 md:py-1 h-fit rounded-full border items-center justify-center border-[#8e8e8e]/50 text-black transition-all ${isPulsing ? "bg-[#eab3f4]/50" : "bg-[#f9f9f9]"}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Minus
-                  className={`size-4 md:size-5 lg:size-6 ${displayQuantity > 0 ? "cursor-pointer" : "cursor-no-drop"}`}
-                  onClick={
-                    displayQuantity > 0 ? handleRemoveFromCart : undefined
-                  }
-                />
-                <p className="font-normal text-base md:text-lg lg:text-xl">
-                  {displayQuantity}
-                </p>
-                <div ref={plusButtonRef}>
-                  <Plus
-                    className="size-4 md:size-5 lg:size-6 cursor-pointer"
-                    onClick={handleAddToCart}
-                  />
+          {adaptedItem.features.length > 0 && (
+            <div className="flex gap-1 md:gap-1.5 mt-1 md:mt-2 mb-3 md:mb-4">
+              {adaptedItem.features.map((feature, index) => (
+                <div
+                  key={index}
+                  className="text-sm md:text-base lg:text-lg text-black font-medium border border-[#bfbfbf]/50 rounded-3xl px-3 md:px-4 py-1 md:py-1.5 shadow-sm"
+                >
+                  {feature}
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-base md:text-lg lg:text-xl line-clamp-3 leading-4 md:leading-5 lg:leading-6 bg-gradient-to-b from-black to-black/30 bg-clip-text text-transparent">
+            {adaptedItem.description}
+          </p>
+          <div className="flex items-center justify-between mt-2 md:mt-3">
+            {adaptedItem.discount > 0 ? (
+              <div className="text-base md:text-lg lg:text-xl text-black flex flex-col">
+                <div>
+                  <span className="text-black line-through text-xs md:text-sm lg:text-base">
+                    ${adaptedItem.price} MXN
+                  </span>
+                </div>
+                <div className="-translate-y-1">
+                  $
+                  {(
+                    adaptedItem.price *
+                    (1 - adaptedItem.discount / 100)
+                  ).toFixed(2)}{" "}
+                  MXN
                 </div>
               </div>
-            </div>
-            {adaptedItem.features.length > 0 && (
-              <div className="flex gap-1 md:gap-1.5 mt-1 md:mt-2 mb-3 md:mb-4">
-                {adaptedItem.features.map((feature, index) => (
-                  <div
-                    key={index}
-                    className="text-sm md:text-base lg:text-lg text-black font-medium border border-[#bfbfbf]/50 rounded-3xl px-3 md:px-4 py-1 md:py-1.5 shadow-sm"
-                  >
-                    {feature}
-                  </div>
-                ))}
-              </div>
+            ) : (
+              <span className="text-base md:text-lg lg:text-xl text-black">
+                ${adaptedItem.price.toFixed(2)} MXN
+              </span>
             )}
-            <p className="text-base md:text-lg lg:text-xl line-clamp-3 leading-4 md:leading-5 lg:leading-6 bg-gradient-to-b from-black to-black/30 bg-clip-text text-transparent">
-              {adaptedItem.description}
-            </p>
-            <div className="flex items-center justify-between mt-2 md:mt-3">
-              {adaptedItem.discount > 0 ? (
-                <div className="text-base md:text-lg lg:text-xl text-black flex flex-col">
-                  <div>
-                    <span className="text-black line-through text-xs md:text-sm lg:text-base">
-                      ${adaptedItem.price} MXN
-                    </span>
-                  </div>
-                  <div className="-translate-y-1">
-                    $
-                    {(
-                      adaptedItem.price *
-                      (1 - adaptedItem.discount / 100)
-                    ).toFixed(2)}{" "}
-                    MXN
-                  </div>
-                </div>
-              ) : (
-                <span className="text-base md:text-lg lg:text-xl text-black">
-                  ${adaptedItem.price.toFixed(2)} MXN
-                </span>
-              )}
-            </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
+
+export default memo(MenuItem);

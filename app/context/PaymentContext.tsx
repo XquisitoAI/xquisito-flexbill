@@ -40,12 +40,6 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
   const hasPaymentMethods = paymentMethods.length > 0;
 
   const refreshPaymentMethods = async () => {
-    // Only fetch if auth is loaded (either registered user or guest)
-    if (authLoading) {
-      setPaymentMethods([]);
-      return;
-    }
-
     // For registered users - prioritize user over guest session
     if (isAuthenticated && user) {
       console.log("🔐 Fetching payment methods for registered user:", user.id);
@@ -67,16 +61,22 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
 
       setIsLoading(true);
       try {
-        // Ensure auth token is set in apiService
         apiService.setAuthToken(userToken);
-        console.log("🔑 Auth token set in apiService before payment request");
 
         const response = await apiService.getPaymentMethods();
-        if (response.success && response.data?.paymentMethods) {
-          setPaymentMethods(response.data.paymentMethods);
+        if (response.success) {
+          let methods: PaymentMethod[] = [];
+          if ((response as any).paymentMethods) {
+            methods = (response as any).paymentMethods;
+          } else if (response.data?.paymentMethods) {
+            methods = response.data.paymentMethods;
+          } else if (Array.isArray(response.data)) {
+            methods = response.data;
+          }
+          setPaymentMethods(methods);
           console.log(
             "💳 Loaded payment methods for registered user:",
-            response.data.paymentMethods.length,
+            methods.length,
           );
         } else {
           setPaymentMethods([]);
@@ -100,12 +100,17 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
       setIsLoading(true);
       try {
         const response = await apiService.getPaymentMethods();
-        if (response.success && response.data?.paymentMethods) {
-          setPaymentMethods(response.data.paymentMethods);
-          console.log(
-            "💳 Loaded payment methods for guest:",
-            response.data.paymentMethods.length,
-          );
+        if (response.success) {
+          let methods: PaymentMethod[] = [];
+          if ((response as any).paymentMethods) {
+            methods = (response as any).paymentMethods;
+          } else if (response.data?.paymentMethods) {
+            methods = response.data.paymentMethods;
+          } else if (Array.isArray(response.data)) {
+            methods = response.data;
+          }
+          setPaymentMethods(methods);
+          console.log("💳 Loaded payment methods for guest:", methods.length);
         } else {
           setPaymentMethods([]);
           console.log("💳 No payment methods found for guest");
@@ -186,6 +191,13 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
       `🗑️ Deleting payment method for ${isGuest ? "guest" : "registered user"}:`,
       paymentMethodId,
     );
+
+    // Optimistic update: remove immediately, restore on failure
+    const deletedMethod = paymentMethods.find(
+      (pm) => pm.id === paymentMethodId,
+    );
+    removePaymentMethod(paymentMethodId);
+
     try {
       if (isGuest && guestId) {
         apiService.setGuestInfo(guestId);
@@ -197,16 +209,15 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
       }
 
       const response = await apiService.deletePaymentMethod(paymentMethodId);
-      if (response.success) {
-        removePaymentMethod(paymentMethodId);
-        console.log("✅ Payment method deleted successfully:", paymentMethodId);
-      } else {
+      if (!response.success) {
         throw new Error(
           response.error?.message || "Failed to delete payment method",
         );
       }
+      console.log("✅ Payment method deleted successfully:", paymentMethodId);
     } catch (error) {
       console.error("❌ Error deleting payment method:", error);
+      if (deletedMethod) addPaymentMethod(deletedMethod);
       throw error;
     }
   };
@@ -261,26 +272,24 @@ export function PaymentProvider({ children }: PaymentProviderProps) {
 
   // Load payment methods when user context changes
   useEffect(() => {
-    if (!authLoading) {
-      // If user is authenticated, clear any guest session
-      if (isAuthenticated && user && isGuest) {
-        console.log("🔐 User authenticated - clearing guest session");
-        setAsAuthenticated(user.id);
-      }
+    if (authLoading) return;
 
-      console.log("🔄 PaymentContext - Context changed:", {
-        isLoaded: !authLoading,
-        hasUser: !!user,
-        userId: user?.id,
-        isGuest,
-        guestId,
-      });
-
-      // Delay refreshPaymentMethods to ensure token is set
-      setTimeout(() => {
-        refreshPaymentMethods();
-      }, 100); // Small delay to ensure token is configured
+    // If user is authenticated, clear any guest session
+    if (isAuthenticated && user && isGuest) {
+      console.log("🔐 User authenticated - clearing guest session");
+      setAsAuthenticated(user.id);
     }
+
+    console.log("🔄 PaymentContext - Context changed:", {
+      isAuthenticated,
+      hasUser: !!user,
+      userId: user?.id,
+      isGuest,
+      guestId,
+    });
+
+    refreshPaymentMethods();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     authLoading,
     isAuthenticated,

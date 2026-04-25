@@ -916,7 +916,9 @@ export default function CardSelectionPage() {
         onAnimationComplete={handleAnimationComplete}
       />
 
-      <div className="min-h-dvh bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+      <div
+        className={`min-h-dvh bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col ${showPaymentAnimation ? "animate-fade-out" : ""}`}
+      >
         {/* Header */}
         <MenuHeaderBack
           restaurant={restaurantData}
@@ -1120,7 +1122,9 @@ export default function CardSelectionPage() {
         </div>
 
         {/* Barra inferior fija — botón pagar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white mx-4 px-8 z-90 py-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <div
+          className={`fixed bottom-0 left-0 right-0 bg-white mx-4 px-8 z-90 py-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-opacity duration-200 ${showPaymentAnimation ? "opacity-0 pointer-events-none" : ""}`}
+        >
           <button
             onClick={handlePayment}
             disabled={isProcessing || isUnderMinimum}

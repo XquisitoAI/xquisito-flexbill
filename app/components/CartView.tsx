@@ -112,7 +112,7 @@ export default function CartView() {
   };
 
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a8b9b] to-[#153f43] flex flex-col">
       <MenuHeaderBack
         restaurant={restaurantData}
         tableNumber={tableState.tableNumber}

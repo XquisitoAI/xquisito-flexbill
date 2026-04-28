@@ -11,6 +11,7 @@ import { useValidateAccess } from "@/app/hooks/useValidateAccess";
 import ValidationError from "@/app/components/ValidationError";
 import { authService } from "@/app/services/auth.service";
 import { useAuth } from "@/app/context/AuthContext";
+import { useGuest } from "@/app/context/GuestContext";
 
 type Step = "phone" | "verify" | "profile";
 
@@ -33,6 +34,7 @@ export default function AuthSelectionPage() {
   const { navigateWithTable } = useTableNavigation();
   const { validationError } = useValidateAccess();
   const { state } = useTable();
+  const { guestName } = useGuest();
   const restaurantData = getRestaurantData();
   const {
     verifyOTP,
@@ -329,7 +331,11 @@ export default function AuthSelectionPage() {
               {/* Guest link */}
               <div className="text-center pt-1">
                 <button
-                  onClick={() => navigateWithTable("/payment-options")}
+                  onClick={() =>
+                    navigateWithTable(
+                      guestName ? "/payment-options" : "/guest-name",
+                    )
+                  }
                   className="text-white/70 hover:text-white text-sm underline underline-offset-2 transition-colors"
                 >
                   Continuar como invitado

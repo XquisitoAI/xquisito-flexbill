@@ -549,7 +549,7 @@ export default function PaymentSuccessPage() {
                         >
                           {/* Image */}
                           <img
-                            src={dish.images[0]}
+                            src={dish.images[0] || "/logo-short-green.webp"}
                             alt={dish.item}
                             className="size-14 md:size-16 lg:size-20 object-cover rounded-lg md:rounded-xl flex-shrink-0"
                           />

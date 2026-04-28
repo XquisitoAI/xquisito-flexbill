@@ -61,14 +61,19 @@ export default function OrderStatus() {
       const key = `${dish.guest_name}|${dish.item}|${customFieldsKey}`;
 
       if (grouped.has(key)) {
-        // Si ya existe, sumar la cantidad y actualizar el total
         const existing = grouped.get(key);
         existing.quantity += dish.quantity;
         existing.total_price += dish.total_price;
-        // Mantener el primer dish_order_id para la key
+        // Acumular estatus de cada sub-orden
+        existing.statuses.push({
+          status: dish.status,
+          quantity: dish.quantity,
+        });
       } else {
-        // Si no existe, agregar una copia del dish
-        grouped.set(key, { ...dish });
+        grouped.set(key, {
+          ...dish,
+          statuses: [{ status: dish.status, quantity: dish.quantity }],
+        });
       }
     });
 
@@ -256,8 +261,31 @@ export default function OrderStatus() {
                               ready: "Listo",
                               delivered: "Entregado",
                             };
-                            const status =
-                              statusMap[dish.status as string] || "Preparando";
+                            const statusColorMap: Record<string, string> = {
+                              preparing:
+                                "bg-yellow-100 text-yellow-800 border-yellow-300",
+                              ready:
+                                "bg-blue-100 text-blue-800 border-blue-300",
+                              delivered:
+                                "bg-green-100 text-green-800 border-green-300",
+                            };
+
+                            // Agrupar cantidades por estatus
+                            const statusCounts = (
+                              dish.statuses as {
+                                status: string;
+                                quantity: number;
+                              }[]
+                            ).reduce(
+                              (acc, s) => {
+                                acc[s.status] =
+                                  (acc[s.status] || 0) + s.quantity;
+                                return acc;
+                              },
+                              {} as Record<string, number>,
+                            );
+                            const uniqueStatuses = Object.keys(statusCounts);
+                            const multipleStatuses = uniqueStatuses.length > 1;
 
                             return (
                               <div
@@ -315,20 +343,17 @@ export default function OrderStatus() {
                                             )}
                                           </div>
                                         )}
-                                      <div className="mt-1 md:mt-1.5 lg:mt-2">
-                                        <span
-                                          className={`inline-block px-2 md:px-3 lg:px-4 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm lg:text-base font-medium rounded-full border ${
-                                            dish.status === "preparing"
-                                              ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                                              : dish.status === "ready"
-                                                ? "bg-blue-100 text-blue-800 border-blue-300"
-                                                : dish.status === "delivered"
-                                                  ? "bg-green-100 text-green-800 border-green-300"
-                                                  : "bg-yellow-100 text-yellow-800 border-yellow-300"
-                                          }`}
-                                        >
-                                          {status}
-                                        </span>
+                                      <div className="mt-1 md:mt-1.5 lg:mt-2 flex flex-wrap gap-1">
+                                        {uniqueStatuses.map((s) => (
+                                          <span
+                                            key={s}
+                                            className={`inline-block px-2 md:px-3 lg:px-4 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm lg:text-base font-medium rounded-full border ${statusColorMap[s] || "bg-yellow-100 text-yellow-800 border-yellow-300"}`}
+                                          >
+                                            {statusMap[s] || s}
+                                            {multipleStatuses &&
+                                              ` ${statusCounts[s]}/${dish.quantity}`}
+                                          </span>
+                                        ))}
                                       </div>
                                     </div>
                                   </div>

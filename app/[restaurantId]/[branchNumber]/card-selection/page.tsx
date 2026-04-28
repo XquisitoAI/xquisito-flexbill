@@ -28,7 +28,7 @@ export default function CardSelectionPage() {
   const searchParams = useSearchParams();
   const restaurantData = getRestaurantData();
   const isGuest = useIsGuest();
-  const { guestId, tableNumber, setAsAuthenticated } = useGuest();
+  const { guestId, tableNumber, guestName, setAsAuthenticated } = useGuest();
   const { hasPaymentMethods, paymentMethods, deletePaymentMethod } =
     usePayment();
   const { user, profile, isLoading } = useAuth();
@@ -352,6 +352,11 @@ export default function CardSelectionPage() {
               ? null
               : selectedPaymentMethodId;
 
+          // Determinar nombre del pagador
+          const transactionBy = isGuest
+            ? guestName || "Invitado"
+            : [profile?.firstName, profile?.lastName].filter(Boolean).join(" ");
+
           // Registrar transacción siempre, con o sin table_order_id
           await paymentService.recordPaymentTransaction({
             payment_method_id: transactionPaymentMethodId,
@@ -373,6 +378,7 @@ export default function CardSelectionPage() {
             total_amount_charged: totalAmountCharged,
             subtotal_for_commission: subtotalForCommission,
             currency: "MXN",
+            transaction_by: transactionBy,
           });
           console.log(
             "✅ Payment transaction recorded successfully (background)",

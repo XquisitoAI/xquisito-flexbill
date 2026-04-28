@@ -384,6 +384,7 @@ class ApiService {
     total_amount_charged: number;
     subtotal_for_commission: number;
     currency?: string;
+    transaction_by?: string;
   }): Promise<ApiResponse<any>> {
     return this.makeRequest("/payment-transactions", {
       method: "POST",

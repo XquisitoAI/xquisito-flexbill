@@ -46,6 +46,7 @@ export interface RecordPaymentTransactionParams {
   total_amount_charged: number;
   subtotal_for_commission: number;
   currency: string;
+  transaction_by?: string;
 }
 
 export interface ProcessPaymentParams {

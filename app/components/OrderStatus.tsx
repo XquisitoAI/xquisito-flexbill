@@ -284,8 +284,17 @@ export default function OrderStatus() {
                               },
                               {} as Record<string, number>,
                             );
+                            const statusHierarchy = [
+                              "delivered",
+                              "ready",
+                              "preparing",
+                            ];
                             const uniqueStatuses = Object.keys(statusCounts);
                             const multipleStatuses = uniqueStatuses.length > 1;
+                            // Estatus más avanzado según jerarquía
+                            const topStatus =
+                              statusHierarchy.find((s) => statusCounts[s]) ??
+                              uniqueStatuses[0];
 
                             return (
                               <div
@@ -343,17 +352,14 @@ export default function OrderStatus() {
                                             )}
                                           </div>
                                         )}
-                                      <div className="mt-1 md:mt-1.5 lg:mt-2 flex flex-wrap gap-1">
-                                        {uniqueStatuses.map((s) => (
-                                          <span
-                                            key={s}
-                                            className={`inline-block px-2 md:px-3 lg:px-4 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm lg:text-base font-medium rounded-full border ${statusColorMap[s] || "bg-yellow-100 text-yellow-800 border-yellow-300"}`}
-                                          >
-                                            {statusMap[s] || s}
-                                            {multipleStatuses &&
-                                              ` ${statusCounts[s]}/${dish.quantity}`}
-                                          </span>
-                                        ))}
+                                      <div className="mt-1 md:mt-1.5 lg:mt-2">
+                                        <span
+                                          className={`inline-block px-2 md:px-3 lg:px-4 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm lg:text-base font-medium rounded-full border ${statusColorMap[topStatus] || "bg-yellow-100 text-yellow-800 border-yellow-300"}`}
+                                        >
+                                          {statusMap[topStatus] || topStatus}
+                                          {multipleStatuses &&
+                                            ` ${statusCounts[topStatus]}/${dish.quantity}`}
+                                        </span>
                                       </div>
                                     </div>
                                   </div>

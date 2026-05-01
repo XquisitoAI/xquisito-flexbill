@@ -236,7 +236,11 @@ export default function CartView() {
                             <div className="flex items-center gap-2 md:gap-3">
                               <Minus
                                 onClick={() =>
-                                  updateQuantity(item.id, item.quantity - 1)
+                                  item.cartItemId &&
+                                  updateQuantity(
+                                    item.cartItemId,
+                                    item.quantity - 1,
+                                  )
                                 }
                                 className="size-4 md:size-5 lg:size-6 flex items-center justify-center text-black cursor-pointer"
                               />
@@ -245,7 +249,11 @@ export default function CartView() {
                               </p>
                               <Plus
                                 onClick={() =>
-                                  updateQuantity(item.id, item.quantity + 1)
+                                  item.cartItemId &&
+                                  updateQuantity(
+                                    item.cartItemId,
+                                    item.quantity + 1,
+                                  )
                                 }
                                 className="size-4 md:size-5 lg:size-6 flex items-center justify-center text-black cursor-pointer"
                               />

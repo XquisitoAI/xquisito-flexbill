@@ -31,6 +31,7 @@ export interface CartItem {
       optionId: string;
       optionName: string;
       price: number;
+      quantity?: number;
     }>;
   }>;
   subtotal: number;
